@@ -180,7 +180,7 @@ private fun OptionCard(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = "${option.id}",
+                text = "${option.optionNumber}",
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
                 color = if (selected) MaterialTheme.colorScheme.onPrimary

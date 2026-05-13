@@ -52,6 +52,7 @@ class ApiQuizRepository(
 
     private fun ChoiceApiResponse.toDomain(): QuizOption = QuizOption(
         id = id,
+        optionNumber = orderNum,
         text = content,
     )
 

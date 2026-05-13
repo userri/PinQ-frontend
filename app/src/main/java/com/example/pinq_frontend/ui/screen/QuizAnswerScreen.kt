@@ -197,7 +197,7 @@ private fun AnswerOptionRow(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = "${option.id}",
+                text = "${option.optionNumber}",
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.surface,

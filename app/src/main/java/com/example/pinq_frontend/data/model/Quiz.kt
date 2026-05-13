@@ -23,6 +23,7 @@ data class Quiz(
 
 data class QuizOption(
     val id: Long,
+    val optionNumber: Int, // 1~4 번호 표시용
     val text: String,
 )
 
