@@ -35,8 +35,9 @@ import com.example.pinq_frontend.ui.home.HomeViewModel
 import com.example.pinq_frontend.ui.quiz.QuizSessionViewModel
 import com.example.pinq_frontend.ui.screen.HomeScreen
 import com.example.pinq_frontend.ui.screen.QuizAnswerScreen
-import com.example.pinq_frontend.ui.screen.ResultReportScreen
 import com.example.pinq_frontend.ui.screen.QuizScreen
+import com.example.pinq_frontend.ui.screen.ResultReportScreen
+import com.example.pinq_frontend.ui.screen.WrongNoteScreen
 
 /**
  * FinQ 네비게이션 그래프.
@@ -46,10 +47,10 @@ import com.example.pinq_frontend.ui.screen.QuizScreen
  *   session (nested graph)
  *     ├── session/quiz
  *     ├── session/answer
- *     └── session/done
+ *     ├── session/done      ← 결과 리포트
+ *     └── session/wrongnote ← 오답노트
  *
- * `session` 그래프 안의 세 화면은 같은 [QuizSessionViewModel] 인스턴스를 공유한다.
- * (NavBackStackEntry 를 부모 그래프의 것으로 잡아 viewModel() 에 전달)
+ * `session` 그래프 안의 모든 화면은 같은 [QuizSessionViewModel] 인스턴스를 공유한다.
  */
 object FinQRoutes {
     const val HOME = "home"
@@ -57,6 +58,7 @@ object FinQRoutes {
     const val QUIZ = "session/quiz"
     const val ANSWER = "session/answer"
     const val DONE = "session/done"
+    const val WRONG_NOTE = "session/wrongnote"
 }
 
 @Composable
@@ -64,8 +66,6 @@ fun FinQNavHost(
     navController: NavHostController = rememberNavController(),
     modifier: Modifier = Modifier,
 ) {
-    // Phase 2: 백엔드 API 를 호출하는 ApiQuizRepository 사용.
-    // 더미 모드로 돌리고 싶으면 DummyQuizRepository() 로 교체.
     val repository: QuizRepository = remember { ApiQuizRepository(NetworkModule.quizApi) }
 
     NavHost(
@@ -84,9 +84,7 @@ fun FinQNavHost(
                 streak = state.streak,
                 isLoading = state.isLoading,
                 error = state.error,
-                onStartQuiz = {
-                    navController.navigate(FinQRoutes.SESSION_GRAPH)
-                },
+                onStartQuiz = { navController.navigate(FinQRoutes.SESSION_GRAPH) },
                 onRetry = homeVm::loadQuizInfo,
             )
         }
@@ -112,7 +110,6 @@ fun FinQNavHost(
                         val state = vm.uiState.value
                         if (state.isLastQuiz) {
                             navController.navigate(FinQRoutes.DONE) {
-                                // 퀴즈/정답 스택을 정리하고 done 만 남긴다.
                                 popUpTo(FinQRoutes.QUIZ) { inclusive = true }
                             }
                         } else {
@@ -123,7 +120,6 @@ fun FinQNavHost(
                         }
                     },
                     onArticleClick = { article ->
-                        // Phase 1: 외부 브라우저로 열기. Phase 2 에서 Custom Tab 으로 교체 검토.
                         val intent = Intent(Intent.ACTION_VIEW, article.url.toUri())
                         context.startActivity(intent)
                     },
@@ -134,18 +130,26 @@ fun FinQNavHost(
                 DoneRoute(
                     viewModel = vm,
                     onGoHome = {
-                        // 세션 스택 전체를 정리하고 홈으로 돌아간다.
                         navController.navigate(FinQRoutes.HOME) {
                             popUpTo(FinQRoutes.HOME) { inclusive = true }
                         }
                     },
                     onRestart = {
-                        // DONE 만 팝하고 QUIZ 로 이동해 같은 ViewModel 인스턴스 재사용.
                         vm.restart()
                         navController.navigate(FinQRoutes.QUIZ) {
                             popUpTo(FinQRoutes.DONE) { inclusive = true }
                         }
                     },
+                    onWrongNote = {
+                        navController.navigate(FinQRoutes.WRONG_NOTE)
+                    },
+                )
+            }
+            composable(FinQRoutes.WRONG_NOTE) { entry ->
+                val vm = entry.sessionViewModel(navController, repository)
+                WrongNoteRoute(
+                    viewModel = vm,
+                    onBack = { navController.popBackStack() },
                 )
             }
         }
@@ -169,7 +173,7 @@ private fun NavBackStackEntry.sessionViewModel(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Route 래퍼: ViewModel 상태를 stateless 스크린으로 풀어 넘긴다.
+// Route 래퍼
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
@@ -179,8 +183,6 @@ private fun QuizRoute(
 ) {
     val state by viewModel.uiState.collectAsState()
 
-    // API 응답(lastAnswer)이 도착하면 Answer 화면으로 이동.
-    // isSubmitting 이 false 로 바뀌고 lastAnswer 가 채워진 순간 딱 한 번만 트리거.
     LaunchedEffect(state.lastAnswer, state.isSubmitting) {
         if (!state.isSubmitting && state.lastAnswer != null) {
             onAfterSubmit()
@@ -213,7 +215,6 @@ private fun AnswerRoute(
     val quiz = state.currentQuiz
     val answer = state.lastAnswer
     if (quiz == null || answer == null) {
-        // 채점 결과 도착 대기
         LoadingBox()
     } else {
         QuizAnswerScreen(
@@ -231,6 +232,7 @@ private fun DoneRoute(
     viewModel: QuizSessionViewModel,
     onGoHome: () -> Unit,
     onRestart: () -> Unit,
+    onWrongNote: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsState()
     ResultReportScreen(
@@ -238,6 +240,20 @@ private fun DoneRoute(
         answerHistory = state.answerHistory,
         onGoHome = onGoHome,
         onRestart = onRestart,
+        onWrongNote = onWrongNote,
+    )
+}
+
+@Composable
+private fun WrongNoteRoute(
+    viewModel: QuizSessionViewModel,
+    onBack: () -> Unit,
+) {
+    val state by viewModel.uiState.collectAsState()
+    WrongNoteScreen(
+        quizzes = state.quizzes,
+        answerHistory = state.answerHistory,
+        onBack = onBack,
     )
 }
 
