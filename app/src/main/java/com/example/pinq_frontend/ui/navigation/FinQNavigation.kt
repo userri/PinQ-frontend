@@ -156,7 +156,6 @@ private fun QuizRoute(
             onSelectOption = viewModel::selectOption,
             onSubmit = {
                 viewModel.submitAnswer()
-                onAfterSubmit()
             },
         )
     }

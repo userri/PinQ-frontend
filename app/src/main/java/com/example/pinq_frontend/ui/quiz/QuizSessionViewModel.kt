@@ -66,10 +66,12 @@ class QuizSessionViewModel(
         val selected = state.selectedOptionId ?: return
 
         viewModelScope.launch {
+            _uiState.update { it.copy(isSubmitting = true) } // 제출 시작
             runCatching { quizRepository.submitAnswer(quiz.id, selected) }
                 .onSuccess { result ->
                     _uiState.update {
                         it.copy(
+                            isSubmitting = false,
                             lastAnswer = result,
                             correctCount = if (result.isCorrect) it.correctCount + 1
                             else it.correctCount,
@@ -77,7 +79,12 @@ class QuizSessionViewModel(
                     }
                 }
                 .onFailure { e ->
-                    _uiState.update { it.copy(error = e.message ?: "Submit failed") }
+                    _uiState.update {
+                        it.copy(
+                            isSubmitting = false,
+                            error = e.message ?: "Submit failed"
+                        )
+                    }
                 }
         }
     }

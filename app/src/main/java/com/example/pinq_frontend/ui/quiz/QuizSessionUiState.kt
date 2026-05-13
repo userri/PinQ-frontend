@@ -25,6 +25,9 @@ data class QuizSessionUiState(
     /** 직전에 제출한 답의 채점 결과. answer 화면이 이걸 보고 그린다. */
     val lastAnswer: AnswerResult? = null,
 
+    /** 답 제출 중인지 여부. */
+    val isSubmitting: Boolean = false,
+
     /** 누적 정답 개수. done 화면에서 사용. */
     val correctCount: Int = 0,
 ) {
