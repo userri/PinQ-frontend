@@ -75,6 +75,7 @@ class QuizSessionViewModel(
                             lastAnswer = result,
                             correctCount = if (result.isCorrect) it.correctCount + 1
                             else it.correctCount,
+                            error = null, // 제출 성공했으니 에러는 초기화
                         )
                     }
                 }
