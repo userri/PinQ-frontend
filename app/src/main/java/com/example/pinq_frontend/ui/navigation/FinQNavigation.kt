@@ -35,7 +35,7 @@ import com.example.pinq_frontend.ui.home.HomeViewModel
 import com.example.pinq_frontend.ui.quiz.QuizSessionViewModel
 import com.example.pinq_frontend.ui.screen.HomeScreen
 import com.example.pinq_frontend.ui.screen.QuizAnswerScreen
-import com.example.pinq_frontend.ui.screen.QuizDoneScreen
+import com.example.pinq_frontend.ui.screen.ResultReportScreen
 import com.example.pinq_frontend.ui.screen.QuizScreen
 
 /**
@@ -233,9 +233,9 @@ private fun DoneRoute(
     onRestart: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsState()
-    QuizDoneScreen(
-        correctCount = state.correctCount,
-        totalCount = state.totalCount,
+    ResultReportScreen(
+        quizzes = state.quizzes,
+        answerHistory = state.answerHistory,
         onGoHome = onGoHome,
         onRestart = onRestart,
     )

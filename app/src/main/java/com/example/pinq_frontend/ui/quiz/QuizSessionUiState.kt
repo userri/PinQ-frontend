@@ -7,7 +7,6 @@ import com.example.pinq_frontend.data.repository.AnswerResult
  * 퀴즈 한 세션(오늘 풀이 1회) 전체의 UI 상태.
  *
  * 변경 가능성이 거의 없는 단일 data class 로 표현해 View 쪽에서 다루기 쉽게 한다.
- * (Phase 2 에서 좀 더 복잡해지면 sealed interface 로 쪼개도 늦지 않음)
  */
 data class QuizSessionUiState(
     val isLoading: Boolean = true,
@@ -28,8 +27,15 @@ data class QuizSessionUiState(
     /** 답 제출 중인지 여부. */
     val isSubmitting: Boolean = false,
 
-    /** 누적 정답 개수. done 화면에서 사용. */
+    /** 누적 정답 개수. 결과 리포트 화면에서 사용. */
     val correctCount: Int = 0,
+
+    /**
+     * 제출 완료된 문제들의 채점 결과 리스트 (제출 순서대로 누적).
+     * 결과 리포트 화면에서 문제별 정오 표시에 사용한다.
+     * quizzes[i] 와 answerHistory[i] 가 같은 문제에 대응된다.
+     */
+    val answerHistory: List<AnswerResult> = emptyList(),
 ) {
     val currentQuiz: Quiz? get() = quizzes.getOrNull(currentIndex)
     val totalCount: Int get() = quizzes.size
