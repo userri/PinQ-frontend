@@ -62,10 +62,12 @@ fun ResultReportScreen(
     answerHistory: List<AnswerResult>,
     onGoHome: () -> Unit,
     onRestart: () -> Unit,
+    onWrongNote: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val correctCount = answerHistory.count { it.isCorrect }
     val totalCount = quizzes.size
+    val wrongCount = answerHistory.count { !it.isCorrect }
 
     Column(
         modifier = modifier
@@ -125,11 +127,28 @@ fun ResultReportScreen(
         Spacer(Modifier.height(36.dp))
 
         // ── 버튼 ──────────────────────────────────────────────────
-        Button(
+        // 오답이 있을 때만 오답노트 버튼 표시
+        if (wrongCount > 0) {
+            Button(
+                onClick = onWrongNote,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 52.dp),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Text(
+                    text = "오답노트 보기  (${wrongCount}개)",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+        }
+        OutlinedButton(
             onClick = onGoHome,
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 52.dp),
+                .heightIn(min = 48.dp),
             shape = RoundedCornerShape(12.dp),
         ) {
             Text(
@@ -363,6 +382,7 @@ private fun ResultReportPreview() {
             answerHistory = previewAnswers,
             onGoHome = {},
             onRestart = {},
+            onWrongNote = {},
         )
     }
 }
@@ -376,6 +396,7 @@ private fun ResultReportAllWrongPreview() {
             answerHistory = previewAnswers.map { it.copy(isCorrect = false) },
             onGoHome = {},
             onRestart = {},
+            onWrongNote = {},
         )
     }
 }
