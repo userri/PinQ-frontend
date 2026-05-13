@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -30,6 +31,7 @@ import com.example.pinq_frontend.ui.theme.PinQ_frontendTheme
 fun QuizDoneScreen(
     correctCount: Int,
     totalCount: Int,
+    onGoHome: () -> Unit,
     onRestart: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -61,15 +63,29 @@ fun QuizDoneScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(32.dp))
-        OutlinedButton(
-            onClick = onRestart,
+        Button(
+            onClick = onGoHome,
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 52.dp),
             shape = RoundedCornerShape(12.dp),
         ) {
             Text(
-                text = "처음으로 돌아가기",
+                text = "홈으로",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+        Spacer(Modifier.height(12.dp))
+        OutlinedButton(
+            onClick = onRestart,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp),
+            shape = RoundedCornerShape(12.dp),
+        ) {
+            Text(
+                text = "다시 풀기",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -81,6 +97,6 @@ fun QuizDoneScreen(
 @Composable
 private fun QuizDoneScreenPreview() {
     PinQ_frontendTheme {
-        QuizDoneScreen(correctCount = 3, totalCount = 4, onRestart = {})
+        QuizDoneScreen(correctCount = 3, totalCount = 4, onGoHome = {}, onRestart = {})
     }
 }
