@@ -2,11 +2,17 @@ package com.example.pinq_frontend.ui.navigation
 
 import android.content.Intent
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -144,6 +150,15 @@ private fun QuizRoute(
     onAfterSubmit: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsState()
+
+    // API 응답(lastAnswer)이 도착하면 Answer 화면으로 이동.
+    // isSubmitting 이 false 로 바뀌고 lastAnswer 가 채워진 순간 딱 한 번만 트리거.
+    LaunchedEffect(state.lastAnswer, state.isSubmitting) {
+        if (!state.isSubmitting && state.lastAnswer != null) {
+            onAfterSubmit()
+        }
+    }
+
     when {
         state.isLoading -> LoadingBox()
         state.error != null -> ErrorBox(state.error!!) { viewModel.loadQuizzes() }
@@ -153,10 +168,9 @@ private fun QuizRoute(
             totalCount = state.totalCount,
             quiz = state.currentQuiz!!,
             selectedOptionId = state.selectedOptionId,
+            isSubmitting = state.isSubmitting,
             onSelectOption = viewModel::selectOption,
-            onSubmit = {
-                viewModel.submitAnswer()
-            },
+            onSubmit = { viewModel.submitAnswer() },
         )
     }
 }
@@ -171,7 +185,7 @@ private fun AnswerRoute(
     val quiz = state.currentQuiz
     val answer = state.lastAnswer
     if (quiz == null || answer == null) {
-        // 채점 결과 도착 대기 (Phase 1 더미라 보통 즉시 그려진다)
+        // 채점 결과 도착 대기
         LoadingBox()
     } else {
         QuizAnswerScreen(
@@ -207,12 +221,16 @@ private fun LoadingBox() {
 @Composable
 private fun ErrorBox(message: String, onRetry: () -> Unit) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(
-            text = "오류: $message\n(화면을 다시 들어와 주세요)",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.error,
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = "오류: $message",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = onRetry) {
+                Text("다시 시도")
+            }
+        }
     }
-    // onRetry 는 추후 재시도 버튼을 추가할 때 사용 (현재는 미사용)
-    @Suppress("UNUSED_EXPRESSION") onRetry
 }
