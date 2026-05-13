@@ -31,7 +31,9 @@ import com.example.pinq_frontend.data.model.RelatedArticle
 import com.example.pinq_frontend.data.remote.NetworkModule
 import com.example.pinq_frontend.data.repository.ApiQuizRepository
 import com.example.pinq_frontend.data.repository.QuizRepository
+import com.example.pinq_frontend.ui.home.HomeViewModel
 import com.example.pinq_frontend.ui.quiz.QuizSessionViewModel
+import com.example.pinq_frontend.ui.screen.HomeScreen
 import com.example.pinq_frontend.ui.screen.QuizAnswerScreen
 import com.example.pinq_frontend.ui.screen.QuizDoneScreen
 import com.example.pinq_frontend.ui.screen.QuizScreen
@@ -40,6 +42,7 @@ import com.example.pinq_frontend.ui.screen.QuizScreen
  * FinQ 네비게이션 그래프.
  *
  * 구조:
+ *   home
  *   session (nested graph)
  *     ├── session/quiz
  *     ├── session/answer
@@ -49,6 +52,7 @@ import com.example.pinq_frontend.ui.screen.QuizScreen
  * (NavBackStackEntry 를 부모 그래프의 것으로 잡아 viewModel() 에 전달)
  */
 object FinQRoutes {
+    const val HOME = "home"
     const val SESSION_GRAPH = "session"
     const val QUIZ = "session/quiz"
     const val ANSWER = "session/answer"
@@ -61,14 +65,33 @@ fun FinQNavHost(
     modifier: Modifier = Modifier,
 ) {
     // Phase 2: 백엔드 API 를 호출하는 ApiQuizRepository 사용.
-    // BASE_URL 변경은 NetworkModule 참조. 더미 모드로 돌리고 싶으면 DummyQuizRepository() 로 교체.
+    // 더미 모드로 돌리고 싶으면 DummyQuizRepository() 로 교체.
     val repository: QuizRepository = remember { ApiQuizRepository(NetworkModule.quizApi) }
 
     NavHost(
         navController = navController,
-        startDestination = FinQRoutes.SESSION_GRAPH,
+        startDestination = FinQRoutes.HOME,
         modifier = modifier,
     ) {
+        // ── 홈 화면 ──────────────────────────────────────────────────
+        composable(FinQRoutes.HOME) {
+            val homeVm: HomeViewModel = viewModel(
+                factory = HomeViewModel.factory(repository),
+            )
+            val state by homeVm.uiState.collectAsState()
+            HomeScreen(
+                quizCount = state.quizCount,
+                streak = state.streak,
+                isLoading = state.isLoading,
+                error = state.error,
+                onStartQuiz = {
+                    navController.navigate(FinQRoutes.SESSION_GRAPH)
+                },
+                onRetry = homeVm::loadQuizInfo,
+            )
+        }
+
+        // ── 퀴즈 세션 그래프 ──────────────────────────────────────────
         navigation(
             startDestination = FinQRoutes.QUIZ,
             route = FinQRoutes.SESSION_GRAPH,
@@ -110,9 +133,14 @@ fun FinQNavHost(
                 val vm = entry.sessionViewModel(navController, repository)
                 DoneRoute(
                     viewModel = vm,
+                    onGoHome = {
+                        // 세션 스택 전체를 정리하고 홈으로 돌아간다.
+                        navController.navigate(FinQRoutes.HOME) {
+                            popUpTo(FinQRoutes.HOME) { inclusive = true }
+                        }
+                    },
                     onRestart = {
-                        // SESSION_GRAPH 자체는 유지해서 ViewModel 을 보존하고,
-                        // DONE 만 팝한 뒤 QUIZ 로 이동.
+                        // DONE 만 팝하고 QUIZ 로 이동해 같은 ViewModel 인스턴스 재사용.
                         vm.restart()
                         navController.navigate(FinQRoutes.QUIZ) {
                             popUpTo(FinQRoutes.DONE) { inclusive = true }
@@ -201,12 +229,14 @@ private fun AnswerRoute(
 @Composable
 private fun DoneRoute(
     viewModel: QuizSessionViewModel,
+    onGoHome: () -> Unit,
     onRestart: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsState()
     QuizDoneScreen(
         correctCount = state.correctCount,
         totalCount = state.totalCount,
+        onGoHome = onGoHome,
         onRestart = onRestart,
     )
 }
