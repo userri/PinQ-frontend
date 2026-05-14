@@ -284,12 +284,12 @@ private fun QuizResultItem(
                 .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // 번호 뱃지
+            // 번호 뱃지 — 정오답에 따라 배경색 구분
             Box(
                 modifier = Modifier
                     .size(28.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                    .background(iconBg),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
