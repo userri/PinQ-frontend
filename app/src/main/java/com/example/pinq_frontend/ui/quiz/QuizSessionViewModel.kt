@@ -4,12 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.pinq_frontend.data.local.SavedWrongNote
+import com.example.pinq_frontend.data.local.WrongNoteStore
 import com.example.pinq_frontend.data.repository.QuizRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * 퀴즈 세션 전체를 책임지는 ViewModel.
@@ -18,10 +22,7 @@ import kotlinx.coroutines.launch
  *  - 오늘의 퀴즈 로딩
  *  - 사용자 옵션 선택 / 정답 제출 / 다음 문제 이동 / 재시작
  *  - 누적 정답 개수 관리
- *
- * 책임에서 명시적으로 제외:
- *  - 화면 전환 (NavController 가 담당)
- *  - UI 렌더링 (Composable 이 담당)
+ *  - 오답노트 저장 (saveWrongNotes)
  */
 class QuizSessionViewModel(
     private val quizRepository: QuizRepository,
@@ -66,7 +67,7 @@ class QuizSessionViewModel(
         val selected = state.selectedOptionId ?: return
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isSubmitting = true) } // 제출 시작
+            _uiState.update { it.copy(isSubmitting = true) }
             runCatching { quizRepository.submitAnswer(quiz.id, selected) }
                 .onSuccess { result ->
                     _uiState.update {
@@ -76,7 +77,7 @@ class QuizSessionViewModel(
                             correctCount = if (result.isCorrect) it.correctCount + 1
                             else it.correctCount,
                             answerHistory = it.answerHistory + result,
-                            error = null, // 제출 성공했으니 에러는 초기화
+                            error = null,
                         )
                     }
                 }
@@ -84,7 +85,7 @@ class QuizSessionViewModel(
                     _uiState.update {
                         it.copy(
                             isSubmitting = false,
-                            error = e.message ?: "Submit failed"
+                            error = e.message ?: "Submit failed",
                         )
                     }
                 }
@@ -122,13 +123,39 @@ class QuizSessionViewModel(
         }
     }
 
+    /**
+     * 세션 오답을 WrongNoteStore 에 저장한다.
+     * answerHistory 에서 isCorrect=false 인 항목을 quizzes 와 join 해
+     * SavedWrongNote 를 만들고 store.upsert() 를 호출한다.
+     */
+    fun saveWrongNotes(store: WrongNoteStore) {
+        viewModelScope.launch {
+            val state = _uiState.value
+            val wrongNotes = state.quizzes.zip(state.answerHistory)
+                .filter { (_, answer) -> !answer.isCorrect }
+                .map { (quiz, answer) ->
+                    val myAnswerText = quiz.options
+                        .find { it.id == answer.selectedOptionId }?.text ?: "-"
+                    val correctAnswerText = quiz.options
+                        .find { it.id == answer.correctOptionId }?.text ?: "-"
+                    SavedWrongNote(
+                        quizId = quiz.id,
+                        question = quiz.question,
+                        categoryName = quiz.category.name,
+                        categoryDisplay = quiz.category.displayName,
+                        myAnswerText = myAnswerText,
+                        correctAnswerText = correctAnswerText,
+                        explanation = answer.explanation,
+                        keyword = answer.keyword,
+                    )
+                }
+            if (wrongNotes.isNotEmpty()) {
+                withContext(Dispatchers.IO) { store.upsert(wrongNotes) }
+            }
+        }
+    }
+
     companion object {
-        /**
-         * Repository 를 주입할 수 있는 팩토리.
-         *
-         *   val factory = QuizSessionViewModel.factory(DummyQuizRepository())
-         *   val vm: QuizSessionViewModel = viewModel(factory = factory)
-         */
         fun factory(repository: QuizRepository) = viewModelFactory {
             initializer { QuizSessionViewModel(repository) }
         }
