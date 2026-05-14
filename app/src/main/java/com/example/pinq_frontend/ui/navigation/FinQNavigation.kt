@@ -178,7 +178,6 @@ fun FinQNavHost(
                     correctRate = 0f,
                     activityGrid = dummyGrid,
                     appVersion = BuildConfig.VERSION_NAME,
-                    onBack = { navController.popBackStack() },
                 )
             }
 

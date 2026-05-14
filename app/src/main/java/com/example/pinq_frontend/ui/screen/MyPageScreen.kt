@@ -51,7 +51,6 @@ fun MyPageScreen(
     correctRate: Float,
     activityGrid: List<Boolean>,
     appVersion: String,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // List<Boolean> → List<Int> 변환 (기존 API 호환)
@@ -65,7 +64,6 @@ fun MyPageScreen(
         correctRate = correctRate,
         intensityGrid = intensityGrid,
         appVersion = appVersion,
-        onBack = onBack,
         modifier = modifier,
     )
 }
@@ -77,7 +75,6 @@ fun MyPageContent(
     correctRate: Float,
     intensityGrid: List<Int>,
     appVersion: String,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -401,7 +398,6 @@ private fun MyPageScreenPreview() {
             correctRate = 0.75f,
             intensityGrid = intensityGrid,
             appVersion = "1.0",
-            onBack = {},
         )
     }
 }
@@ -416,7 +412,6 @@ private fun MyPageEmptyPreview() {
             correctRate = 0f,
             intensityGrid = emptyList(),
             appVersion = "1.0",
-            onBack = {},
         )
     }
 }
