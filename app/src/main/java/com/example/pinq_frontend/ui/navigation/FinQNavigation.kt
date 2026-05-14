@@ -40,8 +40,11 @@ import com.example.pinq_frontend.data.local.LocalModule
 import com.example.pinq_frontend.data.model.RelatedArticle
 import com.example.pinq_frontend.data.remote.NetworkModule
 import com.example.pinq_frontend.data.repository.ApiQuizRepository
+import com.example.pinq_frontend.data.repository.ApiUserStatsRepository
 import com.example.pinq_frontend.data.repository.QuizRepository
+import com.example.pinq_frontend.data.repository.UserStatsRepository
 import com.example.pinq_frontend.ui.home.HomeViewModel
+import com.example.pinq_frontend.ui.mypage.MyPageViewModel
 import com.example.pinq_frontend.ui.quiz.QuizSessionViewModel
 import com.example.pinq_frontend.ui.screen.HomeScreen
 import com.example.pinq_frontend.ui.screen.MyPageScreen
@@ -102,6 +105,7 @@ fun FinQNavHost(
     modifier: Modifier = Modifier,
 ) {
     val repository: QuizRepository = remember { ApiQuizRepository(NetworkModule.quizApi) }
+    val statsRepository: UserStatsRepository = remember { ApiUserStatsRepository(NetworkModule.userApi) }
     val context = LocalContext.current
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -134,7 +138,7 @@ fun FinQNavHost(
             // ── 홈 ──────────────────────────────────────────────────────
             composable(FinQRoutes.HOME) {
                 val homeVm: HomeViewModel = viewModel(
-                    factory = HomeViewModel.factory(repository),
+                    factory = HomeViewModel.factory(repository, statsRepository),
                 )
                 val state by homeVm.uiState.collectAsState()
                 HomeScreen(
@@ -166,18 +170,15 @@ fun FinQNavHost(
 
             // ── 마이페이지 ───────────────────────────────────────────────
             composable(FinQRoutes.MY_PAGE) {
-                val dummyGrid = remember {
-                    val pattern = listOf(
-                        true, false, true, true, false, true, false,
-                        false, true, true, false, true, true, true,
-                    )
-                    List(56) { i -> pattern[i % pattern.size] }
-                }
+                val myPageVm: MyPageViewModel = viewModel(
+                    factory = MyPageViewModel.factory(statsRepository),
+                )
+                val state by myPageVm.uiState.collectAsState()
                 MyPageScreen(
-                    streak = 0,
-                    totalSolved = 0,
-                    correctRate = 0f,
-                    activityGrid = dummyGrid,
+                    streak = state.streak,
+                    totalSolved = state.totalSolved,
+                    correctRate = state.correctRate,
+                    activityGrid = state.activityGrid,
                     appVersion = BuildConfig.VERSION_NAME,
                 )
             }
