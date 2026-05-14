@@ -1,10 +1,10 @@
 package com.example.pinq_frontend.ui.wrongnote
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.pinq_frontend.data.local.LocalModule
 import com.example.pinq_frontend.data.local.SavedWrongNote
 import com.example.pinq_frontend.data.local.WrongNoteStore
 import kotlinx.coroutines.Dispatchers
@@ -30,8 +30,8 @@ class WrongNoteViewModel(private val store: WrongNoteStore) : ViewModel() {
     }
 
     companion object {
-        fun factory(context: Context) = viewModelFactory {
-            initializer { WrongNoteViewModel(WrongNoteStore(context.applicationContext)) }
+        val factory = viewModelFactory {
+            initializer { WrongNoteViewModel(LocalModule.wrongNoteStore) }
         }
     }
 }
