@@ -36,6 +36,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navigation
 import com.example.pinq_frontend.BuildConfig
+import com.example.pinq_frontend.data.local.LocalModule
 import com.example.pinq_frontend.data.model.RelatedArticle
 import com.example.pinq_frontend.data.remote.NetworkModule
 import com.example.pinq_frontend.data.repository.ApiQuizRepository
@@ -156,7 +157,7 @@ fun FinQNavHost(
             // ── 오답노트 탭 ──────────────────────────────────────────────
             composable(FinQRoutes.WRONG_NOTE_TAB) {
                 val wrongNoteVm: WrongNoteViewModel = viewModel(
-                    factory = WrongNoteViewModel.factory(context),
+                    factory = WrongNoteViewModel.factory,
                 )
                 // 화면 진입 시마다 최신 데이터 로드
                 LaunchedEffect(Unit) { wrongNoteVm.refresh() }
@@ -219,9 +220,8 @@ fun FinQNavHost(
                 }
                 composable(FinQRoutes.DONE) { entry ->
                     val vm = entry.sessionViewModel(navController, repository)
-                    val store = remember { com.example.pinq_frontend.data.local.WrongNoteStore(context.applicationContext) }
                     // 세션 종료 시 오답을 영구 저장소에 기록
-                    LaunchedEffect(Unit) { vm.saveWrongNotes(store) }
+                    LaunchedEffect(Unit) { vm.saveWrongNotes(LocalModule.wrongNoteStore) }
                     DoneRoute(
                         viewModel = vm,
                         onGoHome = {
