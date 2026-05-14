@@ -3,6 +3,7 @@ package com.example.pinq_frontend.ui.screen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -30,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.times
 import com.example.pinq_frontend.ui.theme.PinQBlue
 import com.example.pinq_frontend.ui.theme.PinQ_frontendTheme
 
@@ -122,22 +124,12 @@ fun MyPageContent(
             )
         }
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(20.dp))
 
-        // ── 잔디 히트맵 ───────────────────────────────────────────
-        Text(
-            text = "학습 기록",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Spacer(Modifier.height(12.dp))
-        ActivityHeatmap(intensityGrid = intensityGrid)
-        Spacer(Modifier.height(8.dp))
-        // 범례
-        HeatmapLegend()
+        // ── 풀이 활동 카드 ────────────────────────────────────────
+        ActivityHeatmapCard(intensityGrid = intensityGrid)
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(20.dp))
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         Spacer(Modifier.height(16.dp))
 
@@ -241,94 +233,133 @@ private fun StatCard(
 }
 
 /**
- * 강도별 히트맵.
- * intensity: 0=회색, 1=연파랑, 2=중파랑, 3=진파랑
+ * 풀이 활동 카드 — 8주×7일, 요일 라벨(월~일) 포함, 셀이 카드 너비를 꽉 채움.
  */
 @Composable
-private fun ActivityHeatmap(intensityGrid: List<Int>) {
-    val weeks = 7
+private fun ActivityHeatmapCard(intensityGrid: List<Int>) {
+    val weeks = 8
     val days = 7
+    val gap = 4.dp
+    val labelWidth = 20.dp
     val dayLabels = listOf("월", "화", "수", "목", "금", "토", "일")
+
+    val heatmapColors = listOf(
+        Color(0xFFEDF0F7),   // 0: 빈 셀
+        Color(0xFFBFD3F8),   // 1: 연파랑
+        Color(0xFF6B9BF2),   // 2: 중파랑
+        PinQBlue,            // 3: 진파랑
+    )
 
     val padded = List(weeks * days) { i -> intensityGrid.getOrElse(i) { 0 } }
 
-    val colors = listOf(
-        MaterialTheme.colorScheme.surfaceVariant,   // 0: 회색
-        Color(0xFFBFD3F8),                           // 1: 연파랑
-        Color(0xFF6B9BF2),                           // 2: 중파랑
-        PinQBlue,                                    // 3: 진파랑
-    )
-
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier.padding(end = 6.dp),
-        ) {
-            dayLabels.forEach { label ->
-                Box(
-                    modifier = Modifier.size(width = 16.dp, height = 16.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            // 헤더
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "풀이 활동",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = "지난 8주",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
-        }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            for (week in 0 until weeks) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    for (day in 0 until days) {
-                        val idx = week * days + day
-                        val intensity = padded.getOrElse(idx) { 0 }.coerceIn(0, 3)
-                        Box(
-                            modifier = Modifier
-                                .size(16.dp)
-                                .clip(RoundedCornerShape(3.dp))
-                                .background(colors[intensity]),
-                        )
+            Spacer(Modifier.height(14.dp))
+
+            // 요일 라벨 + 그리드: 셀 크기를 BoxWithConstraints로 동적 계산
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                // 가용 너비 = 전체 - 라벨 열 - 라벨-그리드 간격 - 셀 간 gap 합
+                val cellGapTotal = (weeks - 1) * gap
+                val gridWidth = maxWidth - labelWidth - gap - cellGapTotal
+                val cellSize = gridWidth / weeks
+
+                Row(verticalAlignment = Alignment.Top) {
+                    // 요일 라벨 열
+                    Column(
+                        modifier = Modifier.width(labelWidth),
+                        verticalArrangement = Arrangement.spacedBy(gap),
+                    ) {
+                        dayLabels.forEach { label ->
+                            Box(
+                                modifier = Modifier.size(cellSize),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.width(gap))
+
+                    // 히트맵 그리드 (열 = 주, 행 = 요일)
+                    Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
+                        for (week in 0 until weeks) {
+                            Column(verticalArrangement = Arrangement.spacedBy(gap)) {
+                                for (day in 0 until days) {
+                                    val idx = week * days + day
+                                    val intensity = padded.getOrElse(idx) { 0 }.coerceIn(0, 3)
+                                    Box(
+                                        modifier = Modifier
+                                            .size(cellSize)
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(heatmapColors[intensity]),
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
-        }
-    }
-}
 
-@Composable
-private fun HeatmapLegend() {
-    val colors = listOf(
-        MaterialTheme.colorScheme.surfaceVariant,
-        Color(0xFFBFD3F8),
-        Color(0xFF6B9BF2),
-        PinQBlue,
-    )
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        Text(
-            text = "적게",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.width(4.dp))
-        colors.forEach { color ->
-            Box(
-                modifier = Modifier
-                    .size(12.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(color),
-            )
+            Spacer(Modifier.height(12.dp))
+
+            // 범례 (우하단)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "적게",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.width(4.dp))
+                heatmapColors.forEach { color ->
+                    Box(
+                        modifier = Modifier
+                            .padding(horizontal = 2.dp)
+                            .size(12.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(color),
+                    )
+                }
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    text = "많이",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
-        Spacer(Modifier.width(4.dp))
-        Text(
-            text = "많이",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
@@ -361,7 +392,7 @@ private fun InfoRow(label: String, value: String) {
 private fun MyPageScreenPreview() {
     val intensityGrid = buildList {
         val pattern = listOf(0, 1, 2, 3, 1, 0, 2, 1, 3, 0, 2, 1, 0, 3)
-        repeat(49) { i -> add(pattern[i % pattern.size]) }
+        repeat(56) { i -> add(pattern[i % pattern.size]) }
     }
     PinQ_frontendTheme {
         MyPageContent(

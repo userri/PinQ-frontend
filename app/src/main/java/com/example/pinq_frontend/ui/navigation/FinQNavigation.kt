@@ -170,7 +170,7 @@ fun FinQNavHost(
                         true, false, true, true, false, true, false,
                         false, true, true, false, true, true, true,
                     )
-                    List(49) { i -> pattern[i % pattern.size] }
+                    List(56) { i -> pattern[i % pattern.size] }
                 }
                 MyPageScreen(
                     streak = 0,
