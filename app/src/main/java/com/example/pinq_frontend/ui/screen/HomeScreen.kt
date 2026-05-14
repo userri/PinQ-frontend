@@ -1,5 +1,6 @@
 package com.example.pinq_frontend.ui.screen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,9 +11,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -23,21 +28,26 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.pinq_frontend.ui.theme.PinQBlue
+import com.example.pinq_frontend.ui.theme.PinQDarkNavy
 import com.example.pinq_frontend.ui.theme.PinQ_frontendTheme
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.util.Calendar
 
 /**
  * 홈 화면 — Stateless View.
  *
- * 보여주는 것:
- *  1. 앱 타이틀 + 오늘 날짜
- *  2. 스트릭 카드 (Phase 2 API 연동 전까지 streak = 0)
- *  3. 오늘의 퀴즈 카드 + 시작 버튼
+ * @param quizCount    오늘 퀴즈 개수
+ * @param streak       연속 학습 일수 (0=오늘 처음)
+ * @param isLoading    퀴즈 로딩 중 여부
+ * @param error        에러 메시지 (null이면 정상)
+ * @param onStartQuiz  퀴즈 시작 콜백
+ * @param onRetry      재시도 콜백
  */
 @Composable
 fun HomeScreen(
@@ -47,44 +57,70 @@ fun HomeScreen(
     error: String?,
     onStartQuiz: () -> Unit,
     onRetry: () -> Unit,
+    onMyPage: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val today = remember {
-        SimpleDateFormat("yyyy년 M월 d일 (E)", Locale.KOREAN).format(Date())
-    }
-
     Column(
         modifier = modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 24.dp),
     ) {
-        // ── 헤더 ──────────────────────────────────────────────────────
+        // ── 앱 바 ──────────────────────────────────────────────────
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "PinQ",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.ExtraBold,
+                color = PinQBlue,
+                modifier = Modifier.weight(1f),
+            )
+            // 알림 아이콘 더미
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(text = "🔔", style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+
+        Spacer(Modifier.height(24.dp))
+
+        // ── 그리팅 ───────────────────────────────────────────────
         Text(
-            text = "PinQ",
-            style = MaterialTheme.typography.headlineLarge,
-            fontWeight = FontWeight.ExtraBold,
-            color = MaterialTheme.colorScheme.primary,
+            text = "안녕하세요, 유리님 👋",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
         )
         Spacer(Modifier.height(2.dp))
         Text(
-            text = today,
+            text = "오늘의 퀴즈가 도착했어요.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(24.dp))
 
-        // ── 스트릭 카드 ───────────────────────────────────────────────
-        StreakCard(streak = streak)
+        // ── 주간 스트릭 도트 ─────────────────────────────────────
+        WeeklyStreakRow(streak = streak)
 
         Spacer(Modifier.height(20.dp))
 
-        // ── 오늘의 퀴즈 카드 ──────────────────────────────────────────
+        // ── 히어로 카드 ──────────────────────────────────────────
         when {
-            isLoading -> QuizCardLoading()
-            error != null -> QuizCardError(error = error, onRetry = onRetry)
-            else -> QuizCard(quizCount = quizCount, onStartQuiz = onStartQuiz)
+            isLoading -> HeroCardLoading()
+            error != null -> HeroCardError(error = error, onRetry = onRetry)
+            else -> HeroCard(quizCount = quizCount, onStartQuiz = onStartQuiz)
         }
+
     }
 }
 
@@ -93,78 +129,110 @@ fun HomeScreen(
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun StreakCard(streak: Int) {
+private fun WeeklyStreakRow(streak: Int) {
+    val dayLabels = listOf("월", "화", "수", "목", "금", "토", "일")
+    // 오늘이 몇 번째 요일인지 (월=0 ~ 일=6)
+    val todayDow = remember {
+        val cal = Calendar.getInstance()
+        // Calendar.MONDAY=2 ~ Calendar.SUNDAY=1
+        (cal.get(Calendar.DAY_OF_WEEK) + 5) % 7
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-        ),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(text = "🔥", style = MaterialTheme.typography.headlineMedium)
-            Spacer(Modifier.width(12.dp))
-            Column {
-                Text(
-                    text = "연속 학습",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                )
-                Text(
-                    text = if (streak == 0) "오늘 첫 번째 도전!" else "${streak}일째 streak 🎉",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                )
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+            Text(
+                text = "이번 주 학습",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium,
+            )
+            Spacer(Modifier.height(10.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                dayLabels.forEachIndexed { index, label ->
+                    // streak 개수만큼 오늘까지 역방향으로 채움
+                    val daysFromToday = todayDow - index
+                    val isFilled = daysFromToday in 0 until streak || index == todayDow
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(
+                            modifier = Modifier
+                                .size(28.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (isFilled) PinQBlue
+                                    else MaterialTheme.colorScheme.surfaceVariant
+                                ),
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (isFilled) PinQBlue
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = if (isFilled) FontWeight.Bold else FontWeight.Normal,
+                        )
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun QuizCard(quizCount: Int, onStartQuiz: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-        ),
+private fun HeroCard(quizCount: Int, onStartQuiz: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(
+                brush = Brush.linearGradient(
+                    colors = listOf(PinQDarkNavy, Color(0xFF2851A3)),
+                )
+            )
+            .padding(24.dp),
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-        ) {
+        Column {
             Text(
                 text = "오늘의 퀴즈",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                style = MaterialTheme.typography.labelLarge,
+                color = Color.White.copy(alpha = 0.7f),
+                fontWeight = FontWeight.Medium,
             )
             Spacer(Modifier.height(6.dp))
             Text(
                 text = if (quizCount > 0) "${quizCount}문제 준비됐어요" else "퀴즈를 준비 중이에요",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color.White,
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "예상 시간 3분  ·  난이도 중간",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White.copy(alpha = 0.6f),
             )
             Spacer(Modifier.height(20.dp))
             Button(
                 onClick = onStartQuiz,
                 enabled = quizCount > 0,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 52.dp),
-                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White,
+                    contentColor = PinQDarkNavy,
+                ),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.heightIn(min = 44.dp),
             ) {
                 Text(
-                    text = "퀴즈 시작하기",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    text = "풀기  >",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
                 )
             }
         }
@@ -172,32 +240,28 @@ private fun QuizCard(quizCount: Int, onStartQuiz: () -> Unit) {
 }
 
 @Composable
-private fun QuizCardLoading() {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-        ),
+private fun HeroCardLoading() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(180.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(
+                brush = Brush.linearGradient(
+                    colors = listOf(PinQDarkNavy, Color(0xFF2851A3)),
+                )
+            ),
+        contentAlignment = Alignment.Center,
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(140.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            CircularProgressIndicator(
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
-        }
+        CircularProgressIndicator(color = Color.White)
     }
 }
 
 @Composable
-private fun QuizCardError(error: String, onRetry: () -> Unit) {
+private fun HeroCardError(error: String, onRetry: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.errorContainer,
         ),
@@ -207,7 +271,7 @@ private fun QuizCardError(error: String, onRetry: () -> Unit) {
                 .fillMaxWidth()
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
                 text = "퀴즈를 불러오지 못했어요",
@@ -227,17 +291,18 @@ private fun QuizCardError(error: String, onRetry: () -> Unit) {
     }
 }
 
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Preview
 // ─────────────────────────────────────────────────────────────────────────────
 
-@Preview(showBackground = true, widthDp = 360, heightDp = 760)
+@Preview(showBackground = true, widthDp = 360, heightDp = 800)
 @Composable
 private fun HomeScreenPreview() {
     PinQ_frontendTheme {
         HomeScreen(
             quizCount = 4,
-            streak = 0,
+            streak = 3,
             isLoading = false,
             error = null,
             onStartQuiz = {},
@@ -246,22 +311,7 @@ private fun HomeScreenPreview() {
     }
 }
 
-@Preview(showBackground = true, widthDp = 360, heightDp = 760)
-@Composable
-private fun HomeScreenStreakPreview() {
-    PinQ_frontendTheme {
-        HomeScreen(
-            quizCount = 4,
-            streak = 5,
-            isLoading = false,
-            error = null,
-            onStartQuiz = {},
-            onRetry = {},
-        )
-    }
-}
-
-@Preview(showBackground = true, widthDp = 360, heightDp = 760)
+@Preview(showBackground = true, widthDp = 360, heightDp = 800)
 @Composable
 private fun HomeScreenLoadingPreview() {
     PinQ_frontendTheme {
@@ -270,6 +320,21 @@ private fun HomeScreenLoadingPreview() {
             streak = 0,
             isLoading = true,
             error = null,
+            onStartQuiz = {},
+            onRetry = {},
+        )
+    }
+}
+
+@Preview(showBackground = true, widthDp = 360, heightDp = 800)
+@Composable
+private fun HomeScreenErrorPreview() {
+    PinQ_frontendTheme {
+        HomeScreen(
+            quizCount = 0,
+            streak = 0,
+            isLoading = false,
+            error = "네트워크 연결을 확인해주세요",
             onStartQuiz = {},
             onRetry = {},
         )
