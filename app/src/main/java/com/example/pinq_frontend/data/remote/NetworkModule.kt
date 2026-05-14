@@ -68,4 +68,8 @@ object NetworkModule {
     val quizApi: QuizApi by lazy {
         retrofit.create(QuizApi::class.java)
     }
+
+    val userApi: UserApi by lazy {
+        retrofit.create(UserApi::class.java)
+    }
 }
