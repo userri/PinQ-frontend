@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -49,6 +50,7 @@ fun QuizScreen(
     onSelectOption: (Long) -> Unit,
     onSubmit: () -> Unit,
     modifier: Modifier = Modifier,
+    isSubmitting: Boolean = false,
 ) {
     Column(
         modifier = modifier
@@ -72,6 +74,7 @@ fun QuizScreen(
                 OptionCard(
                     option = option,
                     selected = option.id == selectedOptionId,
+                    enabled = !isSubmitting,
                     onClick = { onSelectOption(option.id) },
                 )
             }
@@ -81,17 +84,25 @@ fun QuizScreen(
 
         Button(
             onClick = onSubmit,
-            enabled = selectedOptionId != null,
+            enabled = selectedOptionId != null && !isSubmitting,
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 52.dp),
             shape = RoundedCornerShape(12.dp),
         ) {
-            Text(
-                text = "정답 확인",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
+            if (isSubmitting) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                )
+            } else {
+                Text(
+                    text = "정답 확인",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
         }
     }
 }
@@ -148,6 +159,7 @@ private fun OptionCard(
     option: QuizOption,
     selected: Boolean,
     onClick: () -> Unit,
+    enabled: Boolean = true,
 ) {
     val containerColor = if (selected) {
         MaterialTheme.colorScheme.primaryContainer
@@ -165,7 +177,7 @@ private fun OptionCard(
             .clip(RoundedCornerShape(12.dp))
             .background(containerColor)
             .border(width = 1.dp, color = borderColor, shape = RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
+            .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

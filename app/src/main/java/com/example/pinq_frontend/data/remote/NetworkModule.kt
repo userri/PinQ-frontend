@@ -16,10 +16,7 @@ import retrofit2.converter.moshi.MoshiConverterFactory
  *
  * 권장: adb reverse 포트포워딩 + "http://localhost:8080/"
  *   1) PC 에서 백엔드 ./gradlew bootRun
- *   2) PC 터미널에서: adb reverse tcp:8080 tcp:8080
- *   3) 앱에서 http://localhost:8080 로 호출하면 adb 가 PC 의 8080 으로 자동 전달
- *   → 에뮬레이터와 실기기 모두 동일하게 동작. IP 신경 쓸 필요 없음.
- *
+ *   2) adb reverse tcp:8080 tcp:8080
  * 대안 A) 에뮬레이터 only:  "http://10.0.2.2:8080/"
  *   10.0.2.2 = 에뮬레이터에서 호스트 PC 의 localhost 매핑.
  *   실기기에서는 이 주소가 의미 없으므로 사용 불가.
@@ -36,7 +33,8 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 object NetworkModule {
 
     // adb reverse 방식. 별도 설정 없이 에뮬레이터/실기기 모두 동작.
-    private const val BASE_URL = "http://localhost:8080/"
+    private const val BASE_URL = "http://192.168.201.51:8080/" // 학원
+//    private const val BASE_URL = "http://172.30.1.32:8080/" // 집
 
     /** OkHttp 클라이언트 — 모든 HTTP 통신의 저수준 처리 + 로깅. */
     private val okHttpClient: OkHttpClient by lazy {
