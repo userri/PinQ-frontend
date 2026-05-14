@@ -1,6 +1,7 @@
 package com.example.pinq_frontend.ui.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -157,14 +158,21 @@ private fun WeeklyStreakRow(streak: Int) {
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 dayLabels.forEachIndexed { index, label ->
-                    // streak 개수만큼 오늘까지 역방향으로 채움
                     val daysFromToday = todayDow - index
-                    val isFilled = daysFromToday in 0 until streak || index == todayDow
+                    // 실제 학습 여부: streak 일수만으로 판단
+                    val isFilled = daysFromToday in 0 until streak
+                    // 오늘 칸: 학습 여부와 무관하게 테두리로 강조
+                    val isToday = index == todayDow
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(
                             modifier = Modifier
                                 .size(28.dp)
                                 .clip(CircleShape)
+                                .then(
+                                    if (isToday && !isFilled)
+                                        Modifier.border(2.dp, PinQBlue, CircleShape)
+                                    else Modifier
+                                )
                                 .background(
                                     if (isFilled) PinQBlue
                                     else MaterialTheme.colorScheme.surfaceVariant
@@ -174,9 +182,9 @@ private fun WeeklyStreakRow(streak: Int) {
                         Text(
                             text = label,
                             style = MaterialTheme.typography.labelSmall,
-                            color = if (isFilled) PinQBlue
+                            color = if (isFilled || isToday) PinQBlue
                             else MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = if (isFilled) FontWeight.Bold else FontWeight.Normal,
+                            fontWeight = if (isFilled || isToday) FontWeight.Bold else FontWeight.Normal,
                         )
                     }
                 }
