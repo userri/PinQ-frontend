@@ -35,6 +35,8 @@ import com.example.pinq_frontend.data.model.Quiz
 import com.example.pinq_frontend.data.model.QuizOption
 import com.example.pinq_frontend.data.model.RelatedArticle
 import com.example.pinq_frontend.data.repository.AnswerResult
+import com.example.pinq_frontend.ui.theme.PinQBlue
+import com.example.pinq_frontend.ui.theme.PinQLightBlue
 import com.example.pinq_frontend.ui.theme.PinQ_frontendTheme
 
 /**
@@ -117,8 +119,8 @@ fun QuizAnswerScreen(
 private fun ResultBanner(isCorrect: Boolean) {
     val style = if (isCorrect) {
         ResultStyle(
-            bg = MaterialTheme.colorScheme.tertiaryContainer,
-            fg = MaterialTheme.colorScheme.onTertiaryContainer,
+            bg = PinQLightBlue,
+            fg = PinQBlue,
             emoji = "🎉",
             label = "정답이에요!",
         )
@@ -165,9 +167,9 @@ private fun AnswerOptionRow(
 ) {
     val (container, border, fg) = when {
         isCorrect -> Triple(
-            MaterialTheme.colorScheme.tertiaryContainer,
-            MaterialTheme.colorScheme.tertiary,
-            MaterialTheme.colorScheme.onTertiaryContainer,
+            PinQLightBlue,
+            PinQBlue,
+            PinQBlue,
         )
         isUserSelected -> Triple(
             MaterialTheme.colorScheme.errorContainer,
@@ -216,7 +218,7 @@ private fun AnswerOptionRow(
                 text = "정답",
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.tertiary,
+                color = PinQBlue,
             )
         } else if (isUserSelected) {
             Text(
