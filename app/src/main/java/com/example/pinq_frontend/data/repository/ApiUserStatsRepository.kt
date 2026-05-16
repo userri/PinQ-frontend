@@ -13,4 +13,8 @@ class ApiUserStatsRepository(private val api: UserApi) : UserStatsRepository {
             activityGrid = dto.activityGrid,
         )
     }
+
+    override suspend fun withdraw(nickname: String) {
+        api.withdraw(nickname)
+    }
 }
