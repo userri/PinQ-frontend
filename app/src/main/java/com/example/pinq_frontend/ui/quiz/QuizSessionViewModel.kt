@@ -129,6 +129,7 @@ class QuizSessionViewModel(
      * 세션 오답을 WrongNoteStore 에 저장한다.
      * answerHistory 에서 isCorrect=false 인 항목을 quizzes 와 join 해
      * SavedWrongNote 를 만들고 store.upsert() 를 호출한다.
+     * relatedArticle 정보도 함께 저장해 오답노트 카드에서 바로 기사를 열 수 있게 한다.
      */
     fun saveWrongNotes(store: WrongNoteStore) {
         viewModelScope.launch {
@@ -140,6 +141,7 @@ class QuizSessionViewModel(
                         .find { it.id == answer.selectedOptionId }?.text ?: "-"
                     val correctAnswerText = quiz.options
                         .find { it.id == answer.correctOptionId }?.text ?: "-"
+                    val article = answer.relatedArticle
                     SavedWrongNote(
                         quizId = quiz.id,
                         question = quiz.question,
@@ -149,6 +151,9 @@ class QuizSessionViewModel(
                         correctAnswerText = correctAnswerText,
                         explanation = answer.explanation,
                         keyword = answer.keyword,
+                        relatedArticleTitle = article.title.takeIf { it.isNotBlank() },
+                        relatedArticleUrl = article.url.takeIf { it.isNotBlank() },
+                        relatedArticleSource = article.source.takeIf { it.isNotBlank() },
                     )
                 }
             if (wrongNotes.isNotEmpty()) {
