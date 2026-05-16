@@ -198,6 +198,8 @@ fun FinQNavHost(
                     onRetry = myPageVm::loadStats,
                     isWithdrawing = state.isWithdrawing,
                     onWithdraw = myPageVm::withdraw,
+                    withdrawError = state.withdrawError,
+                    onClearWithdrawError = myPageVm::clearWithdrawError,
                 )
             }
 

@@ -56,9 +56,11 @@ import java.util.Calendar
  * @param correctRate     정답률 0.0~1.0
  * @param activityGrid    최근 49일(7주×7일) 강도. 0=없음, 1=연파랑, 2=중파랑, 3=진파랑. 인덱스 0이 가장 과거.
  * @param appVersion      BuildConfig.VERSION_NAME
- * @param isLoading       통계 로딩 중 여부
- * @param error           통계 로드 실패 메시지 (null이면 정상)
- * @param onRetry         에러 상태에서 재시도 콜백
+ * @param isLoading         통계 로딩 중 여부
+ * @param error             통계 로드 실패 메시지 (null이면 정상)
+ * @param onRetry           에러 상태에서 재시도 콜백
+ * @param withdrawError     탈퇴 실패 메시지 (null이면 정상)
+ * @param onClearWithdrawError 탈퇴 에러 다이얼로그 닫기 콜백
  */
 @Composable
 fun MyPageScreen(
@@ -72,6 +74,8 @@ fun MyPageScreen(
     onRetry: () -> Unit = {},
     isWithdrawing: Boolean = false,
     onWithdraw: () -> Unit = {},
+    withdrawError: String? = null,
+    onClearWithdrawError: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     when {
@@ -104,6 +108,8 @@ fun MyPageScreen(
                 appVersion = appVersion,
                 isWithdrawing = isWithdrawing,
                 onWithdraw = onWithdraw,
+                withdrawError = withdrawError,
+                onClearWithdrawError = onClearWithdrawError,
                 modifier = modifier,
             )
         }
@@ -119,6 +125,8 @@ fun MyPageContent(
     appVersion: String,
     isWithdrawing: Boolean = false,
     onWithdraw: () -> Unit = {},
+    withdrawError: String? = null,
+    onClearWithdrawError: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var showWithdrawDialog by remember { mutableStateOf(false) }
@@ -268,6 +276,30 @@ fun MyPageContent(
             dismissButton = {
                 TextButton(onClick = { showWithdrawDialog = false }) {
                     Text(text = "취소")
+                }
+            },
+        )
+    }
+
+    // 탈퇴 실패 에러 다이얼로그
+    if (withdrawError != null) {
+        AlertDialog(
+            onDismissRequest = onClearWithdrawError,
+            title = {
+                Text(
+                    text = "탈퇴에 실패했어요",
+                    fontWeight = FontWeight.Bold,
+                )
+            },
+            text = {
+                Text(
+                    text = withdrawError,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = onClearWithdrawError) {
+                    Text(text = "확인")
                 }
             },
         )
