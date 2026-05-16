@@ -127,30 +127,14 @@ class QuizSessionViewModel(
 
     /**
      * 세션 오답을 WrongNoteStore 에 저장한다.
-     * answerHistory 에서 isCorrect=false 인 항목을 quizzes 와 join 해
-     * SavedWrongNote 를 만들고 store.upsert() 를 호출한다.
+     * [SavedWrongNote.from] 헬퍼를 통해 변환하므로 매핑 로직이 한 곳에서만 관리된다.
      */
     fun saveWrongNotes(store: WrongNoteStore) {
         viewModelScope.launch {
             val state = _uiState.value
             val wrongNotes = state.quizzes.zip(state.answerHistory)
                 .filter { (_, answer) -> !answer.isCorrect }
-                .map { (quiz, answer) ->
-                    val myAnswerText = quiz.options
-                        .find { it.id == answer.selectedOptionId }?.text ?: "-"
-                    val correctAnswerText = quiz.options
-                        .find { it.id == answer.correctOptionId }?.text ?: "-"
-                    SavedWrongNote(
-                        quizId = quiz.id,
-                        question = quiz.question,
-                        categoryName = quiz.category.name,
-                        categoryDisplay = quiz.category.displayName,
-                        myAnswerText = myAnswerText,
-                        correctAnswerText = correctAnswerText,
-                        explanation = answer.explanation,
-                        keyword = answer.keyword,
-                    )
-                }
+                .map { (quiz, answer) -> SavedWrongNote.from(quiz, answer) }
             if (wrongNotes.isNotEmpty()) {
                 withContext(Dispatchers.IO) { store.upsert(wrongNotes) }
             }
