@@ -45,6 +45,8 @@ import java.util.Calendar
  *
  * @param quizCount    오늘 퀴즈 개수
  * @param streak       연속 학습 일수 (0=오늘 처음)
+ * @param activityGrid 최근 56일 처음 시도 정답 수 강도.
+ *                     index 0=55일 전, index 55=오늘. 0=활동 없음, 1~4=강도.
  * @param isLoading    퀴즈 로딩 중 여부
  * @param error        에러 메시지 (null이면 정상)
  * @param onStartQuiz  퀴즈 시작 콜백
@@ -54,7 +56,7 @@ import java.util.Calendar
 fun HomeScreen(
     quizCount: Int,
     streak: Int,
-    activityGrid: List<Boolean>,
+    activityGrid: List<Int>,
     isLoading: Boolean,
     error: String?,
     onStartQuiz: () -> Unit,
@@ -112,18 +114,16 @@ fun HomeScreen(
         Spacer(Modifier.height(24.dp))
 
         // ── 주간 스트릭 도트 ─────────────────────────────────────
-        // activityGrid: index 0 = 55일 전, index 55 = 오늘 (날짜순 나열, 요일 무관)
-        // todayDow: 0=월 ~ 6=일. 이번 주 월요일은 오늘로부터 todayDow일 전.
-        // 월~일 각 요일에 대응하는 activityGrid 인덱스를 계산해서 넘긴다.
+        // activityGrid: index 0 = 55일 전, index 55 = 오늘 (날짜순 나열)
+        // 이번 주 월~일 각 요일에 대응하는 activityGrid 인덱스를 계산한다.
         val todayDowForGrid = remember {
             (Calendar.getInstance().get(Calendar.DAY_OF_WEEK) + 5) % 7
         }
-        // weekActivity[i]: i번째 요일(0=월)의 학습 여부
-        // activityGrid[55] = 오늘, activityGrid[55 - todayDow + i] = 이번 주 i번째 요일
+        // weekActivity[i]: i번째 요일(0=월)의 정답 강도 (0이면 활동 없음)
         val weekActivity = remember(activityGrid, todayDowForGrid) {
             List(7) { i ->
                 val gridIndex = 55 - todayDowForGrid + i
-                activityGrid.getOrElse(gridIndex) { false }
+                activityGrid.getOrElse(gridIndex) { 0 }
             }
         }
         WeeklyStreakRow(
@@ -140,7 +140,6 @@ fun HomeScreen(
             error != null -> HeroCardError(error = error, onRetry = onRetry)
             else -> HeroCard(quizCount = quizCount, onStartQuiz = onStartQuiz)
         }
-
     }
 }
 
@@ -151,8 +150,8 @@ fun HomeScreen(
 @Composable
 private fun WeeklyStreakRow(
     streak: Int,
-    weekActivity: List<Boolean>,  // index 0 = 월, index 6 = 일. 오늘 이후 미래 칸은 호출자가 isFuture 체크해서 넣어줌.
-    todayDow: Int,                // 0=월 ~ 6=일
+    weekActivity: List<Int>,  // index 0 = 월, index 6 = 일. 0=활동 없음, 1~4=강도.
+    todayDow: Int,             // 0=월 ~ 6=일
 ) {
     val dayLabels = listOf("월", "화", "수", "목", "금", "토", "일")
 
@@ -163,7 +162,6 @@ private fun WeeklyStreakRow(
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
-            // 헤더: 스트릭 일수 표시
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -197,10 +195,9 @@ private fun WeeklyStreakRow(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 dayLabels.forEachIndexed { index, label ->
-                    // activityGrid는 백엔드에서 오는 정확한 데이터를 사용
-                    // weekActivity가 비어있으면 (API 로딩 시) 모두 false로 표시
                     val isFuture = index > todayDow
-                    val isFilled = !isFuture && (weekActivity.getOrNull(index) == true)
+                    val intensity = weekActivity.getOrElse(index) { 0 }
+                    val isFilled = !isFuture && intensity > 0
                     val isToday = index == todayDow
 
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -209,12 +206,10 @@ private fun WeeklyStreakRow(
                                 .size(30.dp)
                                 .clip(CircleShape)
                                 .then(
-                                    when {
-                                        // 오늘: 안 풀면 파란 테두리
-                                        isToday && !isFilled ->
-                                            Modifier.border(2.dp, PinQBlue, CircleShape)
-                                        else -> Modifier
-                                    }
+                                    if (isToday && !isFilled)
+                                        Modifier.border(2.dp, PinQBlue, CircleShape)
+                                    else
+                                        Modifier
                                 )
                                 .background(
                                     when {
@@ -348,7 +343,6 @@ private fun HeroCardError(error: String, onRetry: () -> Unit) {
     }
 }
 
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Preview
 // ─────────────────────────────────────────────────────────────────────────────
@@ -360,7 +354,7 @@ private fun HomeScreenPreview() {
         HomeScreen(
             quizCount = 4,
             streak = 3,
-            activityGrid = listOf(true, true, true, false, false, false, false), // 월~일, streak=3 예시
+            activityGrid = List(56) { i -> if (i % 3 == 0) 2 else 0 },
             isLoading = false,
             error = null,
             onStartQuiz = {},
