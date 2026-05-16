@@ -92,6 +92,11 @@ fun QuizAnswerScreen(
             ExplanationCard(explanation = answer.explanation)
             Spacer(Modifier.height(16.dp))
 
+            if (!answer.keyword.isNullOrBlank()) {
+                KeywordCard(keyword = answer.keyword)
+                Spacer(Modifier.height(16.dp))
+            }
+
             RelatedArticleCard(
                 article = answer.relatedArticle,
                 onClick = { onArticleClick(answer.relatedArticle) },
@@ -266,6 +271,36 @@ private fun ExplanationCard(explanation: String) {
                 text = explanation,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun KeywordCard(keyword: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = PinQLightBlue,
+        ),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(text = "🔑", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.size(8.dp))
+                Text(
+                    text = "알아야 할 단어",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = PinQBlue,
+                )
+            }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                text = keyword,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
             )
         }
     }
