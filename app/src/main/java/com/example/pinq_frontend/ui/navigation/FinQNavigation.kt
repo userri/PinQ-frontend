@@ -193,6 +193,9 @@ fun FinQNavHost(
                     correctRate = state.correctRate,
                     activityGrid = state.activityGrid,
                     appVersion = BuildConfig.VERSION_NAME,
+                    isLoading = state.isLoading,
+                    error = state.error,
+                    onRetry = myPageVm::loadStats,
                     isWithdrawing = state.isWithdrawing,
                     onWithdraw = myPageVm::withdraw,
                 )

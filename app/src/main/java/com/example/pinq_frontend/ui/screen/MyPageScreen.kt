@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -55,6 +56,9 @@ import java.util.Calendar
  * @param correctRate     정답률 0.0~1.0
  * @param activityGrid    최근 49일(7주×7일) 강도. 0=없음, 1=연파랑, 2=중파랑, 3=진파랑. 인덱스 0이 가장 과거.
  * @param appVersion      BuildConfig.VERSION_NAME
+ * @param isLoading       통계 로딩 중 여부
+ * @param error           통계 로드 실패 메시지 (null이면 정상)
+ * @param onRetry         에러 상태에서 재시도 콜백
  */
 @Composable
 fun MyPageScreen(
@@ -63,20 +67,47 @@ fun MyPageScreen(
     correctRate: Float,
     activityGrid: List<Boolean>,
     appVersion: String,
+    isLoading: Boolean = false,
+    error: String? = null,
+    onRetry: () -> Unit = {},
     isWithdrawing: Boolean = false,
     onWithdraw: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    MyPageContent(
-        streak = streak,
-        totalSolved = totalSolved,
-        correctRate = correctRate,
-        activityGrid = activityGrid,
-        appVersion = appVersion,
-        isWithdrawing = isWithdrawing,
-        onWithdraw = onWithdraw,
-        modifier = modifier,
-    )
+    when {
+        isLoading -> {
+            Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        }
+        error != null -> {
+            Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = error,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Button(onClick = onRetry) {
+                        Text("다시 시도")
+                    }
+                }
+            }
+        }
+        else -> {
+            MyPageContent(
+                streak = streak,
+                totalSolved = totalSolved,
+                correctRate = correctRate,
+                activityGrid = activityGrid,
+                appVersion = appVersion,
+                isWithdrawing = isWithdrawing,
+                onWithdraw = onWithdraw,
+                modifier = modifier,
+            )
+        }
+    }
 }
 
 @Composable
