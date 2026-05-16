@@ -452,25 +452,11 @@ fun WrongNoteScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // SavedWrongNote.from 헬퍼를 통해 변환 — 매핑 로직은 한 곳에서만 관리된다.
     val wrongItems = remember(quizzes, answerHistory) {
         quizzes.zip(answerHistory)
             .filter { (_, answer) -> !answer.isCorrect }
-            .map { (quiz, answer) ->
-                val article = answer.relatedArticle
-                SavedWrongNote(
-                    quizId = quiz.id,
-                    question = quiz.question,
-                    categoryName = quiz.category.name,
-                    categoryDisplay = quiz.category.displayName,
-                    myAnswerText = quiz.options.find { it.id == answer.selectedOptionId }?.text ?: "-",
-                    correctAnswerText = quiz.options.find { it.id == answer.correctOptionId }?.text ?: "-",
-                    explanation = answer.explanation,
-                    keyword = answer.keyword,
-                    relatedArticleTitle = article.title.takeIf { it.isNotBlank() },
-                    relatedArticleUrl = article.url.takeIf { it.isNotBlank() },
-                    relatedArticleSource = article.source.takeIf { it.isNotBlank() },
-                )
-            }
+            .map { (quiz, answer) -> SavedWrongNote.from(quiz, answer) }
     }
 
     Column(
