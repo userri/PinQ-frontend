@@ -4,7 +4,7 @@ data class UserStats(
     val streak: Int,
     val totalSolved: Int,
     val correctRate: Float,
-    val activityGrid: List<Boolean>,
+    val activityGrid: List<Int>,
 )
 
 interface UserStatsRepository {

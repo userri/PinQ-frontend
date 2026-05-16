@@ -20,7 +20,7 @@ data class MyPageUiState(
     val streak: Int = 0,
     val totalSolved: Int = 0,
     val correctRate: Float = 0f,
-    val activityGrid: List<Boolean> = emptyList(),
+    val activityGrid: List<Int> = emptyList(),
     val isWithdrawing: Boolean = false,
     val withdrawError: String? = null,
 )

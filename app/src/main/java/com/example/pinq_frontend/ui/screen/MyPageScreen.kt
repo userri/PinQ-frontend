@@ -54,7 +54,9 @@ import java.util.Calendar
  * @param streak          연속 학습 일수
  * @param totalSolved     누적 풀이 수
  * @param correctRate     정답률 0.0~1.0
- * @param activityGrid    최근 56일(8주×7일) 강도. index 0=55일 전, index 55=오늘. true=활동 있음, false=활동 없음.
+ * @param activityGrid    최근 56일(8주×7일) 처음 시도 정답 수.
+ *                        index 0=55일 전, index 55=오늘.
+ *                        0=활동 없음, 1~4=정답 개수(4 이상은 4로 고정).
  * @param appVersion      BuildConfig.VERSION_NAME
  * @param isLoading         통계 로딩 중 여부
  * @param error             통계 로드 실패 메시지 (null이면 정상)
@@ -67,7 +69,7 @@ fun MyPageScreen(
     streak: Int,
     totalSolved: Int,
     correctRate: Float,
-    activityGrid: List<Boolean>,
+    activityGrid: List<Int>,
     appVersion: String,
     isLoading: Boolean = false,
     error: String? = null,
@@ -121,7 +123,7 @@ fun MyPageContent(
     streak: Int,
     totalSolved: Int,
     correctRate: Float,
-    activityGrid: List<Boolean>,
+    activityGrid: List<Int>,
     appVersion: String,
     isWithdrawing: Boolean = false,
     onWithdraw: () -> Unit = {},
@@ -394,24 +396,38 @@ private fun StatCard(
 }
 
 /**
+ * 히트맵 강도(0~4) → 배경색 매핑.
+ *
+ * PinQBlue(#3D63DD) 기준 5단계:
+ *  0 → 활동 없음 (연한 회색)
+ *  1 → 10% 채도 블루
+ *  2 → 35% 채도 블루
+ *  3 → 65% 채도 블루
+ *  4 → 풀 PinQBlue
+ */
+private fun intensityColor(intensity: Int): Color = when (intensity) {
+    0    -> Color(0xFFEDF0F7)
+    1    -> Color(0xFFBECEF8)
+    2    -> Color(0xFF8AAAF2)
+    3    -> Color(0xFF6086EC)
+    else -> PinQBlue           // 4 이상
+}
+
+/**
  * 풀이 활동 카드 — 8주×7일 GitHub 스타일 히트맵.
  *
  * activityGrid: index 0 = 55일 전, index 55 = 오늘 (날짜순 나열).
+ * 값: 0=활동 없음, 1~4=처음 시도 정답 수 강도.
  *
  * 레이아웃 규칙:
  *  - 마지막 열(week=7) · 오늘 요일 행이 항상 "오늘" 셀.
- *  - 셀 위치를 (week, day) 로 표현할 때
- *      daysAgo  = (weeks-1 - week)*7 + (todayDow - day)
- *      gridIdx  = (totalCells - 1) - daysAgo
+ *  - daysAgo  = (weeks-1 - week)*7 + (todayDow - day)
+ *  - gridIdx  = (totalCells - 1) - daysAgo
  *  - daysAgo < 0  → 미래(이번 주 오늘 이후 요일)
  *  - gridIdx < 0  → 범위 밖(56일 보다 더 과거) → 빈 셀
- *
- *  ※ 이전 구현은 startDow 기반으로 gridIdx 를 계산했으나, 오늘 요일에 따라
- *    오늘 셀 자체가 그리드에 매핑되지 않는 버그가 있었다(예: 오늘이 토요일이면
- *    today gridIdx=55 가 어떤 (week,day) 에도 대응되지 않음).
  */
 @Composable
-private fun ActivityHeatmapCard(activityGrid: List<Boolean>) {
+private fun ActivityHeatmapCard(activityGrid: List<Int>) {
     val weeks = 8
     val days = 7
     val totalCells = weeks * days   // 56
@@ -424,8 +440,12 @@ private fun ActivityHeatmapCard(activityGrid: List<Boolean>) {
         (Calendar.getInstance().get(Calendar.DAY_OF_WEEK) + 5) % 7
     }
 
-    // 각 셀별 상태 계산
-    data class CellState(val active: Boolean, val isToday: Boolean, val isFuture: Boolean, val inRange: Boolean)
+    data class CellState(
+        val intensity: Int,
+        val isToday: Boolean,
+        val isFuture: Boolean,
+        val inRange: Boolean,
+    )
 
     val cells = remember(activityGrid, todayDow) {
         Array(weeks) { week ->
@@ -433,9 +453,9 @@ private fun ActivityHeatmapCard(activityGrid: List<Boolean>) {
                 val daysAgo = (weeks - 1 - week) * 7 + (todayDow - day)
                 val gridIdx = (totalCells - 1) - daysAgo
                 val isFuture = daysAgo < 0
-                val inRange = gridIdx in 0 until activityGrid.size
+                val inRange = gridIdx in activityGrid.indices
                 CellState(
-                    active = inRange && activityGrid[gridIdx],
+                    intensity = if (inRange) activityGrid[gridIdx] else 0,
                     isToday = daysAgo == 0,
                     isFuture = isFuture,
                     inRange = inRange,
@@ -443,6 +463,9 @@ private fun ActivityHeatmapCard(activityGrid: List<Boolean>) {
             }
         }
     }
+
+    // 범례용 강도 단계
+    val legendIntensities = listOf(0, 1, 2, 3, 4)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -503,20 +526,21 @@ private fun ActivityHeatmapCard(activityGrid: List<Boolean>) {
                             Column(verticalArrangement = Arrangement.spacedBy(gap)) {
                                 for (day in 0 until days) {
                                     val cell = cells[week][day]
+
                                     val bgColor = when {
                                         cell.isFuture && !cell.isToday -> Color.Transparent
-                                        cell.active -> PinQBlue
-                                        else -> Color(0xFFEDF0F7)
+                                        else -> intensityColor(cell.intensity)
                                     }
-                                    // 오늘인데 아직 안 푼 경우 진한 테두리 강조
+
+                                    // 오늘 셀: 진한 테두리 강조
                                     val borderMod = when {
-                                        cell.isToday && !cell.active ->
+                                        cell.isToday && cell.intensity == 0 ->
                                             Modifier.border(
                                                 width = 2.dp,
                                                 color = PinQBlue,
                                                 shape = RoundedCornerShape(4.dp),
                                             )
-                                        cell.isToday && cell.active ->
+                                        cell.isToday && cell.intensity > 0 ->
                                             Modifier.border(
                                                 width = 2.dp,
                                                 color = PinQDarkNavy,
@@ -524,6 +548,7 @@ private fun ActivityHeatmapCard(activityGrid: List<Boolean>) {
                                             )
                                         else -> Modifier
                                     }
+
                                     Box(
                                         modifier = Modifier
                                             .size(cellSize)
@@ -566,7 +591,7 @@ private fun ActivityHeatmapCard(activityGrid: List<Boolean>) {
                     )
                 }
 
-                // 활동 강도 범례
+                // 활동 강도 범례 (5단계)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = "적게",
@@ -574,13 +599,13 @@ private fun ActivityHeatmapCard(activityGrid: List<Boolean>) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.width(4.dp))
-                    listOf(Color(0xFFEDF0F7), PinQBlue).forEach { color ->
+                    legendIntensities.forEach { intensity ->
                         Box(
                             modifier = Modifier
                                 .padding(horizontal = 2.dp)
                                 .size(12.dp)
                                 .clip(RoundedCornerShape(3.dp))
-                                .background(color),
+                                .background(intensityColor(intensity)),
                         )
                     }
                     Spacer(Modifier.width(4.dp))
@@ -622,8 +647,16 @@ private fun InfoRow(label: String, value: String) {
 @Preview(showBackground = true, widthDp = 360, heightDp = 800)
 @Composable
 private fun MyPageScreenPreview() {
-    // 오늘이 목요일(3)이라고 가정, 최근 2주 일부 활동
-    val activityGrid = List(56) { i -> i % 3 == 0 || i % 5 == 0 }
+    // 강도 0~4 섞어서 테스트
+    val activityGrid = List(56) { i ->
+        when {
+            i % 7 == 0 -> 4
+            i % 5 == 0 -> 3
+            i % 3 == 0 -> 2
+            i % 2 == 0 -> 1
+            else       -> 0
+        }
+    }
     PinQ_frontendTheme {
         MyPageContent(
             streak = 7,
