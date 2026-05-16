@@ -1,6 +1,8 @@
 package com.example.pinq_frontend.ui.screen
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -364,7 +366,15 @@ private fun WrongNoteCard(note: SavedWrongNote) {
                                     Intent.ACTION_VIEW,
                                     note.relatedArticleUrl!!.toUri(),
                                 )
-                                context.startActivity(intent)
+                                try {
+                                    context.startActivity(intent)
+                                } catch (e: ActivityNotFoundException) {
+                                    Toast.makeText(
+                                        context,
+                                        "기사를 열 수 있는 앱이 없어요",
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
+                                }
                             },
                         shape = RoundedCornerShape(12.dp),
                         color = MaterialTheme.colorScheme.surfaceVariant,
