@@ -32,9 +32,8 @@ import retrofit2.converter.moshi.MoshiConverterFactory
  */
 object NetworkModule {
 
-    // adb reverse 방식. 별도 설정 없이 에뮬레이터/실기기 모두 동작.
-    private const val BASE_URL = "http://192.168.201.51:8080/" // 학원
-//    private const val BASE_URL = "http://172.30.1.32:8080/" // 집
+    // 터미널에서 ipconfig getifaddr en0로 주소 확인후 적절히 수정 필요
+    private const val BASE_URL = "http://192.168.200.210:8080/"
 
     /** OkHttp 클라이언트 — 모든 HTTP 통신의 저수준 처리 + 로깅. */
     private val okHttpClient: OkHttpClient by lazy {
@@ -67,5 +66,9 @@ object NetworkModule {
 
     val quizApi: QuizApi by lazy {
         retrofit.create(QuizApi::class.java)
+    }
+
+    val userApi: UserApi by lazy {
+        retrofit.create(UserApi::class.java)
     }
 }

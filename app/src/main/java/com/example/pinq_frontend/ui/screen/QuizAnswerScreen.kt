@@ -35,6 +35,8 @@ import com.example.pinq_frontend.data.model.Quiz
 import com.example.pinq_frontend.data.model.QuizOption
 import com.example.pinq_frontend.data.model.RelatedArticle
 import com.example.pinq_frontend.data.repository.AnswerResult
+import com.example.pinq_frontend.ui.theme.PinQBlue
+import com.example.pinq_frontend.ui.theme.PinQLightBlue
 import com.example.pinq_frontend.ui.theme.PinQ_frontendTheme
 
 /**
@@ -90,6 +92,11 @@ fun QuizAnswerScreen(
             ExplanationCard(explanation = answer.explanation)
             Spacer(Modifier.height(16.dp))
 
+            if (!answer.keyword.isNullOrBlank()) {
+                KeywordCard(keyword = answer.keyword)
+                Spacer(Modifier.height(16.dp))
+            }
+
             RelatedArticleCard(
                 article = answer.relatedArticle,
                 onClick = { onArticleClick(answer.relatedArticle) },
@@ -117,8 +124,8 @@ fun QuizAnswerScreen(
 private fun ResultBanner(isCorrect: Boolean) {
     val style = if (isCorrect) {
         ResultStyle(
-            bg = MaterialTheme.colorScheme.tertiaryContainer,
-            fg = MaterialTheme.colorScheme.onTertiaryContainer,
+            bg = PinQLightBlue,
+            fg = PinQBlue,
             emoji = "🎉",
             label = "정답이에요!",
         )
@@ -165,9 +172,9 @@ private fun AnswerOptionRow(
 ) {
     val (container, border, fg) = when {
         isCorrect -> Triple(
-            MaterialTheme.colorScheme.tertiaryContainer,
-            MaterialTheme.colorScheme.tertiary,
-            MaterialTheme.colorScheme.onTertiaryContainer,
+            PinQLightBlue,
+            PinQBlue,
+            PinQBlue,
         )
         isUserSelected -> Triple(
             MaterialTheme.colorScheme.errorContainer,
@@ -216,7 +223,7 @@ private fun AnswerOptionRow(
                 text = "정답",
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.tertiary,
+                color = PinQBlue,
             )
         } else if (isUserSelected) {
             Text(
@@ -264,6 +271,36 @@ private fun ExplanationCard(explanation: String) {
                 text = explanation,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun KeywordCard(keyword: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = PinQLightBlue,
+        ),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(text = "🔑", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.size(8.dp))
+                Text(
+                    text = "알아야 할 단어",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = PinQBlue,
+                )
+            }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                text = keyword,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
             )
         }
     }

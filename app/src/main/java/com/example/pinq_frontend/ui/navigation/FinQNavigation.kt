@@ -4,6 +4,7 @@ import android.content.Intent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -40,8 +41,11 @@ import com.example.pinq_frontend.data.local.LocalModule
 import com.example.pinq_frontend.data.model.RelatedArticle
 import com.example.pinq_frontend.data.remote.NetworkModule
 import com.example.pinq_frontend.data.repository.ApiQuizRepository
+import com.example.pinq_frontend.data.repository.ApiUserStatsRepository
 import com.example.pinq_frontend.data.repository.QuizRepository
+import com.example.pinq_frontend.data.repository.UserStatsRepository
 import com.example.pinq_frontend.ui.home.HomeViewModel
+import com.example.pinq_frontend.ui.mypage.MyPageViewModel
 import com.example.pinq_frontend.ui.quiz.QuizSessionViewModel
 import com.example.pinq_frontend.ui.screen.HomeScreen
 import com.example.pinq_frontend.ui.screen.MyPageScreen
@@ -102,6 +106,7 @@ fun FinQNavHost(
     modifier: Modifier = Modifier,
 ) {
     val repository: QuizRepository = remember { ApiQuizRepository(NetworkModule.quizApi) }
+    val statsRepository: UserStatsRepository = remember { ApiUserStatsRepository(NetworkModule.userApi) }
     val context = LocalContext.current
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -134,12 +139,13 @@ fun FinQNavHost(
             // ── 홈 ──────────────────────────────────────────────────────
             composable(FinQRoutes.HOME) {
                 val homeVm: HomeViewModel = viewModel(
-                    factory = HomeViewModel.factory(repository),
+                    factory = HomeViewModel.factory(repository, statsRepository),
                 )
                 val state by homeVm.uiState.collectAsState()
                 HomeScreen(
                     quizCount = state.quizCount,
                     streak = state.streak,
+                    activityGrid = state.activityGrid,
                     isLoading = state.isLoading,
                     error = state.error,
                     onStartQuiz = { navController.navigate(FinQRoutes.SESSION_GRAPH) },
@@ -166,19 +172,34 @@ fun FinQNavHost(
 
             // ── 마이페이지 ───────────────────────────────────────────────
             composable(FinQRoutes.MY_PAGE) {
-                val dummyGrid = remember {
-                    val pattern = listOf(
-                        true, false, true, true, false, true, false,
-                        false, true, true, false, true, true, true,
-                    )
-                    List(56) { i -> pattern[i % pattern.size] }
+                val myPageVm: MyPageViewModel = viewModel(
+                    factory = MyPageViewModel.factory(statsRepository),
+                )
+                val state by myPageVm.uiState.collectAsState()
+
+                // 탈퇴 완료 → 홈으로 이동 (다음 요청에서 demo 유저 재생성됨)
+                LaunchedEffect(Unit) {
+                    myPageVm.withdrawEvents.collect {
+                        navController.navigate(FinQRoutes.HOME) {
+                            popUpTo(FinQRoutes.HOME) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
                 }
+
                 MyPageScreen(
-                    streak = 0,
-                    totalSolved = 0,
-                    correctRate = 0f,
-                    activityGrid = dummyGrid,
+                    streak = state.streak,
+                    totalSolved = state.totalSolved,
+                    correctRate = state.correctRate,
+                    activityGrid = state.activityGrid,
                     appVersion = BuildConfig.VERSION_NAME,
+                    isLoading = state.isLoading,
+                    error = state.error,
+                    onRetry = myPageVm::loadStats,
+                    isWithdrawing = state.isWithdrawing,
+                    onWithdraw = myPageVm::withdraw,
+                    withdrawError = state.withdrawError,
+                    onClearWithdrawError = myPageVm::clearWithdrawError,
                 )
             }
 
@@ -264,6 +285,7 @@ private fun FinQBottomBar(
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 0.dp,
+        windowInsets = WindowInsets(0),
     ) {
         bottomNavItems.forEach { item ->
             val selected = currentRoute == item.route

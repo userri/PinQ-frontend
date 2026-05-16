@@ -150,8 +150,10 @@ private fun WrongNoteList(
     var selectedCategory by remember { mutableStateOf("전체") }
 
     val filtered = remember(notes, selectedCategory) {
-        if (selectedCategory == "전체") notes
+        val byCategory = if (selectedCategory == "전체") notes
         else notes.filter { it.categoryDisplay == selectedCategory }
+        // 최신 풀이가 위에 오도록 날짜 내림차순 정렬
+        byCategory.sortedByDescending { it.savedDateMillis }
     }
 
     Column(
@@ -276,6 +278,19 @@ private fun WrongNoteCard(note: SavedWrongNote) {
                 maxLines = if (expanded) Int.MAX_VALUE else 2,
                 overflow = TextOverflow.Ellipsis,
             )
+
+            // 접힌 상태일 때만 클릭 안내 표시
+            if (!expanded) {
+                Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "👆 카드를 클릭해보세요",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = PinQBlue,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            }
 
             // 펼쳐지면 내 답 / 정답 / 해설 표시
             if (expanded) {

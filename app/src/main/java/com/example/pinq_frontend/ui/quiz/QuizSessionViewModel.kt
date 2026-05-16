@@ -65,6 +65,8 @@ class QuizSessionViewModel(
         val state = _uiState.value
         val quiz = state.currentQuiz ?: return
         val selected = state.selectedOptionId ?: return
+        // 이미 제출된 문제는 재제출 차단 (네트워크 중복 호출 방지)
+        if (state.lastAnswer != null || state.isSubmitting) return
 
         viewModelScope.launch {
             _uiState.update { it.copy(isSubmitting = true) }
