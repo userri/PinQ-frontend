@@ -41,6 +41,7 @@ class HomeViewModel(
                         isLoading = false,
                         quizCount = quizzes.size,
                         streak = stats.streak,
+                        activityGrid = stats.activityGrid,
                     )
                 }
             } catch (e: Exception) {
