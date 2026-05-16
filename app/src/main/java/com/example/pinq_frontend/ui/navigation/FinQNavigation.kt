@@ -142,6 +142,8 @@ fun FinQNavHost(
                     factory = HomeViewModel.factory(repository, statsRepository),
                 )
                 val state by homeVm.uiState.collectAsState()
+                // 화면 진입 시마다 스트릭/통계를 새로 로드 (퀴즈 완료 후 즉시 반영)
+                LaunchedEffect(Unit) { homeVm.loadQuizInfo() }
                 HomeScreen(
                     quizCount = state.quizCount,
                     streak = state.streak,
@@ -176,6 +178,10 @@ fun FinQNavHost(
                     factory = MyPageViewModel.factory(statsRepository),
                 )
                 val state by myPageVm.uiState.collectAsState()
+
+                // 화면 진입 시마다 스트릭/통계를 새로 로드 (퀴즈 완료 후 즉시 반영)
+                // withdrawEvents 수집도 같은 LaunchedEffect 블록 밖에서 별도로 처리
+                LaunchedEffect(Unit) { myPageVm.loadStats() }
 
                 // 탈퇴 완료 → 홈으로 이동 (다음 요청에서 demo 유저 재생성됨)
                 LaunchedEffect(Unit) {
