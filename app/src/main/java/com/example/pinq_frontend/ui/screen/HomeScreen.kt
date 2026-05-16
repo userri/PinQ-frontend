@@ -54,6 +54,7 @@ import java.util.Calendar
 fun HomeScreen(
     quizCount: Int,
     streak: Int,
+    activityGrid: List<Boolean>,
     isLoading: Boolean,
     error: String?,
     onStartQuiz: () -> Unit,
@@ -111,7 +112,25 @@ fun HomeScreen(
         Spacer(Modifier.height(24.dp))
 
         // ── 주간 스트릭 도트 ─────────────────────────────────────
-        WeeklyStreakRow(streak = streak)
+        // activityGrid: index 0 = 55일 전, index 55 = 오늘 (날짜순 나열, 요일 무관)
+        // todayDow: 0=월 ~ 6=일. 이번 주 월요일은 오늘로부터 todayDow일 전.
+        // 월~일 각 요일에 대응하는 activityGrid 인덱스를 계산해서 넘긴다.
+        val todayDowForGrid = remember {
+            (Calendar.getInstance().get(Calendar.DAY_OF_WEEK) + 5) % 7
+        }
+        // weekActivity[i]: i번째 요일(0=월)의 학습 여부
+        // activityGrid[55] = 오늘, activityGrid[55 - todayDow + i] = 이번 주 i번째 요일
+        val weekActivity = remember(activityGrid, todayDowForGrid) {
+            List(7) { i ->
+                val gridIndex = 55 - todayDowForGrid + i
+                activityGrid.getOrElse(gridIndex) { false }
+            }
+        }
+        WeeklyStreakRow(
+            streak = streak,
+            weekActivity = weekActivity,
+            todayDow = todayDowForGrid,
+        )
 
         Spacer(Modifier.height(20.dp))
 
@@ -130,14 +149,12 @@ fun HomeScreen(
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun WeeklyStreakRow(streak: Int) {
+private fun WeeklyStreakRow(
+    streak: Int,
+    weekActivity: List<Boolean>,  // index 0 = 월, index 6 = 일. 오늘 이후 미래 칸은 호출자가 isFuture 체크해서 넣어줌.
+    todayDow: Int,                // 0=월 ~ 6=일
+) {
     val dayLabels = listOf("월", "화", "수", "목", "금", "토", "일")
-    // 오늘이 몇 번째 요일인지 (월=0 ~ 일=6)
-    val todayDow = remember {
-        val cal = Calendar.getInstance()
-        // Calendar.MONDAY=2 ~ Calendar.SUNDAY=1
-        (cal.get(Calendar.DAY_OF_WEEK) + 5) % 7
-    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -146,44 +163,76 @@ private fun WeeklyStreakRow(streak: Int) {
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
-            Text(
-                text = "이번 주 학습",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.Medium,
-            )
-            Spacer(Modifier.height(10.dp))
+            // 헤더: 스트릭 일수 표시
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "이번 주 학습",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Medium,
+                )
+                if (streak > 0) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "🔥",
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                        Spacer(Modifier.size(4.dp))
+                        Text(
+                            text = "${streak}일 연속",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = PinQBlue,
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(12.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 dayLabels.forEachIndexed { index, label ->
-                    val daysFromToday = todayDow - index
-                    // 실제 학습 여부: streak 일수만으로 판단
-                    val isFilled = daysFromToday in 0 until streak
-                    // 오늘 칸: 학습 여부와 무관하게 테두리로 강조
+                    // activityGrid는 백엔드에서 오는 정확한 데이터를 사용
+                    // weekActivity가 비어있으면 (API 로딩 시) 모두 false로 표시
+                    val isFuture = index > todayDow
+                    val isFilled = !isFuture && (weekActivity.getOrNull(index) == true)
                     val isToday = index == todayDow
+
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(
                             modifier = Modifier
-                                .size(28.dp)
+                                .size(30.dp)
                                 .clip(CircleShape)
                                 .then(
-                                    if (isToday && !isFilled)
-                                        Modifier.border(2.dp, PinQBlue, CircleShape)
-                                    else Modifier
+                                    when {
+                                        // 오늘: 안 풀면 파란 테두리
+                                        isToday && !isFilled ->
+                                            Modifier.border(2.dp, PinQBlue, CircleShape)
+                                        else -> Modifier
+                                    }
                                 )
                                 .background(
-                                    if (isFilled) PinQBlue
-                                    else MaterialTheme.colorScheme.surfaceVariant
+                                    when {
+                                        isFilled -> PinQBlue
+                                        isFuture -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                                        else -> MaterialTheme.colorScheme.surfaceVariant
+                                    }
                                 ),
                         )
-                        Spacer(Modifier.height(4.dp))
+                        Spacer(Modifier.height(5.dp))
                         Text(
                             text = label,
                             style = MaterialTheme.typography.labelSmall,
-                            color = if (isFilled || isToday) PinQBlue
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = when {
+                                isFilled || isToday -> PinQBlue
+                                isFuture -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                                else -> MaterialTheme.colorScheme.onSurfaceVariant
+                            },
                             fontWeight = if (isFilled || isToday) FontWeight.Bold else FontWeight.Normal,
                         )
                     }
@@ -311,6 +360,7 @@ private fun HomeScreenPreview() {
         HomeScreen(
             quizCount = 4,
             streak = 3,
+            activityGrid = listOf(true, true, true, false, false, false, false), // 월~일, streak=3 예시
             isLoading = false,
             error = null,
             onStartQuiz = {},
@@ -326,6 +376,7 @@ private fun HomeScreenLoadingPreview() {
         HomeScreen(
             quizCount = 0,
             streak = 0,
+            activityGrid = emptyList(),
             isLoading = true,
             error = null,
             onStartQuiz = {},
@@ -341,6 +392,7 @@ private fun HomeScreenErrorPreview() {
         HomeScreen(
             quizCount = 0,
             streak = 0,
+            activityGrid = emptyList(),
             isLoading = false,
             error = "네트워크 연결을 확인해주세요",
             onStartQuiz = {},
