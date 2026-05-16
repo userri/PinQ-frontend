@@ -1,5 +1,8 @@
 package com.example.pinq_frontend.ui.screen
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -36,10 +39,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import com.example.pinq_frontend.data.local.SavedWrongNote
 import com.example.pinq_frontend.ui.theme.PinQBlue
 import com.example.pinq_frontend.ui.theme.PinQLightBlue
@@ -228,9 +233,14 @@ private fun WrongNoteList(
 @Composable
 private fun WrongNoteCard(note: SavedWrongNote) {
     var expanded by remember { mutableStateOf(false) }
+    val context = LocalContext.current
     val dateStr = remember(note.savedDateMillis) {
         SimpleDateFormat("M/d", Locale.KOREAN).format(Date(note.savedDateMillis))
     }
+
+    // 기사 URL이 유효한지 여부
+    val hasArticle = !note.relatedArticleUrl.isNullOrBlank()
+        && !note.relatedArticleTitle.isNullOrBlank()
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -292,7 +302,7 @@ private fun WrongNoteCard(note: SavedWrongNote) {
                 }
             }
 
-            // 펼쳐지면 내 답 / 정답 / 해설 표시
+            // 펼쳐지면 내 답 / 정답 / 해설 / 키워드 / 관련 기사 표시
             if (expanded) {
                 Spacer(Modifier.height(12.dp))
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -338,6 +348,61 @@ private fun WrongNoteCard(note: SavedWrongNote) {
                                 color = PinQBlue,
                                 fontWeight = FontWeight.SemiBold,
                             )
+                        }
+                    }
+                }
+
+                // ── 관련 기사 버튼 ──────────────────────────────────────
+                if (hasArticle) {
+                    Spacer(Modifier.height(12.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(Modifier.height(10.dp))
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable {
+                                val intent = Intent(
+                                    Intent.ACTION_VIEW,
+                                    note.relatedArticleUrl!!.toUri(),
+                                )
+                                try {
+                                    context.startActivity(intent)
+                                } catch (e: ActivityNotFoundException) {
+                                    Toast.makeText(
+                                        context,
+                                        "기사를 열 수 있는 앱이 없어요",
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
+                                }
+                            },
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(
+                                text = "📰 관련 기사",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = note.relatedArticleTitle!!,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            if (!note.relatedArticleSource.isNullOrBlank()) {
+                                Spacer(Modifier.height(3.dp))
+                                Text(
+                                    text = note.relatedArticleSource,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                     }
                 }
@@ -387,21 +452,11 @@ fun WrongNoteScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // SavedWrongNote.from 헬퍼를 통해 변환 — 매핑 로직은 한 곳에서만 관리된다.
     val wrongItems = remember(quizzes, answerHistory) {
         quizzes.zip(answerHistory)
             .filter { (_, answer) -> !answer.isCorrect }
-            .map { (quiz, answer) ->
-                SavedWrongNote(
-                    quizId = quiz.id,
-                    question = quiz.question,
-                    categoryName = quiz.category.name,
-                    categoryDisplay = quiz.category.displayName,
-                    myAnswerText = quiz.options.find { it.id == answer.selectedOptionId }?.text ?: "-",
-                    correctAnswerText = quiz.options.find { it.id == answer.correctOptionId }?.text ?: "-",
-                    explanation = answer.explanation,
-                    keyword = answer.keyword,
-                )
-            }
+            .map { (quiz, answer) -> SavedWrongNote.from(quiz, answer) }
     }
 
     Column(
@@ -498,6 +553,9 @@ private fun WrongNoteTabPreview() {
             correctAnswerText = "올라간다",
             explanation = "기준금리가 오르면 은행의 자금 조달 비용이 높아져 대출금리도 함께 상승합니다.",
             keyword = "기준금리",
+            relatedArticleTitle = "한국은행, 기준금리 0.25%p 인상 결정",
+            relatedArticleUrl = "https://example.com/article/1",
+            relatedArticleSource = "연합뉴스",
         ),
         SavedWrongNote(
             quizId = 2L,

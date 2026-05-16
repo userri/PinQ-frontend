@@ -1,6 +1,8 @@
 package com.example.pinq_frontend.ui.navigation
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -142,6 +144,8 @@ fun FinQNavHost(
                     factory = HomeViewModel.factory(repository, statsRepository),
                 )
                 val state by homeVm.uiState.collectAsState()
+                // 화면 진입 시마다 스트릭/통계를 새로 로드 (퀴즈 완료 후 즉시 반영)
+                LaunchedEffect(Unit) { homeVm.loadQuizInfo() }
                 HomeScreen(
                     quizCount = state.quizCount,
                     streak = state.streak,
@@ -176,6 +180,10 @@ fun FinQNavHost(
                     factory = MyPageViewModel.factory(statsRepository),
                 )
                 val state by myPageVm.uiState.collectAsState()
+
+                // 화면 진입 시마다 스트릭/통계를 새로 로드 (퀴즈 완료 후 즉시 반영)
+                // withdrawEvents 수집도 같은 LaunchedEffect 블록 밖에서 별도로 처리
+                LaunchedEffect(Unit) { myPageVm.loadStats() }
 
                 // 탈퇴 완료 → 홈으로 이동 (다음 요청에서 demo 유저 재생성됨)
                 LaunchedEffect(Unit) {
@@ -235,7 +243,15 @@ fun FinQNavHost(
                         },
                         onArticleClick = { article ->
                             val intent = Intent(Intent.ACTION_VIEW, article.url.toUri())
-                            localContext.startActivity(intent)
+                            try {
+                                localContext.startActivity(intent)
+                            } catch (e: ActivityNotFoundException) {
+                                Toast.makeText(
+                                    localContext,
+                                    "기사를 열 수 있는 앱이 없어요",
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            }
                         },
                     )
                 }
