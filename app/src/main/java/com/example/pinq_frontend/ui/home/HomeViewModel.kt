@@ -28,24 +28,29 @@ class HomeViewModel(
     fun loadQuizInfo() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-            try {
-                // 퀴즈 목록과 통계를 병렬로 호출
-                val quizzesDeferred = async { quizRepository.getTodayQuizzes() }
-                val statsDeferred   = async { statsRepository.getStats() }
 
-                val quizzes = quizzesDeferred.await()
-                val stats   = statsDeferred.await()
-
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        quizCount = quizzes.size,
-                        streak = stats.streak,
-                        activityGrid = stats.activityGrid,
-                    )
-                }
+            // 퀴즈 로드: 실패 시 홈 화면 전체 에러
+            val quizzes = try {
+                quizRepository.getTodayQuizzes()
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, error = e.message ?: "알 수 없는 오류") }
+                return@launch
+            }
+
+            // 통계 로드: 부가 정보이므로 실패해도 기본값으로 폴백, 퀴즈 진입은 막지 않음
+            val stats = try {
+                statsRepository.getStats()
+            } catch (e: Exception) {
+                null
+            }
+
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    quizCount = quizzes.size,
+                    streak = stats?.streak ?: 0,
+                    activityGrid = stats?.activityGrid ?: emptyList(),
+                )
             }
         }
     }
