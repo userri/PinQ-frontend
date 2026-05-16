@@ -1,6 +1,8 @@
 package com.example.pinq_frontend.ui.navigation
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -241,7 +243,15 @@ fun FinQNavHost(
                         },
                         onArticleClick = { article ->
                             val intent = Intent(Intent.ACTION_VIEW, article.url.toUri())
-                            localContext.startActivity(intent)
+                            try {
+                                localContext.startActivity(intent)
+                            } catch (e: ActivityNotFoundException) {
+                                Toast.makeText(
+                                    localContext,
+                                    "기사를 열 수 있는 앱이 없어요",
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            }
                         },
                     )
                 }
