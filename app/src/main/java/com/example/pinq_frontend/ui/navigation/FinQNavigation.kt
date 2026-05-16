@@ -145,6 +145,7 @@ fun FinQNavHost(
                 HomeScreen(
                     quizCount = state.quizCount,
                     streak = state.streak,
+                    activityGrid = state.activityGrid,
                     isLoading = state.isLoading,
                     error = state.error,
                     onStartQuiz = { navController.navigate(FinQRoutes.SESSION_GRAPH) },
@@ -175,12 +176,25 @@ fun FinQNavHost(
                     factory = MyPageViewModel.factory(statsRepository),
                 )
                 val state by myPageVm.uiState.collectAsState()
+
+                // 탈퇴 완료 → 홈으로 이동 (다음 요청에서 demo 유저 재생성됨)
+                LaunchedEffect(Unit) {
+                    myPageVm.withdrawEvents.collect {
+                        navController.navigate(FinQRoutes.HOME) {
+                            popUpTo(FinQRoutes.HOME) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                }
+
                 MyPageScreen(
                     streak = state.streak,
                     totalSolved = state.totalSolved,
                     correctRate = state.correctRate,
                     activityGrid = state.activityGrid,
                     appVersion = BuildConfig.VERSION_NAME,
+                    isWithdrawing = state.isWithdrawing,
+                    onWithdraw = myPageVm::withdraw,
                 )
             }
 
