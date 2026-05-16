@@ -54,7 +54,7 @@ import java.util.Calendar
  * @param streak          연속 학습 일수
  * @param totalSolved     누적 풀이 수
  * @param correctRate     정답률 0.0~1.0
- * @param activityGrid    최근 49일(7주×7일) 강도. 0=없음, 1=연파랑, 2=중파랑, 3=진파랑. 인덱스 0이 가장 과거.
+ * @param activityGrid    최근 56일(8주×7일) 강도. index 0=55일 전, index 55=오늘. true=활동 있음, false=활동 없음.
  * @param appVersion      BuildConfig.VERSION_NAME
  * @param isLoading         통계 로딩 중 여부
  * @param error             통계 로드 실패 메시지 (null이면 정상)
