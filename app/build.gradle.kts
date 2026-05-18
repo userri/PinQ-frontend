@@ -46,6 +46,15 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // release 빌드 시 필수 키가 비어 있으면 런타임 크래시 대신 빌드 시점에 차단
+            val kakaoKeyForCheck = localProps.getProperty("kakao.native.app.key", "")
+            val googleIdForCheck  = localProps.getProperty("google.web.client.id", "")
+            if (kakaoKeyForCheck.isBlank()) {
+                error("release 빌드에 kakao.native.app.key 가 설정되지 않았습니다. local.properties 를 확인하세요.")
+            }
+            if (googleIdForCheck.isBlank()) {
+                error("release 빌드에 google.web.client.id 가 설정되지 않았습니다. local.properties 를 확인하세요.")
+            }
         }
     }
     compileOptions {
