@@ -118,8 +118,8 @@ private val bottomNavItems = listOf(
 
 @Composable
 fun FinQNavHost(
-    navController: NavHostController = rememberNavController(),
     modifier: Modifier = Modifier,
+    navController: NavHostController = rememberNavController(),
 ) {
     val repository: QuizRepository = remember { ApiQuizRepository(NetworkModule.quizApi) }
     val statsRepository: UserStatsRepository = remember { ApiUserStatsRepository(NetworkModule.userApi) }
@@ -235,7 +235,7 @@ fun FinQNavHost(
 
                 LaunchedEffect(Unit) {
                     myPageVm.withdrawEvents.collect {
-                        SessionManager.clearSession()
+                        SessionManager.clearSession(context)
                         navController.navigate(FinQRoutes.LOGIN) {
                             popUpTo(0) { inclusive = true }
                             launchSingleTop = true
@@ -245,7 +245,7 @@ fun FinQNavHost(
 
                 LaunchedEffect(Unit) {
                     myPageVm.logoutEvents.collect {
-                        authRepository.logout()
+                        authRepository.logout(context)
                         navController.navigate(FinQRoutes.LOGIN) {
                             popUpTo(0) { inclusive = true }
                             launchSingleTop = true
