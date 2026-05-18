@@ -9,6 +9,7 @@ package com.example.pinq_frontend.data.remote.dto
  *   강도 단계: 0(없음) / 1(1개) / 2(2개) / 3(3개) / 4(4개 이상)
  */
 data class UserStatsApiResponse(
+    val nickname: String,
     val streak: Int,
     val totalSolved: Int,
     val correctRate: Float,
