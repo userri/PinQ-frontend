@@ -127,7 +127,10 @@ fun FinQNavHost(
     val libraryRepository: LibraryRepository = remember { ApiLibraryRepository(NetworkModule.libraryApi) }
     val context = LocalContext.current
 
-    // 로그인 여부에 따라 시작 화면 결정
+    // 로그인 여부에 따라 시작 화면 결정 (NavHost 생성 시 1회만 평가됨).
+    // startDestination은 반응형이 아니므로, 런타임에 세션이 해제될 경우
+    // 반드시 navController.navigate(LOGIN) { popUpTo(0) { inclusive = true } } 를
+    // 명시적으로 호출해야 한다 (로그아웃/탈퇴 경로 모두 해당).
     val startDestination = if (SessionManager.isLoggedIn) FinQRoutes.HOME else FinQRoutes.LOGIN
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -213,13 +216,13 @@ fun FinQNavHost(
 
             // ── 보관함 탭 (오답노트 + 북마크 + 전체이력) ────────────────
             composable(FinQRoutes.LIBRARY_TAB) {
-                val wrongNoteVm = libraryViewModel(libraryRepository)
-                val bookmarkVm  = libraryViewModel(libraryRepository)
-                val historyVm   = libraryViewModel(libraryRepository)
+                // viewModel()은 동일 ViewModelStoreOwner 안에서 클래스 기준 단일 인스턴스를 반환한다.
+                // 세 탭이 같은 LibraryViewModel을 공유하므로 toggleBookmark 변경이 즉시 반영된다.
+                val libraryVm = libraryViewModel(libraryRepository)
                 LibraryTabScreen(
-                    wrongNoteViewModel = wrongNoteVm,
-                    bookmarkViewModel  = bookmarkVm,
-                    historyViewModel   = historyVm,
+                    wrongNoteViewModel = libraryVm,
+                    bookmarkViewModel  = libraryVm,
+                    historyViewModel   = libraryVm,
                     snackbarHostState  = snackbarHostState,
                 )
             }
@@ -425,7 +428,14 @@ private fun NavBackStackEntry.sessionViewModel(
     return viewModel(viewModelStoreOwner = parentEntry, factory = factory)
 }
 
-/** 탭마다 새 인스턴스가 만들어지므로 데이터를 캐싱하지 않는다. 화면 진입 시 명시 로드. */
+/**
+ * LibraryViewModel 헬퍼.
+ *
+ * viewModel()은 같은 composable 스코프(ViewModelStoreOwner) 안에서 클래스 기준으로
+ * 단일 인스턴스를 반환한다. 보관함 탭의 세 화면이 이 인스턴스를 공유하여
+ * 북마크 토글 등의 상태 변경이 탭 간에 즉시 동기화된다.
+ * 화면 진입 시 필요한 데이터를 명시적으로 로드한다.
+ */
 @Composable
 private fun libraryViewModel(repository: LibraryRepository): LibraryViewModel {
     val factory = remember(repository) { LibraryViewModel.factory(repository) }
