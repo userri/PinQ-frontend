@@ -11,6 +11,7 @@ package com.example.pinq_frontend.ui.home
 data class HomeUiState(
     val isLoading: Boolean = true,
     val error: String? = null,
+    val nickname: String = "",
     val quizCount: Int = 0,
     val streak: Int = 0,
     val activityGrid: List<Int> = emptyList(),
