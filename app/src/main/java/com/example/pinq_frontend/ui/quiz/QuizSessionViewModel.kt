@@ -4,16 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import com.example.pinq_frontend.data.local.SavedWrongNote
-import com.example.pinq_frontend.data.local.WrongNoteStore
 import com.example.pinq_frontend.data.repository.QuizRepository
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 /**
  * 퀴즈 세션 전체를 책임지는 ViewModel.
@@ -22,7 +18,11 @@ import kotlinx.coroutines.withContext
  *  - 오늘의 퀴즈 로딩
  *  - 사용자 옵션 선택 / 정답 제출 / 다음 문제 이동 / 재시작
  *  - 누적 정답 개수 관리
- *  - 오답노트 저장 (saveWrongNotes)
+ *
+ * Phase 4 메모:
+ *  - 오답노트/풀이이력은 채점 시점에 서버 (UserQuizAttempt) 에 자동 기록되므로
+ *    클라이언트가 별도로 SharedPreferences 등에 저장하지 않는다.
+ *  - 따라서 saveWrongNotes() 같은 별도 영구화 메서드가 더 이상 필요 없다.
  */
 class QuizSessionViewModel(
     private val quizRepository: QuizRepository,
@@ -122,22 +122,6 @@ class QuizSessionViewModel(
                 correctCount = 0,
                 answerHistory = emptyList(),
             )
-        }
-    }
-
-    /**
-     * 세션 오답을 WrongNoteStore 에 저장한다.
-     * [SavedWrongNote.from] 헬퍼를 통해 변환하므로 매핑 로직이 한 곳에서만 관리된다.
-     */
-    fun saveWrongNotes(store: WrongNoteStore) {
-        viewModelScope.launch {
-            val state = _uiState.value
-            val wrongNotes = state.quizzes.zip(state.answerHistory)
-                .filter { (_, answer) -> !answer.isCorrect }
-                .map { (quiz, answer) -> SavedWrongNote.from(quiz, answer) }
-            if (wrongNotes.isNotEmpty()) {
-                withContext(Dispatchers.IO) { store.upsert(wrongNotes) }
-            }
         }
     }
 
