@@ -279,8 +279,7 @@ private fun AnswerRow(label: String, text: String, isCorrect: Boolean) {
         Surface(
             shape = RoundedCornerShape(8.dp),
             color = bgColor,
-            modifier = Modifier
-                .background(MaterialTheme.colorScheme.surface),
+            modifier = Modifier.weight(1f),
         ) {
             Text(
                 text = text,
