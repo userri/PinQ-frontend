@@ -62,6 +62,7 @@ fun HomeScreen(
     onStartQuiz: () -> Unit,
     onRetry: () -> Unit,
     onMyPage: () -> Unit = {},
+    nickname: String = "",
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -99,7 +100,7 @@ fun HomeScreen(
 
         // ── 그리팅 ───────────────────────────────────────────────
         Text(
-            text = "안녕하세요, 유리님 👋",
+            text = if (nickname.isNotEmpty()) "안녕하세요, ${nickname}님 👋" else "안녕하세요 👋",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -153,6 +154,9 @@ private fun WeeklyStreakRow(
     weekActivity: List<Int>,  // index 0 = 월, index 6 = 일. 0=활동 없음, 1~4=강도.
     todayDow: Int,             // 0=월 ~ 6=일
 ) {
+    // 오늘 아직 풀지 않았는지 여부 — weekActivity 의 오늘 요일 인덱스 강도로 추정.
+    // (서버가 별도 solvedToday 필드를 내려주지 않으므로 데이터로 추정.)
+    val solvedToday = weekActivity.getOrElse(todayDow) { 0 } > 0
     val dayLabels = listOf("월", "화", "수", "목", "금", "토", "일")
 
     Card(
@@ -173,19 +177,36 @@ private fun WeeklyStreakRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Medium,
                 )
-                if (streak > 0) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "🔥",
-                            style = MaterialTheme.typography.labelMedium,
-                        )
-                        Spacer(Modifier.size(4.dp))
-                        Text(
-                            text = "${streak}일 연속",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = PinQBlue,
-                        )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    when {
+                        streak > 0 && solvedToday -> {
+                            Text(text = "🔥", style = MaterialTheme.typography.labelMedium)
+                            Spacer(Modifier.size(4.dp))
+                            Text(
+                                text = "${streak}일 연속",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = PinQBlue,
+                            )
+                        }
+                        streak > 0 && !solvedToday -> {
+                            Text(text = "🔥", style = MaterialTheme.typography.labelMedium)
+                            Spacer(Modifier.size(4.dp))
+                            Text(
+                                text = "${streak}일 · 오늘 풀면 ${streak + 1}일째",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = PinQBlue,
+                            )
+                        }
+                        else -> {
+                            Text(
+                                text = "오늘 풀면 1일 연속 시작!",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = PinQBlue,
+                            )
+                        }
                     }
                 }
             }
@@ -259,14 +280,15 @@ private fun HeroCard(quizCount: Int, onStartQuiz: () -> Unit) {
             )
             Spacer(Modifier.height(6.dp))
             Text(
-                text = if (quizCount > 0) "${quizCount}문제 준비됐어요" else "퀴즈를 준비 중이에요",
+                text = if (quizCount > 0) "${quizCount}문제 준비됐어요" else "내일 오전 6시에 새 퀴즈가 도착해요",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.ExtraBold,
                 color = Color.White,
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "예상 시간 3분  ·  난이도 중간",
+                text = if (quizCount > 0) "예상 시간 3분  ·  매일 오전 6시 갱신"
+                       else "오늘 분량은 다 풀었어요!",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.White.copy(alpha = 0.6f),
             )
