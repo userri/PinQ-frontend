@@ -18,6 +18,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -26,6 +29,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -33,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,7 +59,9 @@ import java.util.Calendar
  * @param streak          연속 학습 일수
  * @param totalSolved     누적 풀이 수
  * @param correctRate     정답률 0.0~1.0
- * @param activityGrid    최근 56일(8주×7일) 강도. index 0=55일 전, index 55=오늘. true=활동 있음, false=활동 없음.
+ * @param activityGrid    최근 56일(8주×7일) 활동 강도.
+ *                        index 0=55일 전, index 55=오늘.
+ *                        0=활동 없음, 1=시도했으나 정답 0개, 2=1개 정답, 3=2개 정답, 4=3개 이상 정답.
  * @param appVersion      BuildConfig.VERSION_NAME
  * @param isLoading         통계 로딩 중 여부
  * @param error             통계 로드 실패 메시지 (null이면 정상)
@@ -64,10 +71,11 @@ import java.util.Calendar
  */
 @Composable
 fun MyPageScreen(
+    nickname: String,
     streak: Int,
     totalSolved: Int,
     correctRate: Float,
-    activityGrid: List<Boolean>,
+    activityGrid: List<Int>,
     appVersion: String,
     isLoading: Boolean = false,
     error: String? = null,
@@ -76,6 +84,11 @@ fun MyPageScreen(
     onWithdraw: () -> Unit = {},
     withdrawError: String? = null,
     onClearWithdrawError: () -> Unit = {},
+    onLogout: () -> Unit = {},
+    isUpdatingNickname: Boolean = false,
+    nicknameUpdateError: String? = null,
+    onUpdateNickname: (String) -> Unit = {},
+    onClearNicknameUpdateError: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     when {
@@ -101,6 +114,7 @@ fun MyPageScreen(
         }
         else -> {
             MyPageContent(
+                nickname = nickname,
                 streak = streak,
                 totalSolved = totalSolved,
                 correctRate = correctRate,
@@ -110,6 +124,11 @@ fun MyPageScreen(
                 onWithdraw = onWithdraw,
                 withdrawError = withdrawError,
                 onClearWithdrawError = onClearWithdrawError,
+                onLogout = onLogout,
+                isUpdatingNickname = isUpdatingNickname,
+                nicknameUpdateError = nicknameUpdateError,
+                onUpdateNickname = onUpdateNickname,
+                onClearNicknameUpdateError = onClearNicknameUpdateError,
                 modifier = modifier,
             )
         }
@@ -118,18 +137,26 @@ fun MyPageScreen(
 
 @Composable
 fun MyPageContent(
+    nickname: String,
     streak: Int,
     totalSolved: Int,
     correctRate: Float,
-    activityGrid: List<Boolean>,
+    activityGrid: List<Int>,
     appVersion: String,
     isWithdrawing: Boolean = false,
     onWithdraw: () -> Unit = {},
     withdrawError: String? = null,
     onClearWithdrawError: () -> Unit = {},
+    onLogout: () -> Unit = {},
+    isUpdatingNickname: Boolean = false,
+    nicknameUpdateError: String? = null,
+    onUpdateNickname: (String) -> Unit = {},
+    onClearNicknameUpdateError: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var showWithdrawDialog by remember { mutableStateOf(false) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
+    var showNicknameDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -149,7 +176,10 @@ fun MyPageContent(
         Spacer(Modifier.height(20.dp))
 
         // ── 프로필 카드 ───────────────────────────────────────────
-        ProfileCard()
+        ProfileCard(
+            nickname = nickname,
+            onEditClick = { showNicknameDialog = true },
+        )
 
         Spacer(Modifier.height(20.dp))
 
@@ -207,6 +237,18 @@ fun MyPageContent(
         )
         Spacer(Modifier.height(8.dp))
         OutlinedButton(
+            onClick = { showLogoutDialog = true },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+        ) {
+            Text(
+                text = "로그아웃",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        OutlinedButton(
             onClick = { showWithdrawDialog = true },
             enabled = !isWithdrawing,
             modifier = Modifier.fillMaxWidth(),
@@ -240,6 +282,43 @@ fun MyPageContent(
             text = "탈퇴 시 풀이 기록과 스트릭, 오답노트가 모두 삭제됩니다.",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+
+    // 로그아웃 확인 다이얼로그
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = {
+                Text(
+                    text = "로그아웃 하시겠어요?",
+                    fontWeight = FontWeight.Bold,
+                )
+            },
+            text = {
+                Text(
+                    text = "로그아웃하면 다시 로그인해야 해요.",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLogoutDialog = false
+                        onLogout()
+                    },
+                ) {
+                    Text(
+                        text = "로그아웃",
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text(text = "취소")
+                }
+            },
         )
     }
 
@@ -304,6 +383,70 @@ fun MyPageContent(
             },
         )
     }
+
+    // 닉네임 수정 다이얼로그
+    if (showNicknameDialog) {
+        var inputNickname by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { showNicknameDialog = false },
+            title = {
+                Text(text = "닉네임 변경", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = inputNickname,
+                        onValueChange = { if (it.length <= 20) inputNickname = it },
+                        label = { Text("새 닉네임") },
+                        placeholder = { Text(nickname) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = {
+                            if (inputNickname.isNotBlank()) {
+                                onUpdateNickname(inputNickname)
+                                showNicknameDialog = false
+                            }
+                        }),
+                        supportingText = { Text("${inputNickname.length}/20") },
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (inputNickname.isNotBlank()) {
+                            onUpdateNickname(inputNickname)
+                            showNicknameDialog = false
+                        }
+                    },
+                    enabled = inputNickname.isNotBlank() && !isUpdatingNickname,
+                ) {
+                    if (isUpdatingNickname) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text(text = "변경", fontWeight = FontWeight.Bold, color = PinQBlue)
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showNicknameDialog = false }) {
+                    Text(text = "취소")
+                }
+            },
+        )
+    }
+
+    // 닉네임 수정 실패 에러 다이얼로그
+    if (nicknameUpdateError != null) {
+        AlertDialog(
+            onDismissRequest = onClearNicknameUpdateError,
+            title = { Text(text = "닉네임 변경 실패", fontWeight = FontWeight.Bold) },
+            text = { Text(text = nicknameUpdateError, style = MaterialTheme.typography.bodyMedium) },
+            confirmButton = {
+                TextButton(onClick = onClearNicknameUpdateError) { Text("확인") }
+            },
+        )
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -311,7 +454,11 @@ fun MyPageContent(
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun ProfileCard() {
+private fun ProfileCard(
+    nickname: String,
+    onEditClick: () -> Unit,
+) {
+    val initial = nickname.firstOrNull()?.toString() ?: "?"
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -334,23 +481,30 @@ private fun ProfileCard() {
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = "유",
+                    text = initial,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.White,
                 )
             }
             Spacer(Modifier.width(14.dp))
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "유리님",
+                    text = "${nickname}님",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
-                    text = "Google 로그인은 Phase 3에서 지원됩니다",
+                    text = "닉네임을 변경할 수 있어요",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            TextButton(onClick = onEditClick) {
+                Text(
+                    text = "변경",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = PinQBlue,
                 )
             }
         }
@@ -394,24 +548,38 @@ private fun StatCard(
 }
 
 /**
+ * 히트맵 강도(0~4) → 배경색 매핑.
+ *
+ * PinQBlue(#3D63DD) 기준 5단계:
+ *  0 → 활동 없음 (연한 회색)
+ *  1 → 10% 채도 블루
+ *  2 → 35% 채도 블루
+ *  3 → 65% 채도 블루
+ *  4 → 풀 PinQBlue
+ */
+private fun intensityColor(intensity: Int): Color = when (intensity) {
+    0    -> Color(0xFFEDF0F7)
+    1    -> Color(0xFFBECEF8)
+    2    -> Color(0xFF8AAAF2)
+    3    -> Color(0xFF6086EC)
+    else -> PinQBlue           // 4 이상
+}
+
+/**
  * 풀이 활동 카드 — 8주×7일 GitHub 스타일 히트맵.
  *
  * activityGrid: index 0 = 55일 전, index 55 = 오늘 (날짜순 나열).
+ * 값: 0=활동 없음, 1=시도했으나 정답 0개, 2=1개 정답, 3=2개 정답, 4=3개 이상 정답.
  *
  * 레이아웃 규칙:
  *  - 마지막 열(week=7) · 오늘 요일 행이 항상 "오늘" 셀.
- *  - 셀 위치를 (week, day) 로 표현할 때
- *      daysAgo  = (weeks-1 - week)*7 + (todayDow - day)
- *      gridIdx  = (totalCells - 1) - daysAgo
+ *  - daysAgo  = (weeks-1 - week)*7 + (todayDow - day)
+ *  - gridIdx  = (totalCells - 1) - daysAgo
  *  - daysAgo < 0  → 미래(이번 주 오늘 이후 요일)
  *  - gridIdx < 0  → 범위 밖(56일 보다 더 과거) → 빈 셀
- *
- *  ※ 이전 구현은 startDow 기반으로 gridIdx 를 계산했으나, 오늘 요일에 따라
- *    오늘 셀 자체가 그리드에 매핑되지 않는 버그가 있었다(예: 오늘이 토요일이면
- *    today gridIdx=55 가 어떤 (week,day) 에도 대응되지 않음).
  */
 @Composable
-private fun ActivityHeatmapCard(activityGrid: List<Boolean>) {
+private fun ActivityHeatmapCard(activityGrid: List<Int>) {
     val weeks = 8
     val days = 7
     val totalCells = weeks * days   // 56
@@ -424,8 +592,12 @@ private fun ActivityHeatmapCard(activityGrid: List<Boolean>) {
         (Calendar.getInstance().get(Calendar.DAY_OF_WEEK) + 5) % 7
     }
 
-    // 각 셀별 상태 계산
-    data class CellState(val active: Boolean, val isToday: Boolean, val isFuture: Boolean, val inRange: Boolean)
+    data class CellState(
+        val intensity: Int,
+        val isToday: Boolean,
+        val isFuture: Boolean,
+        val inRange: Boolean,
+    )
 
     val cells = remember(activityGrid, todayDow) {
         Array(weeks) { week ->
@@ -433,9 +605,9 @@ private fun ActivityHeatmapCard(activityGrid: List<Boolean>) {
                 val daysAgo = (weeks - 1 - week) * 7 + (todayDow - day)
                 val gridIdx = (totalCells - 1) - daysAgo
                 val isFuture = daysAgo < 0
-                val inRange = gridIdx in 0 until activityGrid.size
+                val inRange = gridIdx in activityGrid.indices
                 CellState(
-                    active = inRange && activityGrid[gridIdx],
+                    intensity = if (inRange) activityGrid[gridIdx] else 0,
                     isToday = daysAgo == 0,
                     isFuture = isFuture,
                     inRange = inRange,
@@ -443,6 +615,9 @@ private fun ActivityHeatmapCard(activityGrid: List<Boolean>) {
             }
         }
     }
+
+    // 범례용 강도 단계
+    val legendIntensities = listOf(0, 1, 2, 3, 4)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -503,20 +678,21 @@ private fun ActivityHeatmapCard(activityGrid: List<Boolean>) {
                             Column(verticalArrangement = Arrangement.spacedBy(gap)) {
                                 for (day in 0 until days) {
                                     val cell = cells[week][day]
+
                                     val bgColor = when {
                                         cell.isFuture && !cell.isToday -> Color.Transparent
-                                        cell.active -> PinQBlue
-                                        else -> Color(0xFFEDF0F7)
+                                        else -> intensityColor(cell.intensity)
                                     }
-                                    // 오늘인데 아직 안 푼 경우 진한 테두리 강조
+
+                                    // 오늘 셀: 진한 테두리 강조
                                     val borderMod = when {
-                                        cell.isToday && !cell.active ->
+                                        cell.isToday && cell.intensity == 0 ->
                                             Modifier.border(
                                                 width = 2.dp,
                                                 color = PinQBlue,
                                                 shape = RoundedCornerShape(4.dp),
                                             )
-                                        cell.isToday && cell.active ->
+                                        cell.isToday && cell.intensity > 0 ->
                                             Modifier.border(
                                                 width = 2.dp,
                                                 color = PinQDarkNavy,
@@ -524,6 +700,7 @@ private fun ActivityHeatmapCard(activityGrid: List<Boolean>) {
                                             )
                                         else -> Modifier
                                     }
+
                                     Box(
                                         modifier = Modifier
                                             .size(cellSize)
@@ -566,7 +743,7 @@ private fun ActivityHeatmapCard(activityGrid: List<Boolean>) {
                     )
                 }
 
-                // 활동 강도 범례
+                // 활동 강도 범례 (5단계)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = "적게",
@@ -574,13 +751,13 @@ private fun ActivityHeatmapCard(activityGrid: List<Boolean>) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.width(4.dp))
-                    listOf(Color(0xFFEDF0F7), PinQBlue).forEach { color ->
+                    legendIntensities.forEach { intensity ->
                         Box(
                             modifier = Modifier
                                 .padding(horizontal = 2.dp)
                                 .size(12.dp)
                                 .clip(RoundedCornerShape(3.dp))
-                                .background(color),
+                                .background(intensityColor(intensity)),
                         )
                     }
                     Spacer(Modifier.width(4.dp))
@@ -591,6 +768,13 @@ private fun ActivityHeatmapCard(activityGrid: List<Boolean>) {
                     )
                 }
             }
+
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "ⓘ 문제는 1회만 풀 수 있어요.\n오늘 시도에서 맞힌 문제 수에 따라 색이 진해져요.",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -622,10 +806,19 @@ private fun InfoRow(label: String, value: String) {
 @Preview(showBackground = true, widthDp = 360, heightDp = 800)
 @Composable
 private fun MyPageScreenPreview() {
-    // 오늘이 목요일(3)이라고 가정, 최근 2주 일부 활동
-    val activityGrid = List(56) { i -> i % 3 == 0 || i % 5 == 0 }
+    // 강도 0~4 섞어서 테스트
+    val activityGrid = List(56) { i ->
+        when {
+            i % 7 == 0 -> 4
+            i % 5 == 0 -> 3
+            i % 3 == 0 -> 2
+            i % 2 == 0 -> 1
+            else       -> 0
+        }
+    }
     PinQ_frontendTheme {
         MyPageContent(
+            nickname = "유리",
             streak = 7,
             totalSolved = 28,
             correctRate = 0.75f,
@@ -640,6 +833,7 @@ private fun MyPageScreenPreview() {
 private fun MyPageEmptyPreview() {
     PinQ_frontendTheme {
         MyPageContent(
+            nickname = "유저123456",
             streak = 0,
             totalSolved = 0,
             correctRate = 0f,

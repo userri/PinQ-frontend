@@ -17,6 +17,8 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -39,14 +41,18 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navigation
 import com.example.pinq_frontend.BuildConfig
-import com.example.pinq_frontend.data.local.LocalModule
 import com.example.pinq_frontend.data.model.RelatedArticle
 import com.example.pinq_frontend.data.remote.NetworkModule
+import com.example.pinq_frontend.data.repository.ApiLibraryRepository
 import com.example.pinq_frontend.data.repository.ApiQuizRepository
 import com.example.pinq_frontend.data.repository.ApiUserStatsRepository
+import com.example.pinq_frontend.data.repository.LibraryRepository
 import com.example.pinq_frontend.data.repository.QuizRepository
 import com.example.pinq_frontend.data.repository.UserStatsRepository
 import com.example.pinq_frontend.ui.home.HomeViewModel
+import com.example.pinq_frontend.ui.library.AttemptHistoryRoute
+import com.example.pinq_frontend.ui.library.LibraryTabScreen
+import com.example.pinq_frontend.ui.library.LibraryViewModel
 import com.example.pinq_frontend.ui.mypage.MyPageViewModel
 import com.example.pinq_frontend.ui.quiz.QuizSessionViewModel
 import com.example.pinq_frontend.ui.screen.HomeScreen
@@ -55,27 +61,35 @@ import com.example.pinq_frontend.ui.screen.QuizAnswerScreen
 import com.example.pinq_frontend.ui.screen.QuizScreen
 import com.example.pinq_frontend.ui.screen.ResultReportScreen
 import com.example.pinq_frontend.ui.screen.WrongNoteScreen
-import com.example.pinq_frontend.ui.screen.WrongNoteTabScreen
 import com.example.pinq_frontend.ui.theme.PinQBlue
-import com.example.pinq_frontend.ui.wrongnote.WrongNoteViewModel
+import com.example.pinq_frontend.data.local.SessionManager
+import com.example.pinq_frontend.data.repository.AuthRepository
+import com.example.pinq_frontend.ui.login.LoginEvent
+import com.example.pinq_frontend.ui.login.LoginViewModel
+import com.example.pinq_frontend.ui.screen.LoginScreen
 
 /**
  * FinQ 네비게이션 그래프.
  *
- * 구조:
- *   home                ─┐
- *   wrongnote_tab        ├─ 하단 네비게이션 표시 영역
- *   mypage              ─┘
- *   session (nested graph) — 하단 네비게이션 숨김
+ * 구조 (Phase 4):
+ *   login                   — 미인증 시 시작점 (하단 네비게이션 없음)
+ *   home                  ─┐
+ *   library_tab            ├─ 하단 네비게이션 표시 영역 (3탭)
+ *   mypage                ─┘
+ *   session (nested graph)  — 하단 네비게이션 숨김
  *     ├── session/quiz
  *     ├── session/answer
  *     ├── session/done
  *     └── session/wrongnote
  */
 object FinQRoutes {
+    const val LOGIN = "login"
     const val HOME = "home"
-    const val WRONG_NOTE_TAB = "wrongnote_tab"
+    const val WRONG_NOTE_TAB = "wrongnote_tab"   // 하위 호환용 — 직접 접근 시 library_tab 으로 리다이렉트
+    const val BOOKMARK_TAB = "bookmark_tab"       // 하위 호환용
+    const val LIBRARY_TAB = "library_tab"
     const val MY_PAGE = "mypage"
+    const val ATTEMPT_HISTORY = "attempt_history"
     const val SESSION_GRAPH = "session"
     const val QUIZ = "session/quiz"
     const val ANSWER = "session/answer"
@@ -86,7 +100,7 @@ object FinQRoutes {
 // 하단 네비게이션을 표시하는 최상위 루트 목록
 private val bottomNavRoutes = setOf(
     FinQRoutes.HOME,
-    FinQRoutes.WRONG_NOTE_TAB,
+    FinQRoutes.LIBRARY_TAB,
     FinQRoutes.MY_PAGE,
 )
 
@@ -98,32 +112,42 @@ data class BottomNavItem(
 
 private val bottomNavItems = listOf(
     BottomNavItem(FinQRoutes.HOME, "홈", "🏠"),
-    BottomNavItem(FinQRoutes.WRONG_NOTE_TAB, "오답노트", "📝"),
+    BottomNavItem(FinQRoutes.LIBRARY_TAB, "보관함", "📚"),
     BottomNavItem(FinQRoutes.MY_PAGE, "마이", "👤"),
 )
 
 @Composable
 fun FinQNavHost(
-    navController: NavHostController = rememberNavController(),
     modifier: Modifier = Modifier,
+    navController: NavHostController = rememberNavController(),
 ) {
     val repository: QuizRepository = remember { ApiQuizRepository(NetworkModule.quizApi) }
     val statsRepository: UserStatsRepository = remember { ApiUserStatsRepository(NetworkModule.userApi) }
+    val authRepository: AuthRepository = remember { AuthRepository(NetworkModule.authApi) }
+    val libraryRepository: LibraryRepository = remember { ApiLibraryRepository(NetworkModule.libraryApi) }
     val context = LocalContext.current
+
+    // 로그인 여부에 따라 시작 화면 결정 (NavHost 생성 시 1회만 평가됨).
+    // startDestination은 반응형이 아니므로, 런타임에 세션이 해제될 경우
+    // 반드시 navController.navigate(LOGIN) { popUpTo(0) { inclusive = true } } 를
+    // 명시적으로 호출해야 한다 (로그아웃/탈퇴 경로 모두 해당).
+    val startDestination = if (SessionManager.isLoggedIn) FinQRoutes.HOME else FinQRoutes.LOGIN
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val showBottomBar = currentRoute in bottomNavRoutes
 
+    val snackbarHostState = remember { SnackbarHostState() }
+
     Scaffold(
         modifier = modifier,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             if (showBottomBar) {
                 FinQBottomBar(
                     currentRoute = currentRoute,
                     onNavigate = { route ->
                         navController.navigate(route) {
-                            // 탭 전환 시 백스택을 home 위로 팝해서 중복 누적 방지
                             popUpTo(FinQRoutes.HOME) { saveState = true }
                             launchSingleTop = true
                             restoreState = true
@@ -135,16 +159,41 @@ fun FinQNavHost(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = FinQRoutes.HOME,
+            startDestination = startDestination,
             modifier = Modifier.padding(innerPadding),
         ) {
+            // ── 로그인 ────────────────────────────────────────────────────
+            composable(FinQRoutes.LOGIN) {
+                val loginVm: LoginViewModel = viewModel(
+                    factory = LoginViewModel.factory(authRepository),
+                )
+                val state by loginVm.uiState.collectAsState()
+
+                LaunchedEffect(Unit) {
+                    loginVm.events.collect { event ->
+                        if (event is LoginEvent.LoginSuccess) {
+                            navController.navigate(FinQRoutes.HOME) {
+                                popUpTo(FinQRoutes.LOGIN) { inclusive = true }
+                            }
+                        }
+                    }
+                }
+
+                LoginScreen(
+                    isLoading = state.isLoading,
+                    error = state.error,
+                    onKakaoLogin = { loginVm.loginWithKakao(context) },
+                    onGoogleLogin = { loginVm.loginWithGoogle(context) },
+                    onClearError = loginVm::clearError,
+                )
+            }
+
             // ── 홈 ──────────────────────────────────────────────────────
             composable(FinQRoutes.HOME) {
                 val homeVm: HomeViewModel = viewModel(
                     factory = HomeViewModel.factory(repository, statsRepository),
                 )
                 val state by homeVm.uiState.collectAsState()
-                // 화면 진입 시마다 스트릭/통계를 새로 로드 (퀴즈 완료 후 즉시 반영)
                 LaunchedEffect(Unit) { homeVm.loadQuizInfo() }
                 HomeScreen(
                     quizCount = state.quizCount,
@@ -152,6 +201,7 @@ fun FinQNavHost(
                     activityGrid = state.activityGrid,
                     isLoading = state.isLoading,
                     error = state.error,
+                    nickname = state.nickname,
                     onStartQuiz = { navController.navigate(FinQRoutes.SESSION_GRAPH) },
                     onRetry = homeVm::loadQuizInfo,
                     onMyPage = {
@@ -164,14 +214,17 @@ fun FinQNavHost(
                 )
             }
 
-            // ── 오답노트 탭 ──────────────────────────────────────────────
-            composable(FinQRoutes.WRONG_NOTE_TAB) {
-                val wrongNoteVm: WrongNoteViewModel = viewModel(
-                    factory = WrongNoteViewModel.factory,
+            // ── 보관함 탭 (오답노트 + 북마크 + 전체이력) ────────────────
+            composable(FinQRoutes.LIBRARY_TAB) {
+                // viewModel()은 동일 ViewModelStoreOwner 안에서 클래스 기준 단일 인스턴스를 반환한다.
+                // 세 탭이 같은 LibraryViewModel을 공유하므로 toggleBookmark 변경이 즉시 반영된다.
+                val libraryVm = libraryViewModel(libraryRepository)
+                LibraryTabScreen(
+                    wrongNoteViewModel = libraryVm,
+                    bookmarkViewModel  = libraryVm,
+                    historyViewModel   = libraryVm,
+                    snackbarHostState  = snackbarHostState,
                 )
-                // 화면 진입 시마다 최신 데이터 로드
-                LaunchedEffect(Unit) { wrongNoteVm.refresh() }
-                WrongNoteTabScreen(viewModel = wrongNoteVm)
             }
 
             // ── 마이페이지 ───────────────────────────────────────────────
@@ -181,21 +234,30 @@ fun FinQNavHost(
                 )
                 val state by myPageVm.uiState.collectAsState()
 
-                // 화면 진입 시마다 스트릭/통계를 새로 로드 (퀴즈 완료 후 즉시 반영)
-                // withdrawEvents 수집도 같은 LaunchedEffect 블록 밖에서 별도로 처리
                 LaunchedEffect(Unit) { myPageVm.loadStats() }
 
-                // 탈퇴 완료 → 홈으로 이동 (다음 요청에서 demo 유저 재생성됨)
                 LaunchedEffect(Unit) {
                     myPageVm.withdrawEvents.collect {
-                        navController.navigate(FinQRoutes.HOME) {
-                            popUpTo(FinQRoutes.HOME) { inclusive = true }
+                        SessionManager.clearSession(context)
+                        navController.navigate(FinQRoutes.LOGIN) {
+                            popUpTo(0) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                }
+
+                LaunchedEffect(Unit) {
+                    myPageVm.logoutEvents.collect {
+                        authRepository.logout(context)
+                        navController.navigate(FinQRoutes.LOGIN) {
+                            popUpTo(0) { inclusive = true }
                             launchSingleTop = true
                         }
                     }
                 }
 
                 MyPageScreen(
+                    nickname = state.nickname,
                     streak = state.streak,
                     totalSolved = state.totalSolved,
                     correctRate = state.correctRate,
@@ -208,6 +270,21 @@ fun FinQNavHost(
                     onWithdraw = myPageVm::withdraw,
                     withdrawError = state.withdrawError,
                     onClearWithdrawError = myPageVm::clearWithdrawError,
+                    onLogout = myPageVm::logout,
+                    isUpdatingNickname = state.isUpdatingNickname,
+                    nicknameUpdateError = state.nicknameUpdateError,
+                    onUpdateNickname = myPageVm::updateNickname,
+                    onClearNicknameUpdateError = myPageVm::clearNicknameUpdateError,
+                )
+            }
+
+            // ── 전체 풀이 이력 (마이페이지에서 진입) ──────────────────
+            composable(FinQRoutes.ATTEMPT_HISTORY) {
+                val libraryVm = libraryViewModel(libraryRepository)
+                AttemptHistoryRoute(
+                    viewModel = libraryVm,
+                    onBack = { navController.popBackStack() },
+                    snackbarHostState = snackbarHostState,
                 )
             }
 
@@ -228,6 +305,7 @@ fun FinQNavHost(
                     val localContext = LocalContext.current
                     AnswerRoute(
                         viewModel = vm,
+                        libraryRepository = libraryRepository,
                         onNext = {
                             val state = vm.uiState.value
                             if (state.isLastQuiz) {
@@ -257,8 +335,6 @@ fun FinQNavHost(
                 }
                 composable(FinQRoutes.DONE) { entry ->
                     val vm = entry.sessionViewModel(navController, repository)
-                    // 세션 종료 시 오답을 영구 저장소에 기록
-                    LaunchedEffect(Unit) { vm.saveWrongNotes(LocalModule.wrongNoteStore) }
                     DoneRoute(
                         viewModel = vm,
                         onGoHome = {
@@ -281,6 +357,7 @@ fun FinQNavHost(
                     val vm = entry.sessionViewModel(navController, repository)
                     WrongNoteRoute(
                         viewModel = vm,
+                        libraryRepository = libraryRepository,
                         onBack = { navController.popBackStack() },
                     )
                 }
@@ -351,6 +428,20 @@ private fun NavBackStackEntry.sessionViewModel(
     return viewModel(viewModelStoreOwner = parentEntry, factory = factory)
 }
 
+/**
+ * LibraryViewModel 헬퍼.
+ *
+ * viewModel()은 같은 composable 스코프(ViewModelStoreOwner) 안에서 클래스 기준으로
+ * 단일 인스턴스를 반환한다. 보관함 탭의 세 화면이 이 인스턴스를 공유하여
+ * 북마크 토글 등의 상태 변경이 탭 간에 즉시 동기화된다.
+ * 화면 진입 시 필요한 데이터를 명시적으로 로드한다.
+ */
+@Composable
+private fun libraryViewModel(repository: LibraryRepository): LibraryViewModel {
+    val factory = remember(repository) { LibraryViewModel.factory(repository) }
+    return viewModel(factory = factory)
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Route 래퍼
 // ─────────────────────────────────────────────────────────────────────────────
@@ -387,6 +478,7 @@ private fun QuizRoute(
 @Composable
 private fun AnswerRoute(
     viewModel: QuizSessionViewModel,
+    libraryRepository: LibraryRepository,
     onNext: () -> Unit,
     onArticleClick: (RelatedArticle) -> Unit,
 ) {
@@ -402,6 +494,7 @@ private fun AnswerRoute(
             isLast = state.isLastQuiz,
             onNext = onNext,
             onArticleClick = onArticleClick,
+            libraryRepository = libraryRepository,
         )
     }
 }
@@ -426,13 +519,20 @@ private fun DoneRoute(
 @Composable
 private fun WrongNoteRoute(
     viewModel: QuizSessionViewModel,
+    libraryRepository: LibraryRepository,
     onBack: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsState()
+    // 세션 내부 화면에서도 북마크 토글 가능 — 토글 결과는 즉시 서버 반영.
+    // 화면 자체는 메모리 데이터로 그리므로 별도 로드 없음.
+    val libraryVm = libraryViewModel(libraryRepository)
     WrongNoteScreen(
         quizzes = state.quizzes,
         answerHistory = state.answerHistory,
         onBack = onBack,
+        onToggleBookmark = { quizId, currentlyBookmarked ->
+            libraryVm.toggleBookmark(quizId, currentlyBookmarked)
+        },
     )
 }
 

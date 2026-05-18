@@ -45,6 +45,8 @@ import java.util.Calendar
  *
  * @param quizCount    오늘 퀴즈 개수
  * @param streak       연속 학습 일수 (0=오늘 처음)
+ * @param activityGrid 최근 56일 처음 시도 정답 수 강도.
+ *                     index 0=55일 전, index 55=오늘. 0=활동 없음, 1~4=강도.
  * @param isLoading    퀴즈 로딩 중 여부
  * @param error        에러 메시지 (null이면 정상)
  * @param onStartQuiz  퀴즈 시작 콜백
@@ -54,12 +56,13 @@ import java.util.Calendar
 fun HomeScreen(
     quizCount: Int,
     streak: Int,
-    activityGrid: List<Boolean>,
+    activityGrid: List<Int>,
     isLoading: Boolean,
     error: String?,
     onStartQuiz: () -> Unit,
     onRetry: () -> Unit,
     onMyPage: () -> Unit = {},
+    nickname: String = "",
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -97,7 +100,7 @@ fun HomeScreen(
 
         // ── 그리팅 ───────────────────────────────────────────────
         Text(
-            text = "안녕하세요, 유리님 👋",
+            text = if (nickname.isNotEmpty()) "안녕하세요, ${nickname}님 👋" else "안녕하세요 👋",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -112,18 +115,16 @@ fun HomeScreen(
         Spacer(Modifier.height(24.dp))
 
         // ── 주간 스트릭 도트 ─────────────────────────────────────
-        // activityGrid: index 0 = 55일 전, index 55 = 오늘 (날짜순 나열, 요일 무관)
-        // todayDow: 0=월 ~ 6=일. 이번 주 월요일은 오늘로부터 todayDow일 전.
-        // 월~일 각 요일에 대응하는 activityGrid 인덱스를 계산해서 넘긴다.
+        // activityGrid: index 0 = 55일 전, index 55 = 오늘 (날짜순 나열)
+        // 이번 주 월~일 각 요일에 대응하는 activityGrid 인덱스를 계산한다.
         val todayDowForGrid = remember {
             (Calendar.getInstance().get(Calendar.DAY_OF_WEEK) + 5) % 7
         }
-        // weekActivity[i]: i번째 요일(0=월)의 학습 여부
-        // activityGrid[55] = 오늘, activityGrid[55 - todayDow + i] = 이번 주 i번째 요일
+        // weekActivity[i]: i번째 요일(0=월)의 정답 강도 (0이면 활동 없음)
         val weekActivity = remember(activityGrid, todayDowForGrid) {
             List(7) { i ->
                 val gridIndex = 55 - todayDowForGrid + i
-                activityGrid.getOrElse(gridIndex) { false }
+                activityGrid.getOrElse(gridIndex) { 0 }
             }
         }
         WeeklyStreakRow(
@@ -140,7 +141,6 @@ fun HomeScreen(
             error != null -> HeroCardError(error = error, onRetry = onRetry)
             else -> HeroCard(quizCount = quizCount, onStartQuiz = onStartQuiz)
         }
-
     }
 }
 
@@ -151,9 +151,12 @@ fun HomeScreen(
 @Composable
 private fun WeeklyStreakRow(
     streak: Int,
-    weekActivity: List<Boolean>,  // index 0 = 월, index 6 = 일. 오늘 이후 미래 칸은 호출자가 isFuture 체크해서 넣어줌.
-    todayDow: Int,                // 0=월 ~ 6=일
+    weekActivity: List<Int>,  // index 0 = 월, index 6 = 일. 0=활동 없음, 1~4=강도.
+    todayDow: Int,             // 0=월 ~ 6=일
 ) {
+    // 오늘 아직 풀지 않았는지 여부 — weekActivity 의 오늘 요일 인덱스 강도로 추정.
+    // (서버가 별도 solvedToday 필드를 내려주지 않으므로 데이터로 추정.)
+    val solvedToday = weekActivity.getOrElse(todayDow) { 0 } > 0
     val dayLabels = listOf("월", "화", "수", "목", "금", "토", "일")
 
     Card(
@@ -163,7 +166,6 @@ private fun WeeklyStreakRow(
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
-            // 헤더: 스트릭 일수 표시
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -175,19 +177,36 @@ private fun WeeklyStreakRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Medium,
                 )
-                if (streak > 0) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "🔥",
-                            style = MaterialTheme.typography.labelMedium,
-                        )
-                        Spacer(Modifier.size(4.dp))
-                        Text(
-                            text = "${streak}일 연속",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = PinQBlue,
-                        )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    when {
+                        streak > 0 && solvedToday -> {
+                            Text(text = "🔥", style = MaterialTheme.typography.labelMedium)
+                            Spacer(Modifier.size(4.dp))
+                            Text(
+                                text = "${streak}일 연속",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = PinQBlue,
+                            )
+                        }
+                        streak > 0 && !solvedToday -> {
+                            Text(text = "🔥", style = MaterialTheme.typography.labelMedium)
+                            Spacer(Modifier.size(4.dp))
+                            Text(
+                                text = "${streak}일 · 오늘 풀면 ${streak + 1}일째",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = PinQBlue,
+                            )
+                        }
+                        else -> {
+                            Text(
+                                text = "오늘 풀면 1일 연속 시작!",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = PinQBlue,
+                            )
+                        }
                     }
                 }
             }
@@ -197,10 +216,9 @@ private fun WeeklyStreakRow(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 dayLabels.forEachIndexed { index, label ->
-                    // activityGrid는 백엔드에서 오는 정확한 데이터를 사용
-                    // weekActivity가 비어있으면 (API 로딩 시) 모두 false로 표시
                     val isFuture = index > todayDow
-                    val isFilled = !isFuture && (weekActivity.getOrNull(index) == true)
+                    val intensity = weekActivity.getOrElse(index) { 0 }
+                    val isFilled = !isFuture && intensity > 0
                     val isToday = index == todayDow
 
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -209,12 +227,10 @@ private fun WeeklyStreakRow(
                                 .size(30.dp)
                                 .clip(CircleShape)
                                 .then(
-                                    when {
-                                        // 오늘: 안 풀면 파란 테두리
-                                        isToday && !isFilled ->
-                                            Modifier.border(2.dp, PinQBlue, CircleShape)
-                                        else -> Modifier
-                                    }
+                                    if (isToday && !isFilled)
+                                        Modifier.border(2.dp, PinQBlue, CircleShape)
+                                    else
+                                        Modifier
                                 )
                                 .background(
                                     when {
@@ -264,14 +280,15 @@ private fun HeroCard(quizCount: Int, onStartQuiz: () -> Unit) {
             )
             Spacer(Modifier.height(6.dp))
             Text(
-                text = if (quizCount > 0) "${quizCount}문제 준비됐어요" else "퀴즈를 준비 중이에요",
+                text = if (quizCount > 0) "${quizCount}문제 준비됐어요" else "내일 오전 6시에 새 퀴즈가 도착해요",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.ExtraBold,
                 color = Color.White,
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "예상 시간 3분  ·  난이도 중간",
+                text = if (quizCount > 0) "예상 시간 3분  ·  매일 오전 6시 갱신"
+                       else "오늘 분량은 다 풀었어요!",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.White.copy(alpha = 0.6f),
             )
@@ -348,7 +365,6 @@ private fun HeroCardError(error: String, onRetry: () -> Unit) {
     }
 }
 
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Preview
 // ─────────────────────────────────────────────────────────────────────────────
@@ -360,7 +376,7 @@ private fun HomeScreenPreview() {
         HomeScreen(
             quizCount = 4,
             streak = 3,
-            activityGrid = listOf(true, true, true, false, false, false, false), // 월~일, streak=3 예시
+            activityGrid = List(56) { i -> if (i % 3 == 0) 2 else 0 },
             isLoading = false,
             error = null,
             onStartQuiz = {},
