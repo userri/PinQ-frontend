@@ -1,37 +1,4 @@
 package com.example.pinq_frontend.ui.wrongnote
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
-import com.example.pinq_frontend.data.local.LocalModule
-import com.example.pinq_frontend.data.local.SavedWrongNote
-import com.example.pinq_frontend.data.local.WrongNoteStore
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-
-class WrongNoteViewModel(private val store: WrongNoteStore) : ViewModel() {
-
-    private val _allNotes = MutableStateFlow<List<SavedWrongNote>>(emptyList())
-    val allNotes: StateFlow<List<SavedWrongNote>> = _allNotes.asStateFlow()
-
-    init {
-        refresh()
-    }
-
-    fun refresh() {
-        viewModelScope.launch {
-            _allNotes.value = withContext(Dispatchers.IO) { store.getAll() }
-        }
-    }
-
-    companion object {
-        val factory = viewModelFactory {
-            initializer { WrongNoteViewModel(LocalModule.wrongNoteStore) }
-        }
-    }
-}
+// Phase 4 변경: 서버 기반으로 이관되면서 본 ViewModel 은 폐기됐다.
+// 신규 화면들은 com.example.pinq_frontend.ui.library.LibraryViewModel 을 사용한다.

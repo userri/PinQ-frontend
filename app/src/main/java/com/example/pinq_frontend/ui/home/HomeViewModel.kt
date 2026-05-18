@@ -47,6 +47,7 @@ class HomeViewModel(
             _uiState.update {
                 it.copy(
                     isLoading = false,
+                    nickname = stats?.nickname ?: "",
                     quizCount = quizzes.size,
                     streak = stats?.streak ?: 0,
                     activityGrid = stats?.activityGrid ?: emptyList(),
