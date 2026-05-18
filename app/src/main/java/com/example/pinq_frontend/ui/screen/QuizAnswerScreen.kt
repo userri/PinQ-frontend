@@ -66,10 +66,12 @@ fun QuizAnswerScreen(
     onNext: () -> Unit,
     onArticleClick: (RelatedArticle) -> Unit,
     libraryRepository: LibraryRepository? = null,
+    initialBookmarked: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
-    // 북마크 토글 — 채점 직후엔 서버 상태가 false 라고 가정 (첫 시도이므로).
-    var bookmarked by remember(quiz.id) { mutableStateOf(false) }
+    // 북마크 토글 — 퀴즈 세션 직후엔 첫 시도이므로 false가 기본값.
+    // 이미 북마크된 퀴즈를 재표시할 경우 initialBookmarked=true 를 전달한다.
+    var bookmarked by remember(quiz.id) { mutableStateOf(initialBookmarked) }
     val scope = rememberCoroutineScope()
 
     Column(
