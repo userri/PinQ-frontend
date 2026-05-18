@@ -18,6 +18,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -26,6 +29,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -33,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,9 +59,9 @@ import java.util.Calendar
  * @param streak          연속 학습 일수
  * @param totalSolved     누적 풀이 수
  * @param correctRate     정답률 0.0~1.0
- * @param activityGrid    최근 56일(8주×7일) 처음 시도 정답 수.
+ * @param activityGrid    최근 56일(8주×7일) 활동 강도.
  *                        index 0=55일 전, index 55=오늘.
- *                        0=활동 없음, 1~4=정답 개수(4 이상은 4로 고정).
+ *                        0=활동 없음, 1=시도했으나 정답 0개, 2=1개 정답, 3=2개 정답, 4=3개 이상 정답.
  * @param appVersion      BuildConfig.VERSION_NAME
  * @param isLoading         통계 로딩 중 여부
  * @param error             통계 로드 실패 메시지 (null이면 정상)
@@ -66,6 +71,7 @@ import java.util.Calendar
  */
 @Composable
 fun MyPageScreen(
+    nickname: String,
     streak: Int,
     totalSolved: Int,
     correctRate: Float,
@@ -78,6 +84,11 @@ fun MyPageScreen(
     onWithdraw: () -> Unit = {},
     withdrawError: String? = null,
     onClearWithdrawError: () -> Unit = {},
+    onLogout: () -> Unit = {},
+    isUpdatingNickname: Boolean = false,
+    nicknameUpdateError: String? = null,
+    onUpdateNickname: (String) -> Unit = {},
+    onClearNicknameUpdateError: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     when {
@@ -103,6 +114,7 @@ fun MyPageScreen(
         }
         else -> {
             MyPageContent(
+                nickname = nickname,
                 streak = streak,
                 totalSolved = totalSolved,
                 correctRate = correctRate,
@@ -112,6 +124,11 @@ fun MyPageScreen(
                 onWithdraw = onWithdraw,
                 withdrawError = withdrawError,
                 onClearWithdrawError = onClearWithdrawError,
+                onLogout = onLogout,
+                isUpdatingNickname = isUpdatingNickname,
+                nicknameUpdateError = nicknameUpdateError,
+                onUpdateNickname = onUpdateNickname,
+                onClearNicknameUpdateError = onClearNicknameUpdateError,
                 modifier = modifier,
             )
         }
@@ -120,6 +137,7 @@ fun MyPageScreen(
 
 @Composable
 fun MyPageContent(
+    nickname: String,
     streak: Int,
     totalSolved: Int,
     correctRate: Float,
@@ -129,9 +147,16 @@ fun MyPageContent(
     onWithdraw: () -> Unit = {},
     withdrawError: String? = null,
     onClearWithdrawError: () -> Unit = {},
+    onLogout: () -> Unit = {},
+    isUpdatingNickname: Boolean = false,
+    nicknameUpdateError: String? = null,
+    onUpdateNickname: (String) -> Unit = {},
+    onClearNicknameUpdateError: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var showWithdrawDialog by remember { mutableStateOf(false) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
+    var showNicknameDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -151,7 +176,10 @@ fun MyPageContent(
         Spacer(Modifier.height(20.dp))
 
         // ── 프로필 카드 ───────────────────────────────────────────
-        ProfileCard()
+        ProfileCard(
+            nickname = nickname,
+            onEditClick = { showNicknameDialog = true },
+        )
 
         Spacer(Modifier.height(20.dp))
 
@@ -209,6 +237,18 @@ fun MyPageContent(
         )
         Spacer(Modifier.height(8.dp))
         OutlinedButton(
+            onClick = { showLogoutDialog = true },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+        ) {
+            Text(
+                text = "로그아웃",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        OutlinedButton(
             onClick = { showWithdrawDialog = true },
             enabled = !isWithdrawing,
             modifier = Modifier.fillMaxWidth(),
@@ -242,6 +282,43 @@ fun MyPageContent(
             text = "탈퇴 시 풀이 기록과 스트릭, 오답노트가 모두 삭제됩니다.",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+
+    // 로그아웃 확인 다이얼로그
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = {
+                Text(
+                    text = "로그아웃 하시겠어요?",
+                    fontWeight = FontWeight.Bold,
+                )
+            },
+            text = {
+                Text(
+                    text = "로그아웃하면 다시 로그인해야 해요.",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLogoutDialog = false
+                        onLogout()
+                    },
+                ) {
+                    Text(
+                        text = "로그아웃",
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text(text = "취소")
+                }
+            },
         )
     }
 
@@ -306,6 +383,70 @@ fun MyPageContent(
             },
         )
     }
+
+    // 닉네임 수정 다이얼로그
+    if (showNicknameDialog) {
+        var inputNickname by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { showNicknameDialog = false },
+            title = {
+                Text(text = "닉네임 변경", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = inputNickname,
+                        onValueChange = { if (it.length <= 20) inputNickname = it },
+                        label = { Text("새 닉네임") },
+                        placeholder = { Text(nickname) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = {
+                            if (inputNickname.isNotBlank()) {
+                                onUpdateNickname(inputNickname)
+                                showNicknameDialog = false
+                            }
+                        }),
+                        supportingText = { Text("${inputNickname.length}/20") },
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (inputNickname.isNotBlank()) {
+                            onUpdateNickname(inputNickname)
+                            showNicknameDialog = false
+                        }
+                    },
+                    enabled = inputNickname.isNotBlank() && !isUpdatingNickname,
+                ) {
+                    if (isUpdatingNickname) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text(text = "변경", fontWeight = FontWeight.Bold, color = PinQBlue)
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showNicknameDialog = false }) {
+                    Text(text = "취소")
+                }
+            },
+        )
+    }
+
+    // 닉네임 수정 실패 에러 다이얼로그
+    if (nicknameUpdateError != null) {
+        AlertDialog(
+            onDismissRequest = onClearNicknameUpdateError,
+            title = { Text(text = "닉네임 변경 실패", fontWeight = FontWeight.Bold) },
+            text = { Text(text = nicknameUpdateError, style = MaterialTheme.typography.bodyMedium) },
+            confirmButton = {
+                TextButton(onClick = onClearNicknameUpdateError) { Text("확인") }
+            },
+        )
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -313,7 +454,11 @@ fun MyPageContent(
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun ProfileCard() {
+private fun ProfileCard(
+    nickname: String,
+    onEditClick: () -> Unit,
+) {
+    val initial = nickname.firstOrNull()?.toString() ?: "?"
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -336,23 +481,30 @@ private fun ProfileCard() {
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = "유",
+                    text = initial,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.White,
                 )
             }
             Spacer(Modifier.width(14.dp))
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "유리님",
+                    text = "${nickname}님",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
-                    text = "Google 로그인은 Phase 3에서 지원됩니다",
+                    text = "닉네임을 변경할 수 있어요",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            TextButton(onClick = onEditClick) {
+                Text(
+                    text = "변경",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = PinQBlue,
                 )
             }
         }
@@ -417,7 +569,7 @@ private fun intensityColor(intensity: Int): Color = when (intensity) {
  * 풀이 활동 카드 — 8주×7일 GitHub 스타일 히트맵.
  *
  * activityGrid: index 0 = 55일 전, index 55 = 오늘 (날짜순 나열).
- * 값: 0=활동 없음, 1~4=처음 시도 정답 수 강도.
+ * 값: 0=활동 없음, 1=시도했으나 정답 0개, 2=1개 정답, 3=2개 정답, 4=3개 이상 정답.
  *
  * 레이아웃 규칙:
  *  - 마지막 열(week=7) · 오늘 요일 행이 항상 "오늘" 셀.
@@ -616,6 +768,13 @@ private fun ActivityHeatmapCard(activityGrid: List<Int>) {
                     )
                 }
             }
+
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "ⓘ 문제는 1회만 풀 수 있어요.\n오늘 시도에서 맞힌 문제 수에 따라 색이 진해져요.",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -659,6 +818,7 @@ private fun MyPageScreenPreview() {
     }
     PinQ_frontendTheme {
         MyPageContent(
+            nickname = "유리",
             streak = 7,
             totalSolved = 28,
             correctRate = 0.75f,
@@ -673,6 +833,7 @@ private fun MyPageScreenPreview() {
 private fun MyPageEmptyPreview() {
     PinQ_frontendTheme {
         MyPageContent(
+            nickname = "유저123456",
             streak = 0,
             totalSolved = 0,
             correctRate = 0f,
