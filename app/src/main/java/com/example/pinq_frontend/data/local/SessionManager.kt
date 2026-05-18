@@ -30,7 +30,14 @@ object SessionManager {
     val token: String?      get() = _token
     val isLoggedIn: Boolean get() = !_token.isNullOrEmpty()
 
-    /** Application.onCreate 에서 한 번 호출. DataStore 에서 토큰을 복원한다. */
+    /**
+     * Application.onCreate 에서 한 번 호출. DataStore 에서 토큰을 복원한다.
+     *
+     * runBlocking 으로 메인 스레드를 잠시 블로킹한다.
+     * OkHttp 인터셉터가 토큰을 동기적으로 필요로 하기 때문에 인메모리 캐시(_token)를
+     * 앱 시작 시점에 채워야 한다. DataStore 읽기는 수 ms 수준이므로 ANR 위험은 낮지만,
+     * 향후 스플래시 화면 + isReady StateFlow 구조로 전환하면 완전히 해소할 수 있다.
+     */
     fun init(context: Context) {
         runBlocking {
             val prefs = context.applicationContext.dataStore.data.firstOrNull()
