@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.pinq_frontend.data.repository.UserStatsRepository
+import retrofit2.HttpException
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -114,8 +115,7 @@ class MyPageViewModel(private val statsRepository: UserStatsRepository) : ViewMo
                         it.copy(
                             isUpdatingNickname = false,
                             nicknameUpdateError = when {
-                                e.message?.contains("409") == true ||
-                                e.message?.contains("duplicate", ignoreCase = true) == true
+                                e is HttpException && e.code() == 409
                                     -> "이미 사용 중인 닉네임이에요"
                                 else -> e.message ?: "닉네임 변경에 실패했어요"
                             },
