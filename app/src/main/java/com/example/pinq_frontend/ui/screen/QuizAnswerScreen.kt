@@ -30,14 +30,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.IconButton
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import com.example.pinq_frontend.data.DummyQuizData
 import com.example.pinq_frontend.data.model.Quiz
 import com.example.pinq_frontend.data.model.QuizOption
 import com.example.pinq_frontend.data.model.RelatedArticle
 import com.example.pinq_frontend.data.repository.AnswerResult
+import com.example.pinq_frontend.data.repository.LibraryRepository
 import com.example.pinq_frontend.ui.theme.PinQBlue
 import com.example.pinq_frontend.ui.theme.PinQLightBlue
 import com.example.pinq_frontend.ui.theme.PinQ_frontendTheme
+import kotlinx.coroutines.launch
 
 /**
  * 퀴즈 정답/해설 화면 — Stateless View.
@@ -56,8 +65,13 @@ fun QuizAnswerScreen(
     isLast: Boolean,
     onNext: () -> Unit,
     onArticleClick: (RelatedArticle) -> Unit,
+    libraryRepository: LibraryRepository? = null,
     modifier: Modifier = Modifier,
 ) {
+    // 북마크 토글 — 채점 직후엔 서버 상태가 false 라고 가정 (첫 시도이므로).
+    var bookmarked by remember(quiz.id) { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -68,7 +82,35 @@ fun QuizAnswerScreen(
                 .weight(1f)
                 .verticalScroll(rememberScrollState()),
         ) {
-            ResultBanner(isCorrect = answer.isCorrect)
+            // 정답 배너 + ⭐ 북마크 토글
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.weight(1f)) {
+                    ResultBanner(isCorrect = answer.isCorrect)
+                }
+                if (libraryRepository != null) {
+                    Spacer(Modifier.size(8.dp))
+                    IconButton(
+                        onClick = {
+                            val next = !bookmarked
+                            bookmarked = next  // 낙관적 업데이트
+                            scope.launch {
+                                runCatching {
+                                    if (next) libraryRepository.addBookmark(quiz.id)
+                                    else libraryRepository.removeBookmark(quiz.id)
+                                }.onFailure {
+                                    bookmarked = !next  // 실패 시 롤백
+                                }
+                            }
+                        },
+                    ) {
+                        Text(
+                            text = if (bookmarked) "⭐" else "☆",
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = if (bookmarked) PinQBlue else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
             Spacer(Modifier.height(24.dp))
 
             Text(
