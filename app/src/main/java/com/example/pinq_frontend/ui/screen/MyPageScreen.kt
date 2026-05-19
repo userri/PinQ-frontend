@@ -73,6 +73,7 @@ import java.util.Calendar
 fun MyPageScreen(
     nickname: String,
     streak: Int,
+    maxStreak: Int,
     totalSolved: Int,
     correctRate: Float,
     activityGrid: List<Int>,
@@ -116,6 +117,7 @@ fun MyPageScreen(
             MyPageContent(
                 nickname = nickname,
                 streak = streak,
+                maxStreak = maxStreak,
                 totalSolved = totalSolved,
                 correctRate = correctRate,
                 activityGrid = activityGrid,
@@ -139,6 +141,7 @@ fun MyPageScreen(
 fun MyPageContent(
     nickname: String,
     streak: Int,
+    maxStreak: Int,
     totalSolved: Int,
     correctRate: Float,
     activityGrid: List<Int>,
@@ -183,7 +186,7 @@ fun MyPageContent(
 
         Spacer(Modifier.height(20.dp))
 
-        // ── 3단 통계 가로 배치 ────────────────────────────────────
+        // ── 통계 카드 ──────────────────────────────────────────
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -191,6 +194,11 @@ fun MyPageContent(
             StatCard(
                 label = "연속 학습",
                 value = "${streak}일",
+                modifier = Modifier.weight(1f),
+            )
+            StatCard(
+                label = "최고 기록",
+                value = if (maxStreak > 0) "${maxStreak}일" else "-",
                 modifier = Modifier.weight(1f),
             )
             StatCard(
@@ -820,6 +828,7 @@ private fun MyPageScreenPreview() {
         MyPageContent(
             nickname = "유리",
             streak = 7,
+            maxStreak = 14,
             totalSolved = 28,
             correctRate = 0.75f,
             activityGrid = activityGrid,
@@ -835,6 +844,7 @@ private fun MyPageEmptyPreview() {
         MyPageContent(
             nickname = "유저123456",
             streak = 0,
+            maxStreak = 0,
             totalSolved = 0,
             correctRate = 0f,
             activityGrid = emptyList(),

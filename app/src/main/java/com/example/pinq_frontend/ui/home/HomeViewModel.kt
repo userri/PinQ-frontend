@@ -48,8 +48,9 @@ class HomeViewModel(
                 it.copy(
                     isLoading = false,
                     nickname = stats?.nickname ?: "",
-                    quizCount = quizzes.size,
+                    quizCount = quizzes.count { !it.solved },
                     streak = stats?.streak ?: 0,
+                    maxStreak = stats?.maxStreak ?: 0,
                     activityGrid = stats?.activityGrid ?: emptyList(),
                 )
             }
