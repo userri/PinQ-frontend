@@ -128,9 +128,9 @@ private val bottomNavItems = listOf(
  * 퀴즈 세션 중 뒤로가기 — 세션 그래프는 살려두고 홈만 위에 쌓는다.
  *
  * popUpTo(SESSION_GRAPH) + inclusive=false 이므로 SESSION_GRAPH 엔트리는 백스택에 남는다.
- * 홈에서 "풀기"를 다시 누르면 navigate(SESSION_GRAPH)가 호출되지만,
- * launchSingleTop=true 이면 이미 스택에 있는 SESSION_GRAPH 를 재사용한다.
- * → QuizSessionViewModel 재생성 없음 → quizzes/answerHistory 유지.
+ * 홈에서 "풀기"를 다시 누르면 onStartQuiz 가 popUpTo(HOME) 로 HOME 위를 정리한 뒤
+ * SESSION_GRAPH 로 재진입하므로 QuizSessionViewModel 이 재생성되지 않고
+ * quizzes/answerHistory 가 그대로 유지된다.
  */
 private fun NavHostController.pauseSessionToHome() {
     navigate(FinQRoutes.HOME) {
@@ -223,10 +223,12 @@ fun FinQNavHost(
                     error = state.error,
                     nickname = state.nickname,
                     onStartQuiz = {
-                        // SESSION_GRAPH 가 이미 백스택에 살아있으면 재사용,
-                        // 없으면 새로 생성. launchSingleTop 으로 중복 스택 방지.
+                        // HOME 위에 쌓인 것(이전 SESSION_GRAPH 포함)을 모두 정리하고
+                        // SESSION_GRAPH 로 진입한다. HOME 은 백스택에 유지.
+                        // launchSingleTop 만으로는 최상단이 HOME 일 때 중복을 막지 못하므로
+                        // popUpTo 로 명시적으로 정리한다.
                         navController.navigate(FinQRoutes.SESSION_GRAPH) {
-                            launchSingleTop = true
+                            popUpTo(FinQRoutes.HOME) { inclusive = false }
                         }
                     },
                     onRetry = homeVm::loadQuizInfo,
@@ -368,9 +370,13 @@ fun FinQNavHost(
                     DoneRoute(
                         viewModel = vm,
                         onGoHome = {
-                            // 세션 완료 — 이때는 SESSION_GRAPH 를 완전히 팝해도 됨.
+                            // 세션 완료 — HOME 위의 모든 것(세션 그래프 포함)을 제거하고 HOME 으로.
+                            // popUpTo(HOME) 로 HOME 자체는 유지하며 그 위를 전소한다.
+                            // HOME 이 여러 개이면 가장 가까운 HOME 까지만 정리되는데,
+                            // onStartQuiz 에서 popUpTo(HOME) 로 SESSION 진입 전 HOME 을 하나만 남기므로
+                            // 실제로는 HOME 이 중복으로 쌓이지 않는다.
                             navController.navigate(FinQRoutes.HOME) {
-                                popUpTo(FinQRoutes.HOME) { inclusive = true }
+                                popUpTo(FinQRoutes.HOME) { inclusive = false }
                             }
                         },
                         onRestart = {
