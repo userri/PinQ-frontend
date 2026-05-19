@@ -1,5 +1,6 @@
 package com.example.pinq_frontend.data.remote
 
+import android.content.Context
 import com.example.pinq_frontend.BuildConfig
 import com.example.pinq_frontend.data.local.SessionManager
 import com.example.pinq_frontend.data.remote.dto.RefreshRequest
@@ -28,6 +29,9 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 object NetworkModule {
 
     private val BASE_URL get() = BuildConfig.BASE_URL
+    private const val MAX_AUTH_RESPONSE_COUNT = 2
+
+    private val refreshLock = Any()
 
     private val moshi: Moshi by lazy {
         Moshi.Builder()
@@ -66,34 +70,55 @@ object NetworkModule {
     /**
      * 401 응답 시 refresh token으로 access token을 재발급하고 요청을 재시도한다.
      *
-     * - refresh token도 없거나 재발급 실패 시 null을 반환 → 로그인 화면으로 유도.
-     * - 같은 요청에 대해 재시도를 반복하지 않도록 응답 횟수를 체크한다.
+     * - 같은 요청은 priorResponse 체인 기준 1회만 재시도한다.
+     * - 동시 401 응답은 refreshLock으로 직렬화해 refresh token rotation 충돌을 막는다.
+     * - refresh token이 없거나 재발급에 실패하면 세션을 삭제하고 null을 반환한다.
      */
-    private fun tokenAuthenticator(context: android.content.Context) = object : Authenticator {
-        override fun authenticate(route: Route?, response: Response): Request? {
-            // 이미 재시도한 요청이면 포기 (무한 루프 방지)
-            if (response.request.header("X-Retry-Auth") != null) return null
+    private fun tokenAuthenticator(context: Context): Authenticator {
+        val appContext = context.applicationContext
+        return object : Authenticator {
+            override fun authenticate(route: Route?, response: Response): Request? {
+                if (response.responseCount() >= MAX_AUTH_RESPONSE_COUNT) return null
 
-            val refreshToken = SessionManager.refreshToken ?: return null
-
-            // 동기 호출 — Authenticator는 백그라운드 스레드에서 실행된다
-            val newTokens = runCatching {
-                kotlinx.coroutines.runBlocking {
-                    authApiForRefresh.refresh(RefreshRequest(refreshToken))
+                val requestToken = response.request.bearerToken()
+                val currentToken = SessionManager.accessToken
+                if (!currentToken.isNullOrEmpty() && currentToken != requestToken) {
+                    return response.request.withBearerToken(currentToken)
                 }
-            }.getOrNull() ?: return null
 
-            SessionManager.updateTokensSync(context, newTokens.accessToken, newTokens.refreshToken)
+                return synchronized(refreshLock) {
+                    val latestToken = SessionManager.accessToken
+                    if (!latestToken.isNullOrEmpty() && latestToken != requestToken) {
+                        return@synchronized response.request.withBearerToken(latestToken)
+                    }
 
-            return response.request.newBuilder()
-                .header("Authorization", "Bearer ${newTokens.accessToken}")
-                .header("X-Retry-Auth", "true")
-                .build()
+                    val refreshToken = SessionManager.refreshToken
+                    if (refreshToken.isNullOrEmpty()) {
+                        SessionManager.clearSessionSync(appContext)
+                        return@synchronized null
+                    }
+
+                    // 동기 호출 — Authenticator는 백그라운드 스레드에서 실행된다.
+                    val newTokens = runCatching {
+                        kotlinx.coroutines.runBlocking {
+                            authApiForRefresh.refresh(RefreshRequest(refreshToken))
+                        }
+                    }.getOrNull()
+
+                    if (newTokens == null) {
+                        SessionManager.clearSessionSync(appContext)
+                        return@synchronized null
+                    }
+
+                    SessionManager.updateTokensSync(appContext, newTokens.accessToken, newTokens.refreshToken)
+                    response.request.withBearerToken(newTokens.accessToken)
+                }
+            }
         }
     }
 
-    /** OkHttp 클라이언트 팩토리 — context가 필요해서 Application.onCreate에서 초기화한다. */
-    fun buildOkHttpClient(context: android.content.Context): OkHttpClient =
+    /** OkHttp 클라이언트 팩토리 — Application context 만 캡처하도록 init 내부에서만 호출한다. */
+    private fun buildOkHttpClient(context: Context): OkHttpClient =
         OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
             .authenticator(tokenAuthenticator(context))
@@ -111,10 +136,11 @@ object NetworkModule {
     private lateinit var retrofit: Retrofit
 
     /** Application.onCreate에서 반드시 호출 */
-    fun init(context: android.content.Context) {
+    fun init(context: Context) {
+        val appContext = context.applicationContext
         retrofit = Retrofit.Builder()
             .baseUrl(BASE_URL)
-            .client(buildOkHttpClient(context))
+            .client(buildOkHttpClient(appContext))
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
     }
@@ -123,4 +149,24 @@ object NetworkModule {
     val userApi:    UserApi    by lazy { retrofit.create(UserApi::class.java) }
     val authApi:    AuthApi    by lazy { retrofit.create(AuthApi::class.java) }
     val libraryApi: LibraryApi by lazy { retrofit.create(LibraryApi::class.java) }
+
+    private fun Response.responseCount(): Int {
+        var count = 1
+        var prior = priorResponse
+        while (prior != null) {
+            count++
+            prior = prior.priorResponse
+        }
+        return count
+    }
+
+    private fun Request.bearerToken(): String? =
+        header("Authorization")
+            ?.takeIf { it.startsWith("Bearer ") }
+            ?.removePrefix("Bearer ")
+
+    private fun Request.withBearerToken(token: String): Request =
+        newBuilder()
+            .header("Authorization", "Bearer $token")
+            .build()
 }
