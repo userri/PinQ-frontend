@@ -127,15 +127,38 @@ private val bottomNavItems = listOf(
 /**
  * 퀴즈 세션 중 뒤로가기 — 세션 그래프는 살려두고 홈만 위에 쌓는다.
  *
- * popUpTo(SESSION_GRAPH) + inclusive=false 이므로 SESSION_GRAPH 엔트리는 백스택에 남는다.
- * 홈에서 "풀기"를 다시 누르면 onStartQuiz 가 popUpTo(HOME) 로 HOME 위를 정리한 뒤
- * SESSION_GRAPH 로 재진입하므로 QuizSessionViewModel 이 재생성되지 않고
- * quizzes/answerHistory 가 그대로 유지된다.
+ * 백스택: HOME → SESSION_GRAPH → HOME
+ * 이후 onStartQuiz 는 resumeOrStartSession() 으로 SESSION_GRAPH 로 복귀하므로
+ * SESSION_GRAPH 엔트리는 재생성되지 않고 QuizSessionViewModel 상태가 유지된다.
  */
 private fun NavHostController.pauseSessionToHome() {
     navigate(FinQRoutes.HOME) {
         popUpTo(FinQRoutes.SESSION_GRAPH) { inclusive = false }
         launchSingleTop = true
+    }
+}
+
+/**
+ * 세션 시작 또는 복귀 — 백스택에 SESSION_GRAPH 가 이미 있으면 복귀, 없으면 신규 생성.
+ *
+ * pauseSessionToHome() 이후 백스택: HOME → SESSION_GRAPH → HOME
+ * 여기서 popBackStack(SESSION_GRAPH, inclusive=false) 하면 위에 쌓인 HOME 만 제거되어
+ * SESSION_GRAPH 가 상단으로 노쉰된다. ViewModel 재생성 없음.
+ *
+ * SESSION_GRAPH 가 없으면(실제 첢 시작 또는 컴플리티 후 재진입) navigate 로 신규 생성.
+ */
+private fun NavHostController.resumeOrStartSession() {
+    val hasSession = try {
+        getBackStackEntry(FinQRoutes.SESSION_GRAPH)
+        true
+    } catch (e: IllegalArgumentException) {
+        false
+    }
+    if (hasSession) {
+        // SESSION_GRAPH 위에 쌓인 것(중간 이탈 시 HOME)만 제거하고 복귀.
+        popBackStack(FinQRoutes.SESSION_GRAPH, inclusive = false)
+    } else {
+        navigate(FinQRoutes.SESSION_GRAPH)
     }
 }
 
@@ -223,13 +246,9 @@ fun FinQNavHost(
                     error = state.error,
                     nickname = state.nickname,
                     onStartQuiz = {
-                        // HOME 위에 쌓인 것(이전 SESSION_GRAPH 포함)을 모두 정리하고
-                        // SESSION_GRAPH 로 진입한다. HOME 은 백스택에 유지.
-                        // launchSingleTop 만으로는 최상단이 HOME 일 때 중복을 막지 못하므로
-                        // popUpTo 로 명시적으로 정리한다.
-                        navController.navigate(FinQRoutes.SESSION_GRAPH) {
-                            popUpTo(FinQRoutes.HOME) { inclusive = false }
-                        }
+                        // SESSION_GRAPH 가 이미 백스택에 있으면 복귀(중간 이탈 케이스),
+                        // 없으면 신규 생성(첫 진입 또는 컴플리티 후 재풌).
+                        navController.resumeOrStartSession()
                     },
                     onRetry = homeVm::loadQuizInfo,
                     onMyPage = {
@@ -370,13 +389,11 @@ fun FinQNavHost(
                     DoneRoute(
                         viewModel = vm,
                         onGoHome = {
-                            // 세션 완료 — HOME 위의 모든 것(세션 그래프 포함)을 제거하고 HOME 으로.
-                            // popUpTo(HOME) 로 HOME 자체는 유지하며 그 위를 전소한다.
-                            // HOME 이 여러 개이면 가장 가까운 HOME 까지만 정리되는데,
-                            // onStartQuiz 에서 popUpTo(HOME) 로 SESSION 진입 전 HOME 을 하나만 남기므로
-                            // 실제로는 HOME 이 중복으로 쌓이지 않는다.
+                            // 세션 컴플리티 — SESSION_GRAPH 를 inclusive=true 로 완전히 제거하고 HOME 으로.
+                            // 이후 홈에서 "풀기" 시 resumeOrStartSession() 이 SESSION_GRAPH 를 감지하지 못해
+                            // 신규 navigate 하며 새 세션이 시작된다.
                             navController.navigate(FinQRoutes.HOME) {
-                                popUpTo(FinQRoutes.HOME) { inclusive = false }
+                                popUpTo(FinQRoutes.SESSION_GRAPH) { inclusive = true }
                             }
                         },
                         onRestart = {
