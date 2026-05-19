@@ -3,6 +3,7 @@ package com.example.pinq_frontend.data.repository
 data class UserStats(
     val nickname: String,
     val streak: Int,
+    val maxStreak: Int,
     val totalSolved: Int,
     val correctRate: Float,
     val activityGrid: List<Int>,

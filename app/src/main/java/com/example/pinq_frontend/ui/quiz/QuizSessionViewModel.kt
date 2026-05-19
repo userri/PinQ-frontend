@@ -14,15 +14,10 @@ import kotlinx.coroutines.launch
 /**
  * 퀴즈 세션 전체를 책임지는 ViewModel.
  *
- * 책임:
- *  - 오늘의 퀴즈 로딩
- *  - 사용자 옵션 선택 / 정답 제출 / 다음 문제 이동 / 재시작
- *  - 누적 정답 개수 관리
- *
- * Phase 4 메모:
- *  - 오답노트/풀이이력은 채점 시점에 서버 (UserQuizAttempt) 에 자동 기록되므로
- *    클라이언트가 별도로 SharedPreferences 등에 저장하지 않는다.
- *  - 따라서 saveWrongNotes() 같은 별도 영구화 메서드가 더 이상 필요 없다.
+ * [loadQuizzesIfNeeded] — quizzes 가 비어있을 때만 서버에서 로드한다.
+ * 세션 중간에 홈으로 나갔다 돌아와도 ViewModel 인스턴스가 살아있으면
+ * 이미 로드된 quizzes/answerHistory 를 그대로 유지한다.
+ * (init 에서 무조건 loadQuizzes() 를 호출하지 않는 이유)
  */
 class QuizSessionViewModel(
     private val quizRepository: QuizRepository,
@@ -32,11 +27,25 @@ class QuizSessionViewModel(
     val uiState: StateFlow<QuizSessionUiState> = _uiState.asStateFlow()
 
     init {
-        loadQuizzes()
+        loadQuizzesIfNeeded()
     }
 
-    /** 오늘의 퀴즈를 불러온다. 실패 시 error 메시지를 상태에 담아둔다. */
+    /**
+     * quizzes 가 이미 로드되어 있으면 아무것도 하지 않는다.
+     * 세션 재진입(홈 → 풀기) 시 문제 수가 줄어드는 현상을 방지한다.
+     */
+    fun loadQuizzesIfNeeded() {
+        if (_uiState.value.quizzes.isNotEmpty()) return
+        fetchQuizzes()
+    }
+
+    /** 네트워크 오류 후 사용자가 명시적으로 재시도할 때만 호출. */
     fun loadQuizzes() {
+        fetchQuizzes()
+    }
+
+    /** 실제 네트워크 요청과 상태 갱신을 담당하는 내부 헬퍼. */
+    private fun fetchQuizzes() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             runCatching { quizRepository.getTodayQuizzes() }
@@ -51,21 +60,14 @@ class QuizSessionViewModel(
         }
     }
 
-    /** 사용자가 옵션을 탭했을 때 호출. */
     fun selectOption(optionId: Long) {
         _uiState.update { it.copy(selectedOptionId = optionId) }
     }
 
-    /**
-     * 현재 선택된 옵션으로 정답 제출.
-     * 결과는 [QuizSessionUiState.lastAnswer] 로 흘러간다.
-     * 정답이면 [QuizSessionUiState.correctCount] 가 1 증가.
-     */
     fun submitAnswer() {
         val state = _uiState.value
         val quiz = state.currentQuiz ?: return
         val selected = state.selectedOptionId ?: return
-        // 이미 제출된 문제는 재제출 차단 (네트워크 중복 호출 방지)
         if (state.lastAnswer != null || state.isSubmitting) return
 
         viewModelScope.launch {
@@ -94,25 +96,17 @@ class QuizSessionViewModel(
         }
     }
 
-    /**
-     * 다음 문제로 이동.
-     * 마지막 문제에서는 인덱스를 유지한다 (화면 전환은 NavController 가 isLastQuiz 로 판단).
-     */
     fun moveToNext() {
         _uiState.update {
-            if (it.isLastQuiz) {
-                it
-            } else {
-                it.copy(
-                    currentIndex = it.currentIndex + 1,
-                    selectedOptionId = null,
-                    lastAnswer = null,
-                )
-            }
+            if (it.isLastQuiz) it
+            else it.copy(
+                currentIndex = it.currentIndex + 1,
+                selectedOptionId = null,
+                lastAnswer = null,
+            )
         }
     }
 
-    /** 처음부터 다시 풀기. 로드된 퀴즈 목록은 유지. */
     fun restart() {
         _uiState.update {
             it.copy(

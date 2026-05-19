@@ -13,6 +13,8 @@ data class Quiz(
     val category: Category,
     val question: String,
     val options: List<QuizOption>,
+    /** 사용자가 이미 풀었는지 여부. 백엔드 UserQuizAttempt 기준. */
+    val solved: Boolean = false,
     /** Phase 2 부터 API 모드에서는 의미 없음 (placeholder). 더미 모드 전용. */
     val correctOptionId: Long = 0L,
     /** Phase 2 부터 API 모드에서는 의미 없음 (placeholder). */
