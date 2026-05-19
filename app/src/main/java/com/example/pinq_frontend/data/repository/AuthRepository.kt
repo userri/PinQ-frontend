@@ -6,6 +6,7 @@ import com.example.pinq_frontend.data.local.SessionManager
 import com.example.pinq_frontend.data.remote.AuthApi
 import com.example.pinq_frontend.data.remote.dto.GoogleLoginRequest
 import com.example.pinq_frontend.data.remote.dto.KakaoLoginRequest
+import com.example.pinq_frontend.data.remote.dto.LogoutRequest
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.kakao.sdk.auth.model.OAuthToken
@@ -37,7 +38,7 @@ class AuthRepository(
     suspend fun loginWithKakao(context: Context): Result<String> = runCatching {
         val token = getKakaoToken(context)
         val response = authApi.loginWithKakao(KakaoLoginRequest(token.accessToken))
-        SessionManager.saveSession(context, response.accessToken)
+        SessionManager.saveSession(context, response.accessToken, response.refreshToken, response.userId)
         response.nickname
     }
 
@@ -95,15 +96,18 @@ class AuthRepository(
         val credential = GoogleIdTokenCredential.createFrom(result.credential.data)
 
         val response = authApi.loginWithGoogle(GoogleLoginRequest(credential.idToken))
-        SessionManager.saveSession(context, response.accessToken)
+        SessionManager.saveSession(context, response.accessToken, response.refreshToken, response.userId)
         response.nickname
     }
 
     // ── 로그아웃 ─────────────────────────────────────────────────────────────
 
     suspend fun logout(context: Context) {
+        // 서버 측 refresh token 삭제
+        SessionManager.refreshToken?.let { token ->
+            runCatching { authApi.logout(LogoutRequest(token)) }
+        }
         SessionManager.clearSession(context)
-        // 카카오 로컬 토큰도 삭제 (선택적 — 서버 로그아웃은 생략)
         runCatching { UserApiClient.instance.logout { } }
     }
 }
