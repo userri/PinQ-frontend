@@ -36,22 +36,16 @@ class QuizSessionViewModel(
      */
     fun loadQuizzesIfNeeded() {
         if (_uiState.value.quizzes.isNotEmpty()) return
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
-            runCatching { quizRepository.getTodayQuizzes() }
-                .onSuccess { quizzes ->
-                    _uiState.update { it.copy(isLoading = false, quizzes = quizzes) }
-                }
-                .onFailure { e ->
-                    _uiState.update {
-                        it.copy(isLoading = false, error = e.message ?: "Unknown error")
-                    }
-                }
-        }
+        fetchQuizzes()
     }
 
     /** 네트워크 오류 후 사용자가 명시적으로 재시도할 때만 호출. */
     fun loadQuizzes() {
+        fetchQuizzes()
+    }
+
+    /** 실제 네트워크 요청과 상태 갱신을 담당하는 내부 헬퍼. */
+    private fun fetchQuizzes() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             runCatching { quizRepository.getTodayQuizzes() }
