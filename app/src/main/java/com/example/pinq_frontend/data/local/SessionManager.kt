@@ -12,52 +12,71 @@ import kotlinx.coroutines.runBlocking
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "pinq_session")
 
 /**
- * JWT 액세스 토큰을 DataStore 에 영구 저장하는 싱글톤.
+ * Access/Refresh 토큰을 DataStore에 영구 저장하는 싱글톤.
  *
- * OkHttp Interceptor 에서 동기적으로 토큰이 필요하므로
- * 인메모리 캐시(_token)를 함께 유지한다.
+ * OkHttp Authenticator에서 동기적으로 토큰이 필요하므로
+ * 인메모리 캐시(_accessToken, _refreshToken, _userId)를 함께 유지한다.
  *
- * context 는 저장하지 않고 각 메서드 호출 시 직접 전달받는다.
- *
- * init(context) 를 Application.onCreate 에서 반드시 호출할 것.
+ * init(context)를 Application.onCreate에서 반드시 호출할 것.
  */
 object SessionManager {
 
-    private val KEY_TOKEN = stringPreferencesKey("jwt_token")
+    private val KEY_ACCESS_TOKEN   = stringPreferencesKey("jwt_token")
+    private val KEY_REFRESH_TOKEN  = stringPreferencesKey("refresh_token")
+    private val KEY_USER_ID        = stringPreferencesKey("user_id")
 
-    @Volatile private var _token: String? = null
+    @Volatile private var _accessToken:  String? = null
+    @Volatile private var _refreshToken: String? = null
+    @Volatile private var _userId:       Long?   = null
 
-    val token: String?      get() = _token
-    val isLoggedIn: Boolean get() = !_token.isNullOrEmpty()
+    val accessToken:  String?      get() = _accessToken
+    val refreshToken: String?      get() = _refreshToken
+    val userId:       Long?        get() = _userId
+    val isLoggedIn:   Boolean      get() = !_accessToken.isNullOrEmpty()
 
-    /**
-     * Application.onCreate 에서 한 번 호출. DataStore 에서 토큰을 복원한다.
-     *
-     * runBlocking 으로 메인 스레드를 잠시 블로킹한다.
-     * OkHttp 인터셉터가 토큰을 동기적으로 필요로 하기 때문에 인메모리 캐시(_token)를
-     * 앱 시작 시점에 채워야 한다. DataStore 읽기는 수 ms 수준이므로 ANR 위험은 낮지만,
-     * 향후 스플래시 화면 + isReady StateFlow 구조로 전환하면 완전히 해소할 수 있다.
-     */
+    /** Application.onCreate에서 한 번 호출. DataStore에서 세션을 복원한다. */
     fun init(context: Context) {
         runBlocking {
             val prefs = context.applicationContext.dataStore.data.firstOrNull()
-            _token = prefs?.get(KEY_TOKEN)
+            _accessToken  = prefs?.get(KEY_ACCESS_TOKEN)
+            _refreshToken = prefs?.get(KEY_REFRESH_TOKEN)
+            _userId       = prefs?.get(KEY_USER_ID)?.toLongOrNull()
         }
     }
 
     /** 로그인 성공 후 토큰 저장. */
-    suspend fun saveSession(context: Context, token: String) {
-        _token = token
+    suspend fun saveSession(context: Context, accessToken: String, refreshToken: String, userId: Long) {
+        _accessToken  = accessToken
+        _refreshToken = refreshToken
+        _userId       = userId
         context.applicationContext.dataStore.edit { prefs ->
-            prefs[KEY_TOKEN] = token
+            prefs[KEY_ACCESS_TOKEN]  = accessToken
+            prefs[KEY_REFRESH_TOKEN] = refreshToken
+            prefs[KEY_USER_ID]       = userId.toString()
         }
     }
 
-    /** 로그아웃 / 회원탈퇴 시 토큰 삭제. */
+    /** 재발급 후 access + refresh token만 갱신 (동기 버전 — Authenticator용). */
+    fun updateTokensSync(context: Context, accessToken: String, refreshToken: String) {
+        _accessToken  = accessToken
+        _refreshToken = refreshToken
+        runBlocking {
+            context.applicationContext.dataStore.edit { prefs ->
+                prefs[KEY_ACCESS_TOKEN]  = accessToken
+                prefs[KEY_REFRESH_TOKEN] = refreshToken
+            }
+        }
+    }
+
+    /** 로그아웃 / 회원탈퇴 시 세션 전체 삭제. */
     suspend fun clearSession(context: Context) {
-        _token = null
+        _accessToken  = null
+        _refreshToken = null
+        _userId       = null
         context.applicationContext.dataStore.edit { prefs ->
-            prefs.remove(KEY_TOKEN)
+            prefs.remove(KEY_ACCESS_TOKEN)
+            prefs.remove(KEY_REFRESH_TOKEN)
+            prefs.remove(KEY_USER_ID)
         }
     }
 }
