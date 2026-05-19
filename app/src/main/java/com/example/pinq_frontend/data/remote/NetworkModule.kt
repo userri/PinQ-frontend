@@ -1,13 +1,18 @@
 package com.example.pinq_frontend.data.remote
 
+import android.content.Context
 import com.example.pinq_frontend.BuildConfig
 import com.example.pinq_frontend.data.local.SessionManager
+import com.example.pinq_frontend.data.remote.dto.RefreshRequest
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import java.util.concurrent.TimeUnit
+import okhttp3.Authenticator
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
+import okhttp3.Route
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
@@ -23,31 +28,100 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 //     PC IP 찾기 (macOS): ipconfig getifaddr en0
 object NetworkModule {
 
-    // base.url=http://192.168.x.x:8080/ 를 local.properties 에 설정하면 자동 반영.
-    // 미설정 시 adb reverse tcp:8080 tcp:8080 방식으로 localhost:8080 사용.
     private val BASE_URL get() = BuildConfig.BASE_URL
+    private const val MAX_AUTH_RESPONSE_COUNT = 2
+
+    private val refreshLock = Any()
+
+    private val moshi: Moshi by lazy {
+        Moshi.Builder()
+            .add(KotlinJsonAdapterFactory())
+            .build()
+    }
 
     /**
-     * JWT 인터셉터 — SessionManager 에 토큰이 있으면 모든 요청에 Bearer 헤더를 추가한다.
-     * /api/auth/ 하위 엔드포인트는 토큰 없이도 동작하므로 특별 처리 불필요.
+     * access token 재발급 전용 Retrofit — Authenticator 내부에서 사용.
+     * okHttpClient와 분리해서 순환 참조를 방지한다.
+     */
+    private val authRetrofit: Retrofit by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(OkHttpClient.Builder().build())
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
+            .build()
+    }
+    private val authApiForRefresh: AuthApi by lazy { authRetrofit.create(AuthApi::class.java) }
+
+    /**
+     * JWT 인터셉터 — SessionManager에 토큰이 있으면 모든 요청에 Bearer 헤더를 추가한다.
      */
     private val authInterceptor = Interceptor { chain ->
-        val original: Request = chain.request()
-        val token = SessionManager.token
+        val token = SessionManager.accessToken
         val request = if (token != null) {
-            original.newBuilder()
+            chain.request().newBuilder()
                 .header("Authorization", "Bearer $token")
                 .build()
         } else {
-            original
+            chain.request()
         }
         chain.proceed(request)
     }
 
-    /** OkHttp 클라이언트 — JWT 인터셉터 + 로깅 포함. */
-    private val okHttpClient: OkHttpClient by lazy {
+    /**
+     * 401 응답 시 refresh token으로 access token을 재발급하고 요청을 재시도한다.
+     *
+     * - 같은 요청은 priorResponse 체인 기준 1회만 재시도한다.
+     * - 동시 401 응답은 refreshLock으로 직렬화해 refresh token rotation 충돌을 막는다.
+     * - refresh token이 없거나 재발급에 실패하면 세션을 삭제하고 null을 반환한다.
+     */
+    private fun tokenAuthenticator(context: Context): Authenticator {
+        val appContext = context.applicationContext
+        return object : Authenticator {
+            override fun authenticate(route: Route?, response: Response): Request? {
+                if (response.responseCount() >= MAX_AUTH_RESPONSE_COUNT) return null
+
+                val requestToken = response.request.bearerToken()
+                val currentToken = SessionManager.accessToken
+                if (!currentToken.isNullOrEmpty() && currentToken != requestToken) {
+                    return response.request.withBearerToken(currentToken)
+                }
+
+                return synchronized(refreshLock) {
+                    val latestToken = SessionManager.accessToken
+                    if (!latestToken.isNullOrEmpty() && latestToken != requestToken) {
+                        return@synchronized response.request.withBearerToken(latestToken)
+                    }
+
+                    val refreshToken = SessionManager.refreshToken
+                    if (refreshToken.isNullOrEmpty()) {
+                        SessionManager.clearSessionSync(appContext)
+                        return@synchronized null
+                    }
+
+                    // 동기 호출 — Authenticator는 백그라운드 스레드에서 실행된다.
+                    val newTokens = runCatching {
+                        kotlinx.coroutines.runBlocking {
+                            authApiForRefresh.refresh(RefreshRequest(refreshToken))
+                        }
+                    }.getOrNull()
+
+                    if (newTokens == null) {
+                        SessionManager.clearSessionSync(appContext)
+                        return@synchronized null
+                    }
+
+                    SessionManager.updateTokensSync(appContext, newTokens.accessToken, newTokens.refreshToken)
+                    response.request.withBearerToken(newTokens.accessToken)
+                }
+            }
+        }
+    }
+
+    /** OkHttp 클라이언트 팩토리 — Application context 만 캡처하도록 init 내부에서만 호출한다. */
+    private fun buildOkHttpClient(context: Context): OkHttpClient =
         OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
+            .authenticator(tokenAuthenticator(context))
             .apply {
                 if (BuildConfig.DEBUG) {
                     addInterceptor(HttpLoggingInterceptor().apply {
@@ -58,24 +132,41 @@ object NetworkModule {
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(10, TimeUnit.SECONDS)
             .build()
-    }
 
-    private val moshi: Moshi by lazy {
-        Moshi.Builder()
-            .add(KotlinJsonAdapterFactory())
-            .build()
-    }
+    private lateinit var retrofit: Retrofit
 
-    private val retrofit: Retrofit by lazy {
-        Retrofit.Builder()
+    /** Application.onCreate에서 반드시 호출 */
+    fun init(context: Context) {
+        val appContext = context.applicationContext
+        retrofit = Retrofit.Builder()
             .baseUrl(BASE_URL)
-            .client(okHttpClient)
+            .client(buildOkHttpClient(appContext))
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
     }
 
-    val quizApi: QuizApi by lazy { retrofit.create(QuizApi::class.java) }
-    val userApi: UserApi by lazy { retrofit.create(UserApi::class.java) }
-    val authApi: AuthApi by lazy { retrofit.create(AuthApi::class.java) }
+    val quizApi:    QuizApi    by lazy { retrofit.create(QuizApi::class.java) }
+    val userApi:    UserApi    by lazy { retrofit.create(UserApi::class.java) }
+    val authApi:    AuthApi    by lazy { retrofit.create(AuthApi::class.java) }
     val libraryApi: LibraryApi by lazy { retrofit.create(LibraryApi::class.java) }
+
+    private fun Response.responseCount(): Int {
+        var count = 1
+        var prior = priorResponse
+        while (prior != null) {
+            count++
+            prior = prior.priorResponse
+        }
+        return count
+    }
+
+    private fun Request.bearerToken(): String? =
+        header("Authorization")
+            ?.takeIf { it.startsWith("Bearer ") }
+            ?.removePrefix("Bearer ")
+
+    private fun Request.withBearerToken(token: String): Request =
+        newBuilder()
+            .header("Authorization", "Bearer $token")
+            .build()
 }
