@@ -11,6 +11,7 @@ package com.example.pinq_frontend.data.remote.dto
 data class UserStatsApiResponse(
     val nickname: String,
     val streak: Int,
+    val maxStreak: Int,
     val totalSolved: Int,
     val correctRate: Float,
     val activityGrid: List<Int>,
