@@ -79,4 +79,18 @@ object SessionManager {
             prefs.remove(KEY_USER_ID)
         }
     }
+
+    /** 세션 전체 삭제 (동기 버전 — Authenticator용). */
+    fun clearSessionSync(context: Context) {
+        _accessToken  = null
+        _refreshToken = null
+        _userId       = null
+        runBlocking {
+            context.applicationContext.dataStore.edit { prefs ->
+                prefs.remove(KEY_ACCESS_TOKEN)
+                prefs.remove(KEY_REFRESH_TOKEN)
+                prefs.remove(KEY_USER_ID)
+            }
+        }
+    }
 }
