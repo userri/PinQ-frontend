@@ -2,6 +2,7 @@ package com.example.pinq_frontend
 
 import android.app.Application
 import com.example.pinq_frontend.data.local.SessionManager
+import com.example.pinq_frontend.data.remote.NetworkModule
 import com.kakao.sdk.common.KakaoSdk
 
 /**
@@ -13,6 +14,7 @@ class PinQApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         SessionManager.init(this)
+        NetworkModule.init(this)
         // Kakao SDK 초기화 — BuildConfig 에서 네이티브 앱키 주입
         KakaoSdk.init(this, BuildConfig.KAKAO_NATIVE_APP_KEY)
     }
