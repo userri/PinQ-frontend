@@ -15,8 +15,20 @@ data class GoogleLoginRequest(
 
 @JsonClass(generateAdapter = true)
 data class TokenResponse(
-    @Json(name = "accessToken") val accessToken: String,
-    @Json(name = "tokenType")   val tokenType: String,
-    @Json(name = "expiresIn")   val expiresIn: Long,
-    @Json(name = "nickname")    val nickname: String,
+    @Json(name = "userId")       val userId: Long,
+    @Json(name = "accessToken")  val accessToken: String,
+    @Json(name = "refreshToken") val refreshToken: String,
+    @Json(name = "tokenType")    val tokenType: String,
+    @Json(name = "expiresIn")    val expiresIn: Long,
+    @Json(name = "nickname")     val nickname: String,
+)
+
+@JsonClass(generateAdapter = true)
+data class RefreshRequest(
+    @Json(name = "refreshToken") val refreshToken: String,
+)
+
+@JsonClass(generateAdapter = true)
+data class LogoutRequest(
+    @Json(name = "refreshToken") val refreshToken: String,
 )
