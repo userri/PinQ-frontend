@@ -56,6 +56,7 @@ import java.util.Calendar
 fun HomeScreen(
     quizCount: Int,
     streak: Int,
+    maxStreak: Int,
     activityGrid: List<Int>,
     isLoading: Boolean,
     error: String?,
@@ -129,6 +130,7 @@ fun HomeScreen(
         }
         WeeklyStreakRow(
             streak = streak,
+            maxStreak = maxStreak,
             weekActivity = weekActivity,
             todayDow = todayDowForGrid,
         )
@@ -151,8 +153,9 @@ fun HomeScreen(
 @Composable
 private fun WeeklyStreakRow(
     streak: Int,
-    weekActivity: List<Int>,  // index 0 = 월, index 6 = 일. 0=활동 없음, 1~4=강도.
-    todayDow: Int,             // 0=월 ~ 6=일
+    maxStreak: Int,
+    weekActivity: List<Int>,
+    todayDow: Int,
 ) {
     // 오늘 아직 풀지 않았는지 여부 — weekActivity 의 오늘 요일 인덱스 강도로 추정.
     // (서버가 별도 solvedToday 필드를 내려주지 않으므로 데이터로 추정.)
@@ -209,6 +212,24 @@ private fun WeeklyStreakRow(
                         }
                     }
                 }
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "최고 기록",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = if (maxStreak > 0) "🏆 ${maxStreak}일" else "-",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = if (maxStreak > 0) PinQBlue else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             Spacer(Modifier.height(12.dp))
             Row(
@@ -376,6 +397,7 @@ private fun HomeScreenPreview() {
         HomeScreen(
             quizCount = 4,
             streak = 3,
+            maxStreak = 7,
             activityGrid = List(56) { i -> if (i % 3 == 0) 2 else 0 },
             isLoading = false,
             error = null,
@@ -392,6 +414,7 @@ private fun HomeScreenLoadingPreview() {
         HomeScreen(
             quizCount = 0,
             streak = 0,
+            maxStreak = 0,
             activityGrid = emptyList(),
             isLoading = true,
             error = null,
@@ -408,6 +431,7 @@ private fun HomeScreenErrorPreview() {
         HomeScreen(
             quizCount = 0,
             streak = 0,
+            maxStreak = 0,
             activityGrid = emptyList(),
             isLoading = false,
             error = "네트워크 연결을 확인해주세요",

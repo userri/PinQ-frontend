@@ -217,6 +217,7 @@ fun FinQNavHost(
                 HomeScreen(
                     quizCount = state.quizCount,
                     streak = state.streak,
+                    maxStreak = state.maxStreak,
                     activityGrid = state.activityGrid,
                     isLoading = state.isLoading,
                     error = state.error,
@@ -282,6 +283,7 @@ fun FinQNavHost(
                 MyPageScreen(
                     nickname = state.nickname,
                     streak = state.streak,
+                    maxStreak = state.maxStreak,
                     totalSolved = state.totalSolved,
                     correctRate = state.correctRate,
                     activityGrid = state.activityGrid,

@@ -50,6 +50,7 @@ class HomeViewModel(
                     nickname = stats?.nickname ?: "",
                     quizCount = quizzes.size,
                     streak = stats?.streak ?: 0,
+                    maxStreak = stats?.maxStreak ?: 0,
                     activityGrid = stats?.activityGrid ?: emptyList(),
                 )
             }

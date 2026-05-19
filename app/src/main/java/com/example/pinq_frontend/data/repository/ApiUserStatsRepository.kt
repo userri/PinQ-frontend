@@ -10,6 +10,7 @@ class ApiUserStatsRepository(private val api: UserApi) : UserStatsRepository {
         return UserStats(
             nickname = dto.nickname,
             streak = dto.streak,
+            maxStreak = dto.maxStreak,
             totalSolved = dto.totalSolved,
             correctRate = dto.correctRate,
             activityGrid = dto.activityGrid,

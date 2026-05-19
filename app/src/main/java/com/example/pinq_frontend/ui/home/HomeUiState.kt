@@ -14,5 +14,6 @@ data class HomeUiState(
     val nickname: String = "",
     val quizCount: Int = 0,
     val streak: Int = 0,
+    val maxStreak: Int = 0,
     val activityGrid: List<Int> = emptyList(),
 )
