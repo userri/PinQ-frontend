@@ -33,6 +33,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
@@ -231,12 +233,17 @@ fun FinQNavHost(
             }
 
             // ── 홈 ────────────────────────────────────────────────────
-            composable(FinQRoutes.HOME) {
+            composable(FinQRoutes.HOME) { entry ->
                 val homeVm: HomeViewModel = viewModel(
                     factory = HomeViewModel.factory(repository, statsRepository),
                 )
                 val state by homeVm.uiState.collectAsState()
-                LaunchedEffect(Unit) { homeVm.loadQuizInfo() }
+                // RESUMED 때마다 재로드 — 퀴즈 완료 후 돌아왔을 때도 최신 스트릭을 반영한다.
+                LaunchedEffect(entry.lifecycle) {
+                    entry.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                        homeVm.loadQuizInfo()
+                    }
+                }
                 HomeScreen(
                     quizCount = state.quizCount,
                     streak = state.streak,
@@ -273,13 +280,18 @@ fun FinQNavHost(
             }
 
             // ── 마이페이지 ────────────────────────────────────────────
-            composable(FinQRoutes.MY_PAGE) {
+            composable(FinQRoutes.MY_PAGE) { entry ->
                 val myPageVm: MyPageViewModel = viewModel(
                     factory = MyPageViewModel.factory(statsRepository),
                 )
                 val state by myPageVm.uiState.collectAsState()
 
-                LaunchedEffect(Unit) { myPageVm.loadStats() }
+                // RESUMED 때마다 재로드 — restoreState 로 ViewModel 이 재사용될 때도 최신 스트릭을 반영한다.
+                LaunchedEffect(entry.lifecycle) {
+                    entry.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                        myPageVm.loadStats()
+                    }
+                }
 
                 LaunchedEffect(Unit) {
                     myPageVm.withdrawEvents.collect {
