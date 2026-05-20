@@ -19,6 +19,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import com.example.pinq_frontend.R
 import com.example.pinq_frontend.ui.theme.PinQBlue
 
 /**
@@ -35,7 +36,7 @@ fun LibraryTabScreen(
     snackbarHostState: SnackbarHostState? = null,
     modifier: Modifier = Modifier,
 ) {
-    val tabs = listOf("오답노트 📝", "북마크 ⭐", "전체이력 📚")
+    val tabs = listOf("오답노트", "북마크", "전체이력")
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
 
     Column(
@@ -119,7 +120,7 @@ private fun AttemptHistoryTabContent(
         isLoading = state.isLoadingAttempts,
         error = state.attemptsError,
         emptyMessage = "아직 풀어본 문제가 없어요",
-        emptyEmoji = "📚",
+        emptyIconRes = R.drawable.ic_tab_book,
         onRetry = viewModel::loadAttempts,
         onToggleBookmark = { item -> viewModel.toggleBookmark(item.quizId, item.bookmarked) },
         modifier = modifier,

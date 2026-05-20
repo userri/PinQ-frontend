@@ -1,0 +1,46 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp"
+    android:height="100dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <!-- 라운드 사각 배경 (네이비 그라데이션) -->
+    <path
+        android:pathData="M22.5,0 H77.5 C92.5,0 100,7.5 100,22.5 V77.5 C100,92.5 92.5,100 77.5,100 H22.5 C7.5,100 0,92.5 0,77.5 V22.5 C0,7.5 7.5,0 22.5,0 Z">
+        <aapt:attr xmlns:aapt="http://schemas.android.com/aapt" name="android:fillColor">
+            <gradient
+                android:startX="50" android:startY="0"
+                android:endX="50" android:endY="100"
+                android:type="linear">
+                <item android:offset="0" android:color="#FF2A3F8F" />
+                <item android:offset="0.55" android:color="#FF1E2D6B" />
+                <item android:offset="1" android:color="#FF15214F" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- 글로우 스폿 -->
+    <path
+        android:pathData="M22.5,0 H77.5 C92.5,0 100,7.5 100,22.5 V77.5 C100,92.5 92.5,100 77.5,100 H22.5 C7.5,100 0,92.5 0,77.5 V22.5 C0,7.5 7.5,0 22.5,0 Z">
+        <aapt:attr xmlns:aapt="http://schemas.android.com/aapt" name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="25" android:centerY="18"
+                android:gradientRadius="70">
+                <item android:offset="0" android:color="#8C5B7DE8" />
+                <item android:offset="0.5" android:color="#005B7DE8" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- 큰 Q 원형 (흰 링) -->
+    <path
+        android:pathData="M48,26 m -24,0 a 24,24 0 1,0 48,0 a 24,24 0 1,0 -48,0"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="11"
+        android:strokeLineCap="round" />
+    <!-- 별 (오른쪽 하단) -->
+    <path
+        android:pathData="M74,63 L77.8,71.9 L87.4,73.5 L80.5,80 L82.1,89.4 L74,84.9 L65.9,89.4 L67.5,80 L60.6,73.5 L70.2,71.9 Z"
+        android:fillColor="#FFFFC107"
+        android:strokeColor="#FFE0A800"
+        android:strokeWidth="0.8"
+        android:strokeLineJoin="round" />
+</vector>

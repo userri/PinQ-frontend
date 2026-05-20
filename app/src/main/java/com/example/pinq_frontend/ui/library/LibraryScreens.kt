@@ -1,5 +1,6 @@
 package com.example.pinq_frontend.ui.library
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -14,7 +15,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -51,7 +54,7 @@ fun LibraryListScreen(
     isLoading: Boolean,
     error: String?,
     emptyMessage: String,
-    emptyEmoji: String,
+    emptyIconRes: Int,
     onRetry: () -> Unit,
     onToggleBookmark: (AttemptItem) -> Unit,
     modifier: Modifier = Modifier,
@@ -99,7 +102,7 @@ fun LibraryListScreen(
         when {
             isLoading -> LoadingState()
             error != null -> ErrorState(message = error, onRetry = onRetry)
-            filtered.isEmpty() -> EmptyState(emoji = emptyEmoji, message = emptyMessage)
+            filtered.isEmpty() -> EmptyState(iconRes = emptyIconRes, message = emptyMessage)
             else -> LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -187,7 +190,7 @@ private fun ErrorState(message: String, onRetry: () -> Unit) {
 }
 
 @Composable
-private fun EmptyState(emoji: String, message: String) {
+private fun EmptyState(iconRes: Int, message: String) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -195,7 +198,11 @@ private fun EmptyState(emoji: String, message: String) {
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(text = emoji, style = MaterialTheme.typography.displayMedium)
+            Image(
+                painter = painterResource(iconRes),
+                contentDescription = null,
+                modifier = Modifier.size(40.dp),
+            )
             Spacer(Modifier.height(12.dp))
             Text(
                 text = message,
