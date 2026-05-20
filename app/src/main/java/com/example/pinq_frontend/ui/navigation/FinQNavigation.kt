@@ -421,7 +421,10 @@ fun FinQNavHost(
                             }
                         },
                         onWrongNote = {
-                            navController.navigate(FinQRoutes.WRONG_NOTE)
+                            navController.navigate(FinQRoutes.LIBRARY_TAB) {
+                                popUpTo(FinQRoutes.SESSION_GRAPH) { inclusive = true }
+                                launchSingleTop = true
+                            }
                         },
                     )
                 }
@@ -579,7 +582,7 @@ private fun DoneRoute(
 ) {
     val state by viewModel.uiState.collectAsState()
     ResultReportScreen(
-        quizzes = state.quizzes,
+        quizzes = state.allQuizzes.ifEmpty { state.quizzes },
         answerHistory = state.answerHistory,
         onGoHome = onGoHome,
         onRestart = onRestart,
