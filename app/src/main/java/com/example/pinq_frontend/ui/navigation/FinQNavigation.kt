@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -117,13 +118,13 @@ private val bottomNavRoutes = setOf(
 data class BottomNavItem(
     val route: String,
     val label: String,
-    val emoji: String,
+    val iconRes: Int,
 )
 
 private val bottomNavItems = listOf(
-    BottomNavItem(FinQRoutes.HOME, "홈", "🏠"),
-    BottomNavItem(FinQRoutes.LIBRARY_TAB, "보관함", "📚"),
-    BottomNavItem(FinQRoutes.MY_PAGE, "마이", "👤"),
+    BottomNavItem(FinQRoutes.HOME, "홈", com.example.pinq_frontend.R.drawable.ic_tab_home),
+    BottomNavItem(FinQRoutes.LIBRARY_TAB, "내 공부", com.example.pinq_frontend.R.drawable.ic_tab_book),
+    BottomNavItem(FinQRoutes.MY_PAGE, "마이", com.example.pinq_frontend.R.drawable.ic_tab_user),
 )
 
 /**
@@ -359,6 +360,7 @@ fun FinQNavHost(
                     QuizRoute(
                         viewModel = vm,
                         onAfterSubmit = { navController.navigate(FinQRoutes.ANSWER) },
+                        onClose = { navController.pauseSessionToHome() },
                     )
                 }
                 composable(FinQRoutes.ANSWER) { entry ->
@@ -369,6 +371,7 @@ fun FinQNavHost(
                     AnswerRoute(
                         viewModel = vm,
                         libraryRepository = libraryRepository,
+                        onBack = { navController.pauseSessionToHome() },
                         onNext = {
                             val state = vm.uiState.value
                             if (state.isLastQuiz) {
@@ -452,9 +455,14 @@ private fun FinQBottomBar(
                 selected = selected,
                 onClick = { onNavigate(item.route) },
                 icon = {
-                    Text(
-                        text = item.emoji,
-                        style = MaterialTheme.typography.titleMedium,
+                    androidx.compose.foundation.Image(
+                        painter = androidx.compose.ui.res.painterResource(item.iconRes),
+                        contentDescription = item.label,
+                        colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(
+                            if (selected) PinQBlue
+                            else MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
+                        modifier = Modifier.size(22.dp),
                     )
                 },
                 label = {
@@ -504,6 +512,7 @@ private fun libraryViewModel(repository: LibraryRepository): LibraryViewModel {
 private fun QuizRoute(
     viewModel: QuizSessionViewModel,
     onAfterSubmit: () -> Unit,
+    onClose: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsState()
 
@@ -525,6 +534,7 @@ private fun QuizRoute(
             isSubmitting = state.isSubmitting,
             onSelectOption = viewModel::selectOption,
             onSubmit = { viewModel.submitAnswer() },
+            onClose = onClose,
         )
     }
 }
@@ -534,6 +544,7 @@ private fun AnswerRoute(
     viewModel: QuizSessionViewModel,
     libraryRepository: LibraryRepository,
     onNext: () -> Unit,
+    onBack: () -> Unit,
     onArticleClick: (RelatedArticle) -> Unit,
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -546,7 +557,10 @@ private fun AnswerRoute(
             quiz = quiz,
             answer = answer,
             isLast = state.isLastQuiz,
+            quizIndex = state.currentIndex,
+            totalCount = state.totalCount,
             onNext = onNext,
+            onBack = onBack,
             onArticleClick = onArticleClick,
             libraryRepository = libraryRepository,
         )
