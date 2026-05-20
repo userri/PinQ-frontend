@@ -79,7 +79,7 @@ fun HomeScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 20.dp),
     ) {
-        // ── 앱 바: 워드마크 + 알림 아이콘 ──────────────────────────
+        // ── 앱 바: 워드마크만 ─────────────────────────────────────
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -87,23 +87,8 @@ fun HomeScreen(
             Image(
                 painter = painterResource(R.drawable.ic_finq_wordmark),
                 contentDescription = "FinQ",
-                modifier = Modifier
-                    .height(28.dp),
+                modifier = Modifier.height(28.dp),
             )
-            Spacer(Modifier.weight(1f))
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surface),
-                contentAlignment = Alignment.Center,
-            ) {
-                Image(
-                    painter = painterResource(R.drawable.ic_bell),
-                    contentDescription = "알림",
-                    modifier = Modifier.size(20.dp),
-                )
-            }
         }
 
         Spacer(Modifier.height(20.dp))
