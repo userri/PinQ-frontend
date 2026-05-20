@@ -1,5 +1,6 @@
 package com.example.pinq_frontend.ui.screen
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,7 +14,9 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -28,6 +31,7 @@ import com.example.pinq_frontend.data.model.AttemptItem
 import com.example.pinq_frontend.data.model.Quiz
 import com.example.pinq_frontend.data.model.QuizOption
 import com.example.pinq_frontend.data.repository.AnswerResult
+import com.example.pinq_frontend.R
 import com.example.pinq_frontend.ui.library.AttemptItemCard
 
 /**
@@ -75,7 +79,7 @@ fun WrongNoteScreen(
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                text = if (wrongItems.isEmpty()) "모두 맞혔어요! 🎉" else "${wrongItems.size}개 틀렸어요",
+                text = if (wrongItems.isEmpty()) "모두 맞혔어요" else "${wrongItems.size}개 틀렸어요",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -89,10 +93,14 @@ fun WrongNoteScreen(
                 contentAlignment = Alignment.Center,
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = "🏆", style = MaterialTheme.typography.displayMedium)
+                    Image(
+                        painter = painterResource(R.drawable.ic_trophy),
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp),
+                    )
                     Spacer(Modifier.height(12.dp))
                     Text(
-                        text = "오답이 없어요!",
+                        text = "오답이 없어요",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                     )

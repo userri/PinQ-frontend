@@ -1,7 +1,10 @@
 package com.example.pinq_frontend.ui.screen
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,114 +17,175 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.material3.IconButton
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.example.pinq_frontend.R
 import com.example.pinq_frontend.data.DummyQuizData
 import com.example.pinq_frontend.data.model.Quiz
 import com.example.pinq_frontend.data.model.QuizOption
 import com.example.pinq_frontend.data.model.RelatedArticle
 import com.example.pinq_frontend.data.repository.AnswerResult
 import com.example.pinq_frontend.data.repository.LibraryRepository
-import com.example.pinq_frontend.ui.theme.PinQBlue
-import com.example.pinq_frontend.ui.theme.PinQLightBlue
+import com.example.pinq_frontend.ui.theme.FinQBlue
+import com.example.pinq_frontend.ui.theme.FinQBlueSoft
+import com.example.pinq_frontend.ui.theme.FinQDivider
+import com.example.pinq_frontend.ui.theme.FinQNavy
+import com.example.pinq_frontend.ui.theme.FinQRed
+import com.example.pinq_frontend.ui.theme.FinQRedSoft
+import com.example.pinq_frontend.ui.theme.FinQSurfaceMuted
+import com.example.pinq_frontend.ui.theme.FinQTextMuted
+import com.example.pinq_frontend.ui.theme.FinQTextStrong
+import com.example.pinq_frontend.ui.theme.FinQYellowSoft
 import com.example.pinq_frontend.ui.theme.PinQ_frontendTheme
 import kotlinx.coroutines.launch
 
 /**
  * 퀴즈 정답/해설 화면 — Stateless View.
  *
- * 입력:
- *  - [quiz]: 문제 본문과 옵션 텍스트
- *  - [answer]: 채점 결과 (정답 여부, 정답 옵션 id, 해설, 관련 기사)
- *  - [isLast]: 마지막 문제 여부 → 버튼 라벨이 "결과 보기" 로 바뀜
- *
- * 이 화면은 [QuizSessionViewModel] 의 lastAnswer 가 채워진 직후에만 노출된다.
+ * FinQ 디자인:
+ *  - 상단: 뒤로 + 진행도 + N/M
+ *  - 정답/오답 칩 (블루 또는 레드)
+ *  - 보기 4개: 정답 옵션은 파란 보더 + "정답" 뱃지, 사용자 오답은 레드 보더
+ *  - 해설 카드
+ *  - 알아두면 좋아요 (옐로우 콜아웃)
+ *  - 하단 다음/결과 보기 버튼 (네이비)
  */
 @Composable
 fun QuizAnswerScreen(
     quiz: Quiz,
     answer: AnswerResult,
     isLast: Boolean,
+    quizIndex: Int,
+    totalCount: Int,
     onNext: () -> Unit,
+    onBack: () -> Unit,
     onArticleClick: (RelatedArticle) -> Unit,
     libraryRepository: LibraryRepository? = null,
     initialBookmarked: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
-    // 북마크 토글 — 퀴즈 세션 직후엔 첫 시도이므로 false가 기본값.
-    // 이미 북마크된 퀴즈를 재표시할 경우 initialBookmarked=true 를 전달한다.
     var bookmarked by remember(quiz.id) { mutableStateOf(initialBookmarked) }
     val scope = rememberCoroutineScope()
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = 20.dp, vertical = 12.dp),
     ) {
+        // ── 상단 진행도 ──────────────────────────────────────────
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clickable(onClick = onBack),
+                contentAlignment = Alignment.Center,
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.ic_chevron_left),
+                    contentDescription = "뒤로",
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+            Spacer(Modifier.size(8.dp))
+            LinearProgressIndicator(
+                progress = {
+                    (quizIndex + 1).toFloat() / totalCount.coerceAtLeast(1).toFloat()
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp)),
+                color = FinQBlue,
+                trackColor = FinQDivider,
+            )
+            Spacer(Modifier.size(10.dp))
+            Text(
+                text = "${quizIndex + 1}/$totalCount",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = FinQTextMuted,
+            )
+        }
+
+        Spacer(Modifier.height(16.dp))
+
         Column(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState()),
         ) {
-            // 정답 배너 + ⭐ 북마크 토글
+            // ── 정답/오답 칩 + 북마크 ─────────────────────────────
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.weight(1f)) {
-                    ResultBanner(isCorrect = answer.isCorrect)
-                }
+                ResultChip(isCorrect = answer.isCorrect, modifier = Modifier.weight(1f))
+                Spacer(Modifier.size(8.dp))
                 if (libraryRepository != null) {
-                    Spacer(Modifier.size(8.dp))
-                    IconButton(
-                        onClick = {
-                            val next = !bookmarked
-                            bookmarked = next  // 낙관적 업데이트
-                            scope.launch {
-                                runCatching {
-                                    if (next) libraryRepository.addBookmark(quiz.id)
-                                    else libraryRepository.removeBookmark(quiz.id)
-                                }.onFailure {
-                                    bookmarked = !next  // 실패 시 롤백
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clickable {
+                                val next = !bookmarked
+                                bookmarked = next
+                                scope.launch {
+                                    runCatching {
+                                        if (next) libraryRepository.addBookmark(quiz.id)
+                                        else libraryRepository.removeBookmark(quiz.id)
+                                    }.onFailure {
+                                        bookmarked = !next
+                                    }
                                 }
-                            }
-                        },
+                            },
+                        contentAlignment = Alignment.Center,
                     ) {
-                        Text(
-                            text = if (bookmarked) "⭐" else "☆",
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = if (bookmarked) PinQBlue else MaterialTheme.colorScheme.onSurfaceVariant,
+                        Image(
+                            painter = painterResource(
+                                if (bookmarked) R.drawable.ic_bookmark_star_filled
+                                else R.drawable.ic_bookmark_star,
+                            ),
+                            contentDescription = "북마크",
+                            modifier = Modifier.size(26.dp),
                         )
                     }
                 }
             }
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(18.dp))
 
+            // ── 문제 ────────────────────────────────────────────
             Text(
                 text = "Q. ${quiz.question}",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Bold,
+                color = FinQTextStrong,
             )
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(14.dp))
 
+            // ── 보기 4개 ─────────────────────────────────────────
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 quiz.options.forEach { option ->
                     AnswerOptionRow(
@@ -131,82 +195,94 @@ fun QuizAnswerScreen(
                     )
                 }
             }
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(20.dp))
 
+            // ── 해설 카드 ────────────────────────────────────────
             ExplanationCard(explanation = answer.explanation)
-            Spacer(Modifier.height(16.dp))
 
+            // ── 알아두면 좋아요 (옐로우 콜아웃) ───────────────────
             if (!answer.keyword.isNullOrBlank()) {
+                Spacer(Modifier.height(12.dp))
                 KeywordCard(keyword = answer.keyword)
-                Spacer(Modifier.height(16.dp))
             }
 
-            RelatedArticleCard(
-                article = answer.relatedArticle,
-                onClick = { onArticleClick(answer.relatedArticle) },
-            )
+            // ── 관련 기사 ────────────────────────────────────────
+            if (answer.relatedArticle != RelatedArticle.EMPTY &&
+                answer.relatedArticle.title.isNotBlank()
+            ) {
+                Spacer(Modifier.height(12.dp))
+                RelatedArticleCard(
+                    article = answer.relatedArticle,
+                    onClick = { onArticleClick(answer.relatedArticle) },
+                )
+            }
             Spacer(Modifier.height(16.dp))
         }
 
+        // ── 다음/결과 보기 버튼 ─────────────────────────────────
         Button(
             onClick = onNext,
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 52.dp),
-            shape = RoundedCornerShape(12.dp),
+                .heightIn(min = 54.dp),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = FinQNavy,
+                contentColor = Color.White,
+            ),
         ) {
             Text(
                 text = if (isLast) "결과 보기" else "다음 문제",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Bold,
             )
         }
+        Spacer(Modifier.height(6.dp))
     }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 정답/오답 칩
+// ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun ResultBanner(isCorrect: Boolean) {
-    val style = if (isCorrect) {
-        ResultStyle(
-            bg = PinQLightBlue,
-            fg = PinQBlue,
-            emoji = "🎉",
-            label = "정답이에요!",
-        )
-    } else {
-        ResultStyle(
-            bg = MaterialTheme.colorScheme.errorContainer,
-            fg = MaterialTheme.colorScheme.onErrorContainer,
-            emoji = "💡",
-            label = "아쉬워요. 다음엔 맞혀봐요!",
-        )
-    }
-
+private fun ResultChip(isCorrect: Boolean, modifier: Modifier = Modifier) {
+    val bg = if (isCorrect) FinQBlueSoft else FinQRedSoft
+    val fg = if (isCorrect) FinQBlue else FinQRed
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(style.bg)
-            .padding(horizontal = 20.dp, vertical = 20.dp),
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .background(bg)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(text = style.emoji, style = MaterialTheme.typography.headlineMedium)
-        Spacer(Modifier.size(12.dp))
+        Box(
+            modifier = Modifier
+                .size(28.dp)
+                .clip(CircleShape)
+                .background(fg),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = "Q",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color.White,
+            )
+        }
+        Spacer(Modifier.size(10.dp))
         Text(
-            text = style.label,
-            style = MaterialTheme.typography.titleLarge,
+            text = if (isCorrect) "정답이에요!" else "아쉬워요, 다음에 맞혀봐요",
+            style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            color = style.fg,
+            color = fg,
         )
     }
 }
 
-private data class ResultStyle(
-    val bg: Color,
-    val fg: Color,
-    val emoji: String,
-    val label: String,
-)
+// ─────────────────────────────────────────────────────────────────────────────
+// 보기 행
+// ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
 private fun AnswerOptionRow(
@@ -214,160 +290,182 @@ private fun AnswerOptionRow(
     isCorrect: Boolean,
     isUserSelected: Boolean,
 ) {
-    val (container, border, fg) = when {
-        isCorrect -> Triple(
-            PinQLightBlue,
-            PinQBlue,
-            PinQBlue,
-        )
-        isUserSelected -> Triple(
-            MaterialTheme.colorScheme.errorContainer,
-            MaterialTheme.colorScheme.error,
-            MaterialTheme.colorScheme.onErrorContainer,
-        )
-        else -> Triple(
-            MaterialTheme.colorScheme.surface,
-            MaterialTheme.colorScheme.outlineVariant,
-            MaterialTheme.colorScheme.onSurface,
-        )
+    val container = Color.White
+    val (border, accent) = when {
+        isCorrect -> FinQBlue to FinQBlue
+        isUserSelected -> FinQRed to FinQRed
+        else -> Color.Transparent to FinQTextMuted
+    }
+    val highlightBg = when {
+        isCorrect -> FinQBlueSoft
+        isUserSelected -> FinQRedSoft
+        else -> container
     }
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(container)
-            .border(1.dp, border, RoundedCornerShape(12.dp))
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .clip(RoundedCornerShape(14.dp))
+            .background(highlightBg)
+            .border(
+                width = if (isCorrect || isUserSelected) 1.5.dp else 1.dp,
+                color = if (border == Color.Transparent) FinQDivider else border,
+                shape = RoundedCornerShape(14.dp),
+            )
+            .padding(horizontal = 14.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
             modifier = Modifier
                 .size(26.dp)
-                .clip(RoundedCornerShape(50))
-                .background(border),
+                .clip(CircleShape)
+                .background(
+                    if (isCorrect || isUserSelected) accent
+                    else Color(0xFFE5E7EB)
+                ),
             contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = "${option.optionNumber}",
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.surface,
+                color = if (isCorrect || isUserSelected) Color.White else Color(0xFF6B7280),
             )
         }
         Spacer(Modifier.size(12.dp))
         Text(
             text = option.text,
             style = MaterialTheme.typography.bodyLarge,
-            color = fg,
+            color = FinQTextStrong,
             fontWeight = if (isCorrect || isUserSelected) FontWeight.SemiBold else FontWeight.Normal,
             modifier = Modifier.weight(1f),
         )
         if (isCorrect) {
-            Text(
-                text = "정답",
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                color = PinQBlue,
-            )
+            Spacer(Modifier.size(8.dp))
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(50))
+                    .background(FinQBlue)
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+            ) {
+                Text(
+                    text = "정답",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                )
+            }
         } else if (isUserSelected) {
-            Text(
-                text = "내 선택",
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.error,
-            )
+            Spacer(Modifier.size(8.dp))
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(50))
+                    .background(FinQRed)
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+            ) {
+                Text(
+                    text = "내 선택",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                )
+            }
         }
     }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 해설 카드
+// ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
 private fun ExplanationCard(explanation: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        ),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = FinQSurfaceMuted),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(
-                    shape = RoundedCornerShape(50),
-                    color = MaterialTheme.colorScheme.primary,
-                ) {
-                    Text(
-                        text = "AI",
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                    )
-                }
-                Spacer(Modifier.size(8.dp))
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(FinQBlueSoft)
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+            ) {
                 Text(
                     text = "해설",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = FinQNavy,
                 )
             }
             Spacer(Modifier.height(10.dp))
             Text(
                 text = explanation,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = FinQTextStrong,
             )
         }
     }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 알아두면 좋아요 (옐로우 콜아웃)
+// ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
 private fun KeywordCard(keyword: String) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = PinQLightBlue,
-        ),
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(FinQYellowSoft)
+            .padding(horizontal = 14.dp, vertical = 14.dp),
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(text = "🔑", style = MaterialTheme.typography.titleMedium)
-                Spacer(Modifier.size(8.dp))
+        Row {
+            Image(
+                painter = painterResource(R.drawable.ic_lightbulb),
+                contentDescription = null,
+                modifier = Modifier.size(22.dp),
+            )
+            Spacer(Modifier.size(10.dp))
+            Column {
                 Text(
-                    text = "알아야 할 단어",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = PinQBlue,
+                    text = "알아두면 좋아요",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF7A5B00),
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = keyword,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color(0xFF5A4400),
                 )
             }
-            Spacer(Modifier.height(10.dp))
-            Text(
-                text = keyword,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
         }
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 관련 기사
+// ─────────────────────────────────────────────────────────────────────────────
+
 @Composable
-private fun RelatedArticleCard(
-    article: RelatedArticle,
-    onClick: () -> Unit,
-) {
+private fun RelatedArticleCard(article: RelatedArticle, onClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(14.dp),
         onClick = onClick,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-        ),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, FinQDivider),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = "관련 기사",
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
+                color = FinQBlue,
                 fontWeight = FontWeight.Bold,
             )
             Spacer(Modifier.height(8.dp))
@@ -375,17 +473,22 @@ private fun RelatedArticleCard(
                 text = article.title,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
+                color = FinQTextStrong,
                 maxLines = 2,
             )
             Spacer(Modifier.height(6.dp))
             Text(
                 text = article.source,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = FinQTextMuted,
             )
         }
     }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Preview
+// ─────────────────────────────────────────────────────────────────────────────
 
 @Preview(showBackground = true, widthDp = 360, heightDp = 760)
 @Composable
@@ -400,11 +503,14 @@ private fun QuizAnswerScreenCorrectPreview() {
                 isCorrect = true,
                 correctOptionId = q.correctOptionId,
                 explanation = q.explanation,
-                keyword = "금융통화위원회 — 한국은행 정책금리 결정 기구.",
+                keyword = "환율이 한국 경제 전반에 미치는 효과는 산업·소비 등 다양한 측면에서 복합적으로 나타납니다.",
                 relatedArticle = q.relatedArticle,
             ),
             isLast = false,
+            quizIndex = 1,
+            totalCount = 4,
             onNext = {},
+            onBack = {},
             onArticleClick = {},
         )
     }
@@ -424,11 +530,14 @@ private fun QuizAnswerScreenWrongPreview() {
                 isCorrect = false,
                 correctOptionId = q.correctOptionId,
                 explanation = q.explanation,
-                keyword = "원화 강세 — 환율 하락 = 원화 가치 상승.",
+                keyword = "원화 강세는 환율 하락을 의미합니다.",
                 relatedArticle = q.relatedArticle,
             ),
             isLast = true,
+            quizIndex = 3,
+            totalCount = 4,
             onNext = {},
+            onBack = {},
             onArticleClick = {},
         )
     }

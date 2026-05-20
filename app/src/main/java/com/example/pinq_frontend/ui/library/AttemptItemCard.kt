@@ -3,6 +3,7 @@ package com.example.pinq_frontend.ui.library
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -31,9 +32,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import com.example.pinq_frontend.R
 import com.example.pinq_frontend.data.model.AttemptItem
 import com.example.pinq_frontend.ui.theme.PinQBlue
 import com.example.pinq_frontend.ui.theme.PinQLightBlue
@@ -116,15 +119,18 @@ fun AttemptItemCard(
                     }
                 }
 
-                // 북마크 ⭐ 버튼 — 카드 클릭과 분리
+                // 북마크 버튼 — 카드 클릭과 분리
                 IconButton(
                     onClick = onToggleBookmark,
                     modifier = Modifier.size(32.dp),
                 ) {
-                    Text(
-                        text = if (item.bookmarked) "⭐" else "☆",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = if (item.bookmarked) PinQBlue else MaterialTheme.colorScheme.onSurfaceVariant,
+                    Image(
+                        painter = painterResource(
+                            if (item.bookmarked) R.drawable.ic_bookmark_star_filled
+                            else R.drawable.ic_bookmark_star,
+                        ),
+                        contentDescription = "북마크",
+                        modifier = Modifier.size(20.dp),
                     )
                 }
             }
@@ -143,7 +149,7 @@ fun AttemptItemCard(
             if (!expanded) {
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = "👆 카드를 클릭해보세요",
+                    text = "자세히 보기",
                     style = MaterialTheme.typography.labelSmall,
                     color = PinQBlue,
                     fontWeight = FontWeight.SemiBold,
@@ -169,7 +175,7 @@ fun AttemptItemCard(
                 if (item.explanation.isNotBlank()) {
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        text = "💡 해설",
+                        text = "해설",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -186,7 +192,7 @@ fun AttemptItemCard(
                     Spacer(Modifier.height(8.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = "🔑 키워드  ",
+                            text = "키워드  ",
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -232,7 +238,7 @@ fun AttemptItemCard(
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Text(
-                                text = "📰 관련 기사",
+                                text = "관련 기사",
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary,
@@ -266,11 +272,19 @@ fun AttemptItemCard(
 private fun AnswerRow(label: String, text: String, isCorrect: Boolean) {
     val bgColor = if (isCorrect) PinQLightBlue else MaterialTheme.colorScheme.errorContainer
     val textColor = if (isCorrect) PinQBlue else MaterialTheme.colorScheme.onErrorContainer
-    val icon = if (isCorrect) "✅" else "❌"
 
     Row(verticalAlignment = Alignment.Top) {
+        Image(
+            painter = painterResource(
+                if (isCorrect) R.drawable.ic_check_circle else R.drawable.ic_x_circle,
+            ),
+            contentDescription = null,
+            modifier = Modifier
+                .padding(top = 1.dp, end = 6.dp)
+                .size(16.dp),
+        )
         Text(
-            text = "$icon $label  ",
+            text = "$label  ",
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurfaceVariant,

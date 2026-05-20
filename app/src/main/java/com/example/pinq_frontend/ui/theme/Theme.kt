@@ -3,27 +3,37 @@ package com.example.pinq_frontend.ui.theme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 
 private val LightColorScheme = lightColorScheme(
-    primary = PinQBlue,
+    primary = FinQNavy,
     onPrimary = White,
-    primaryContainer = PinQLightBlue,
-    onPrimaryContainer = PinQDarkNavy,
-    background = PinQBackground,
-    surface = White,
-    onSurface = Color(0xFF1A1D2E),
-    onSurfaceVariant = Color(0xFF6B7280),
-    surfaceVariant = Color(0xFFEDF0F7),
-    error = PinQRed,
-    errorContainer = Color(0xFFFFECED),
-    onErrorContainer = Color(0xFF7F1D1D),
-    secondary = PinQDarkNavy,
+    primaryContainer = FinQBlueSoft,
+    onPrimaryContainer = FinQNavy,
+
+    secondary = FinQBlue,
     onSecondary = White,
-    secondaryContainer = PinQLightBlue,
-    onSecondaryContainer = PinQDarkNavy,
-    outline = Color(0xFFD1D5DB),
-    outlineVariant = Color(0xFFE5E7EB),
+    secondaryContainer = FinQBlueSoft,
+    onSecondaryContainer = FinQNavy,
+
+    tertiary = FinQYellow,
+    onTertiary = FinQTextStrong,
+    tertiaryContainer = FinQYellowSoft,
+    onTertiaryContainer = FinQTextStrong,
+
+    background = FinQBackground,
+    onBackground = FinQTextStrong,
+    surface = FinQSurface,
+    onSurface = FinQTextStrong,
+    surfaceVariant = FinQSurfaceMuted,
+    onSurfaceVariant = FinQTextMuted,
+
+    error = FinQRed,
+    onError = White,
+    errorContainer = FinQRedSoft,
+    onErrorContainer = FinQRed,
+
+    outline = FinQOutline,
+    outlineVariant = FinQDivider,
 )
 
 @Composable
