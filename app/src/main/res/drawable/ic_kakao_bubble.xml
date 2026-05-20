@@ -1,0 +1,10 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- 카카오 시그니처 스피치 버블 (단순화) -->
+    <path
+        android:pathData="M12,4 C7,4 3.2,7.1 3.2,11 C3.2,13.4 4.7,15.5 7,16.7 L6.2,19.6 C6.1,19.9 6.4,20.1 6.7,20 L10,18 C10.6,18.1 11.3,18.2 12,18.2 C17,18.2 20.8,15.1 20.8,11 C20.8,7.1 17,4 12,4 Z"
+        android:fillColor="#FF191919" />
+</vector>

@@ -4,28 +4,22 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- 어댑티브 아이콘은 가운데 72x72 가 안전 영역.
-         finq.svg 의 100x100 캔버스를 (18,18)~(90,90)에 배치한다. -->
+    <!-- 어댑티브 아이콘 안전 영역은 가운데 72x72.
+         finq.svg(100x100) 를 0.72 배율로 가운데에 배치한다. -->
     <group
         android:translateX="18"
         android:translateY="18"
         android:scaleX="0.72"
         android:scaleY="0.72">
-        <!-- 큰 Q 원형 (흰 링) -->
+        <!-- 큰 Q 원형 (흰 링) — 원본 cx=48, cy=50 -->
         <path
             android:pathData="M48,50 m -24,0 a 24,24 0 1,0 48,0 a 24,24 0 1,0 -48,0"
             android:strokeColor="#FFFFFFFF"
             android:strokeWidth="11"
             android:strokeLineCap="round" />
-        <!-- Q의 꼬리 (오른쪽 하단으로 떨어지는 선) -->
+        <!-- 별 (오른쪽 하단 강조 포인트) — 원본 center=(74,76) -->
         <path
-            android:pathData="M62,68 L74,82"
-            android:strokeColor="#FFFFFFFF"
-            android:strokeWidth="11"
-            android:strokeLineCap="round" />
-        <!-- 별 (오른쪽 상단 강조 포인트) -->
-        <path
-            android:pathData="M82,18 L84.3,23.4 L90.2,24.4 L86,28.4 L87,34.2 L82,31.5 L77,34.2 L78,28.4 L73.8,24.4 L79.7,23.4 Z"
+            android:pathData="M74,63 L77.8,71.9 L87.4,73.5 L80.5,80 L82.1,89.4 L74,84.9 L65.9,89.4 L67.5,80 L60.6,73.5 L70.2,71.9 Z"
             android:fillColor="#FFFFC107"
             android:strokeColor="#FFE0A800"
             android:strokeWidth="0.8"
