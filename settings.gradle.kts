@@ -23,5 +23,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "PinQ_frontend"
+rootProject.name = "FinQ"
 include(":app")
