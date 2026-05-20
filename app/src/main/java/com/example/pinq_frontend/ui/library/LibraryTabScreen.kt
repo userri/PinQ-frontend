@@ -3,6 +3,8 @@ package com.example.pinq_frontend.ui.library
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
@@ -14,13 +16,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import com.example.pinq_frontend.R
 import com.example.pinq_frontend.ui.theme.PinQBlue
+import kotlinx.coroutines.launch
 
 /**
  * 보관함 탭 — 오답노트 / 북마크 / 전체이력을 하나의 화면으로 묶는다.
@@ -37,7 +38,9 @@ fun LibraryTabScreen(
     modifier: Modifier = Modifier,
 ) {
     val tabs = listOf("오답노트", "북마크", "전체이력")
-    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    val pagerState = rememberPagerState(pageCount = { tabs.size })
+    val coroutineScope = rememberCoroutineScope()
+    val selectedTab = pagerState.currentPage
 
     Column(
         modifier = modifier
@@ -58,7 +61,11 @@ fun LibraryTabScreen(
             tabs.forEachIndexed { index, title ->
                 Tab(
                     selected = selectedTab == index,
-                    onClick = { selectedTab = index },
+                    onClick = {
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(index)
+                        }
+                    },
                     text = {
                         Text(
                             text = title,
@@ -72,22 +79,29 @@ fun LibraryTabScreen(
             }
         }
 
-        when (selectedTab) {
-            0 -> WrongNoteTabRoute(
-                viewModel = wrongNoteViewModel,
-                snackbarHostState = snackbarHostState,
-                modifier = Modifier.weight(1f),
-            )
-            1 -> BookmarkTabRoute(
-                viewModel = bookmarkViewModel,
-                snackbarHostState = snackbarHostState,
-                modifier = Modifier.weight(1f),
-            )
-            2 -> AttemptHistoryTabContent(
-                viewModel = historyViewModel,
-                snackbarHostState = snackbarHostState,
-                modifier = Modifier.weight(1f),
-            )
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxSize(),
+        ) { page ->
+            when (page) {
+                0 -> WrongNoteTabRoute(
+                    viewModel = wrongNoteViewModel,
+                    snackbarHostState = snackbarHostState,
+                    modifier = Modifier.fillMaxSize(),
+                )
+                1 -> BookmarkTabRoute(
+                    viewModel = bookmarkViewModel,
+                    snackbarHostState = snackbarHostState,
+                    modifier = Modifier.fillMaxSize(),
+                )
+                2 -> AttemptHistoryTabContent(
+                    viewModel = historyViewModel,
+                    snackbarHostState = snackbarHostState,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
         }
     }
 }
