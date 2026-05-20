@@ -91,16 +91,8 @@ fun QuizScreen(
                 color = Color.White,
             )
             Spacer(Modifier.weight(1f))
-            Box(
-                modifier = Modifier.size(32.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Image(
-                    painter = painterResource(R.drawable.ic_bookmark_star),
-                    contentDescription = "북마크",
-                    modifier = Modifier.size(20.dp),
-                )
-            }
+            // 닫기 아이콘과 좌우 시각 균형을 맞추기 위한 보이지 않는 placeholder.
+            Box(modifier = Modifier.size(32.dp))
         }
 
         Spacer(Modifier.height(20.dp))
@@ -143,8 +135,11 @@ fun QuizScreen(
                     )
                 }
             }
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(4.dp))
         }
+
+        // 스크롤 영역과 하단 CTA 사이 여백
+        Spacer(Modifier.height(4.dp))
 
         // ── 하단 정답 확인 버튼 (화이트 풀블리드) ────────────────
         Button(
@@ -175,7 +170,7 @@ fun QuizScreen(
                 )
             }
         }
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(4.dp))
     }
 }
 
