@@ -85,13 +85,10 @@ import com.example.pinq_frontend.ui.screen.LoginScreen
  *     ├── session/done
  *     └── session/wrongnote
  *
- * [세션 중간 이탈 처리 — 방법 B]
- *   quiz/answer 화면에서 뒤로가기 시 세션 그래프를 죽이지 않고
- *   홈을 백스택 위에 쌓는다 (popUpTo SESSION_GRAPH, inclusive=false).
- *   덕분에 홈에서 "풀기"를 다시 눌러도 SESSION_GRAPH 엔트리가 살아있어
- *   QuizSessionViewModel 이 재생성되지 않고 quizzes/answerHistory 가 그대로 유지된다.
- *   loadQuizzes() 재호출이 없으므로 백엔드가 "이미 제출한 문제 제외" 로직을 타지 않아
- *   문제 수가 줄어드는 현상이 사라진다.
+ * [세션 중간 이탈 처리]
+ *   quiz/answer 화면에서 뒤로가기 시 세션 그래프를 제거하고 홈으로 돌아간다.
+ *   홈에서 다시 "풀기"를 누르면 서버의 solved 상태를 새로 받아 아직 안 푼 문제부터 시작한다.
+ *   진행도는 전체 오늘 문제 기준으로 표시해, 남은 문제만 풀어도 Q3/4 같은 맥락이 유지된다.
  */
 object FinQRoutes {
     const val LOGIN = "login"
@@ -136,27 +133,19 @@ private val bottomNavItems = listOf(
 )
 
 /**
- * 퀴즈 세션 중 뒤로가기 — 세션 그래프는 살려두고 홈만 위에 쌓는다.
- *
- * 백스택: HOME → SESSION_GRAPH → HOME
- * 이후 onStartQuiz 는 resumeOrStartSession() 으로 SESSION_GRAPH 로 복귀하므로
- * SESSION_GRAPH 엔트리는 재생성되지 않고 QuizSessionViewModel 상태가 유지된다.
+ * 퀴즈 세션 중 뒤로가기 — 세션 그래프를 제거하고 홈으로 돌아간다.
+ * 이후 onStartQuiz 는 신규 세션을 만들고 서버의 solved 상태 기준으로 미풀이 문제만 로드한다.
  */
 private fun NavHostController.pauseSessionToHome() {
     navigate(FinQRoutes.HOME) {
-        popUpTo(FinQRoutes.SESSION_GRAPH) { inclusive = false }
+        popUpTo(FinQRoutes.SESSION_GRAPH) { inclusive = true }
         launchSingleTop = true
     }
 }
 
 /**
  * 세션 시작 또는 복귀 — 백스택에 SESSION_GRAPH 가 이미 있으면 복귀, 없으면 신규 생성.
- *
- * pauseSessionToHome() 이후 백스택: HOME → SESSION_GRAPH → HOME
- * 여기서 popBackStack(SESSION_GRAPH, inclusive=false) 하면 위에 쌓인 HOME 만 제거되어
- * SESSION_GRAPH 가 상단으로 노쉰된다. ViewModel 재생성 없음.
- *
- * SESSION_GRAPH 가 없으면(실제 첢 시작 또는 컴플리티 후 재진입) navigate 로 신규 생성.
+ * 중간 이탈은 SESSION_GRAPH 를 제거하므로 보통 신규 생성되어 최신 solved 상태를 다시 읽는다.
  */
 private fun NavHostController.resumeOrStartSession() {
     val hasSession = try {
@@ -368,8 +357,8 @@ fun FinQNavHost(
             ) {
                 composable(FinQRoutes.QUIZ) { entry ->
                     val vm = entry.sessionViewModel(navController, repository)
-                    // 뒤로가기: 세션을 죽이지 않고 홈을 위에 쌓는다.
-                    // ViewModel 이 살아있으므로 quizzes/answerHistory 유지됨.
+                    // 뒤로가기: 세션을 종료하고 홈으로 돌아간다.
+                    // 재진입 시 서버의 solved 상태 기준으로 미풀이 문제부터 시작한다.
                     BackHandler { navController.pauseSessionToHome() }
                     QuizRoute(
                         viewModel = vm,
@@ -541,7 +530,7 @@ private fun QuizRoute(
         state.error != null -> ErrorBox(state.error!!) { viewModel.loadQuizzes() }
         state.currentQuiz == null -> ErrorBox("표시할 퀴즈가 없습니다.") { viewModel.loadQuizzes() }
         else -> QuizScreen(
-            quizIndex = state.currentIndex,
+            quizIndex = state.progressIndex,
             totalCount = state.totalCount,
             quiz = state.currentQuiz!!,
             selectedOptionId = state.selectedOptionId,
@@ -571,7 +560,7 @@ private fun AnswerRoute(
             quiz = quiz,
             answer = answer,
             isLast = state.isLastQuiz,
-            quizIndex = state.currentIndex,
+            quizIndex = state.progressIndex,
             totalCount = state.totalCount,
             onNext = onNext,
             onBack = onBack,
