@@ -3,6 +3,8 @@ package com.example.pinq_frontend.ui.screen
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,10 +19,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -32,29 +34,37 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.pinq_frontend.R
 import com.example.pinq_frontend.data.model.Category
 import com.example.pinq_frontend.data.model.Quiz
 import com.example.pinq_frontend.data.model.RelatedArticle
 import com.example.pinq_frontend.data.repository.AnswerResult
+import com.example.pinq_frontend.ui.theme.FinQBlue
+import com.example.pinq_frontend.ui.theme.FinQDivider
+import com.example.pinq_frontend.ui.theme.FinQNavy
+import com.example.pinq_frontend.ui.theme.FinQSurfaceMuted
+import com.example.pinq_frontend.ui.theme.FinQTextMuted
+import com.example.pinq_frontend.ui.theme.FinQTextStrong
 import com.example.pinq_frontend.ui.theme.PinQ_frontendTheme
 
 /**
- * 퀴즈 세션 완료 후 보여주는 결과 리포트 화면.
+ * 퀴즈 세션 완료 후 결과 리포트.
  *
- * 구성:
- *  1. 정답률 도넛 차트 (Canvas 기반)
- *  2. 점수 요약 텍스트
- *  3. 문제별 정오 리스트
- *  4. 홈으로 / 다시 풀기 버튼
- *
- * @param quizzes       오늘 풀이한 퀴즈 목록 (문제 텍스트 표시에 사용)
- * @param answerHistory 제출 완료된 결과 목록 (quizzes 와 같은 순서)
+ * FinQ 디자인:
+ *  - 헤더: "오늘의 결과"
+ *  - 정답률 카드 (도넛 + 점수 + 격려 문구)
+ *  - 문제별 결과 (check / x 마크)
+ *  - 오답노트 보기 (네이비, 오답 1개 이상일 때만)
+ *  - 홈으로 / 다시 풀기 (아웃라인 둘로 분할 표시)
  */
 @Composable
 fun ResultReportScreen(
@@ -72,105 +82,143 @@ fun ResultReportScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         // ── 헤더 ──────────────────────────────────────────────────
         Text(
             text = "오늘의 결과",
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.ExtraBold,
+            color = FinQTextStrong,
         )
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(16.dp))
 
-        // ── 도넛 차트 ─────────────────────────────────────────────
-        DonutChart(
-            correctCount = correctCount,
-            totalCount = totalCount,
-        )
+        // ── 정답률 카드 (도넛 + 격려) ─────────────────────────────
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            border = BorderStroke(1.dp, FinQDivider),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 24.dp, horizontal = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                DonutChart(correctCount = correctCount, totalCount = totalCount)
+                Spacer(Modifier.height(14.dp))
+                Text(
+                    text = gradeMessage(correctCount, totalCount),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = FinQTextStrong,
+                )
+            }
+        }
 
-        Spacer(Modifier.height(12.dp))
-
-        // ── 점수 평가 문구 ────────────────────────────────────────
-        Text(
-            text = gradeMessage(correctCount, totalCount),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(20.dp))
 
         // ── 문제별 결과 ───────────────────────────────────────────
         if (quizzes.isNotEmpty() && answerHistory.isNotEmpty()) {
             Text(
                 text = "문제별 결과",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 12.dp),
+                fontWeight = FontWeight.Bold,
+                color = FinQTextStrong,
             )
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                quizzes.forEachIndexed { index, quiz ->
-                    val answer = answerHistory.getOrNull(index)
-                    QuizResultItem(
-                        index = index,
-                        question = quiz.question,
-                        isCorrect = answer?.isCorrect,
-                    )
+            Spacer(Modifier.height(12.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                border = BorderStroke(1.dp, FinQDivider),
+            ) {
+                Column {
+                    quizzes.forEachIndexed { index, quiz ->
+                        val answer = answerHistory.getOrNull(index)
+                        QuizResultRow(
+                            index = index,
+                            question = quiz.question,
+                            isCorrect = answer?.isCorrect,
+                        )
+                        if (index < quizzes.lastIndex) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp)
+                                    .height(1.dp)
+                                    .background(FinQDivider)
+                            )
+                        }
+                    }
                 }
             }
         }
 
-        Spacer(Modifier.height(36.dp))
+        Spacer(Modifier.height(28.dp))
 
-        // ── 버튼 ──────────────────────────────────────────────────
-        // 오답이 있을 때만 오답노트 버튼 표시
+        // ── 오답노트 (있을 때만) ─────────────────────────────────
         if (wrongCount > 0) {
             Button(
                 onClick = onWrongNote,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 52.dp),
-                shape = RoundedCornerShape(12.dp),
+                    .heightIn(min = 54.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = FinQNavy,
+                    contentColor = Color.White,
+                ),
             ) {
                 Text(
-                    text = "오답노트 보기  (${wrongCount}개)",
+                    text = "오답노트 보기 ($wrongCount)",
                     style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+            Spacer(Modifier.height(10.dp))
+        }
+
+        // ── 홈으로 / 다시 풀기 (가로 50:50) ─────────────────────
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            OutlinedButton(
+                onClick = onGoHome,
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 48.dp),
+                shape = RoundedCornerShape(14.dp),
+                border = BorderStroke(1.dp, FinQDivider),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = FinQTextStrong),
+            ) {
+                Text(
+                    text = "홈으로",
+                    style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                 )
             }
-            Spacer(Modifier.height(12.dp))
+            OutlinedButton(
+                onClick = onRestart,
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 48.dp),
+                shape = RoundedCornerShape(14.dp),
+                border = BorderStroke(1.dp, FinQDivider),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = FinQTextStrong),
+            ) {
+                Text(
+                    text = "다시 풀기",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
         }
-        OutlinedButton(
-            onClick = onGoHome,
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 48.dp),
-            shape = RoundedCornerShape(12.dp),
-        ) {
-            Text(
-                text = "홈으로",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-        }
-        Spacer(Modifier.height(12.dp))
-        OutlinedButton(
-            onClick = onRestart,
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 48.dp),
-            shape = RoundedCornerShape(12.dp),
-        ) {
-            Text(
-                text = "다시 풀기",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-        }
+        Spacer(Modifier.height(8.dp))
     }
 }
 
@@ -185,8 +233,6 @@ private fun DonutChart(
     modifier: Modifier = Modifier,
 ) {
     val fraction = if (totalCount > 0) correctCount.toFloat() / totalCount.toFloat() else 0f
-
-    // 채워지는 애니메이션 (0f → fraction)
     val animatedFraction = remember { Animatable(0f) }
     LaunchedEffect(fraction) {
         animatedFraction.animateTo(
@@ -195,15 +241,15 @@ private fun DonutChart(
         )
     }
 
-    val trackColor = MaterialTheme.colorScheme.surfaceVariant
-    val arcColor = MaterialTheme.colorScheme.primary
+    val trackColor = FinQSurfaceMuted
+    val arcColor = FinQBlue
 
     Box(
-        modifier = modifier.size(180.dp),
+        modifier = modifier.size(160.dp),
         contentAlignment = Alignment.Center,
     ) {
         androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
-            val strokeWidth = 22.dp.toPx()
+            val strokeWidth = 18.dp.toPx()
             val inset = strokeWidth / 2f
             val arcSize = androidx.compose.ui.geometry.Size(
                 width = size.width - strokeWidth,
@@ -211,7 +257,6 @@ private fun DonutChart(
             )
             val topLeft = androidx.compose.ui.geometry.Offset(inset, inset)
 
-            // 배경 트랙
             drawArc(
                 color = trackColor,
                 startAngle = -90f,
@@ -221,7 +266,6 @@ private fun DonutChart(
                 size = arcSize,
                 style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
             )
-            // 정답 비율 호
             if (animatedFraction.value > 0f) {
                 drawArc(
                     color = arcColor,
@@ -235,99 +279,85 @@ private fun DonutChart(
             }
         }
 
-        // 중앙 텍스트
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = "$correctCount / $totalCount",
-                style = MaterialTheme.typography.headlineMedium,
+                text = "$correctCount/$totalCount",
+                fontSize = 36.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = FinQTextStrong,
             )
+            Spacer(Modifier.height(2.dp))
             Text(
-                text = "정답",
+                text = "정답률",
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = FinQTextMuted,
+                fontWeight = FontWeight.SemiBold,
             )
         }
     }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 문제별 결과 아이템
+// 문제별 결과 행
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun QuizResultItem(
+private fun QuizResultRow(
     index: Int,
     question: String,
     isCorrect: Boolean?,
-    modifier: Modifier = Modifier,
 ) {
-    val (icon, containerColor, iconBg) = when (isCorrect) {
-        true -> Triple("✅", MaterialTheme.colorScheme.surface,
-            MaterialTheme.colorScheme.primaryContainer)
-        false -> Triple("❌", MaterialTheme.colorScheme.surface,
-            MaterialTheme.colorScheme.errorContainer)
-        null -> Triple("⬜", MaterialTheme.colorScheme.surface,
-            MaterialTheme.colorScheme.surfaceVariant)
-    }
-
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = containerColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            // 번호 뱃지 — 정오답에 따라 배경색 구분
-            Box(
-                modifier = Modifier
-                    .size(28.dp)
-                    .clip(CircleShape)
-                    .background(iconBg),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = "Q${index + 1}",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Spacer(Modifier.width(12.dp))
-            Text(
-                text = question,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
+        Text(
+            text = "Q${index + 1}",
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+            color = FinQTextMuted,
+            modifier = Modifier.width(28.dp),
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = question,
+            style = MaterialTheme.typography.bodyMedium,
+            color = FinQTextStrong,
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(Modifier.width(12.dp))
+        when (isCorrect) {
+            true -> Image(
+                painter = painterResource(R.drawable.ic_check_circle),
+                contentDescription = "정답",
+                modifier = Modifier.size(20.dp),
             )
-            Spacer(Modifier.width(12.dp))
-            Text(
-                text = icon,
-                style = MaterialTheme.typography.titleMedium,
+            false -> Image(
+                painter = painterResource(R.drawable.ic_x_circle),
+                contentDescription = "오답",
+                modifier = Modifier.size(20.dp),
             )
+            null -> Box(modifier = Modifier.size(20.dp))
         }
     }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 점수 평가 문구
+// 점수 평가 문구 (이모지 제거)
 // ─────────────────────────────────────────────────────────────────────────────
 
 private fun gradeMessage(correct: Int, total: Int): String {
     if (total == 0) return ""
     return when {
-        correct == total -> "완벽해요! 모두 맞혔어요 🎉"
-        correct.toFloat() / total >= 0.75f -> "잘했어요! 조금만 더 👍"
-        correct.toFloat() / total >= 0.5f -> "절반 이상! 계속 도전해봐요 💪"
-        correct > 0 -> "아쉽지만 내일 또 도전해요 🌱"
-        else -> "오늘은 어려웠죠. 내일은 꼭! 🔥"
+        correct == total -> "완벽해요! 모두 맞혔어요"
+        correct.toFloat() / total >= 0.75f -> "잘하고 있어요, 조금만 더!"
+        correct.toFloat() / total >= 0.5f -> "절반 이상! 계속 도전해봐요"
+        correct > 0 -> "아쉽지만 내일 또 도전해요"
+        else -> "오늘은 어려웠죠, 내일은 꼭"
     }
 }
 
@@ -336,37 +366,29 @@ private fun gradeMessage(correct: Int, total: Int): String {
 // ─────────────────────────────────────────────────────────────────────────────
 
 private val previewQuizzes = listOf(
-    Quiz(
-        id = 1L, category = Category.INTEREST_RATE,
-        question = "한국은행이 기준금리를 올리면 일반적으로 시중 대출금리는 어떻게 변하나요?",
-        options = emptyList(),
-    ),
-    Quiz(
-        id = 2L, category = Category.EXCHANGE_RATE,
-        question = "소비자물가지수(CPI)가 상승한다는 것은 무엇을 의미하나요?",
-        options = emptyList(),
-    ),
-    Quiz(
-        id = 3L, category = Category.STOCK,
-        question = "주식 시장에서 '베어 마켓'은 어떤 상황을 가리키나요?",
-        options = emptyList(),
-    ),
-    Quiz(
-        id = 4L, category = Category.REAL_ESTATE,
-        question = "GDP 대비 국가 부채 비율이 높아질 경우 나타날 수 있는 우려는 무엇인가요?",
-        options = emptyList(),
-    ),
+    Quiz(id = 1L, category = Category.INTEREST_RATE,
+        question = "기준금리 인상이 글로벌 경제에 미치는 영향은?",
+        options = emptyList()),
+    Quiz(id = 2L, category = Category.EXCHANGE_RATE,
+        question = "원화가 약세를 보일 때 한국 경제에 미치는...",
+        options = emptyList()),
+    Quiz(id = 3L, category = Category.STOCK,
+        question = "코스피 지수가 급등락을 반복하는 상황에...",
+        options = emptyList()),
+    Quiz(id = 4L, category = Category.REAL_ESTATE,
+        question = "다주택자에 대한 양도소득세 중과 유예...",
+        options = emptyList()),
 )
 
 private val previewAnswers = listOf(
     AnswerResult(quizId = 1L, selectedOptionId = 1L, isCorrect = true,
         correctOptionId = 1L, explanation = "", keyword = null,
         relatedArticle = RelatedArticle.EMPTY),
-    AnswerResult(quizId = 2L, selectedOptionId = 3L, isCorrect = false,
-        correctOptionId = 2L, explanation = "", keyword = null,
+    AnswerResult(quizId = 2L, selectedOptionId = 4L, isCorrect = true,
+        correctOptionId = 4L, explanation = "", keyword = null,
         relatedArticle = RelatedArticle.EMPTY),
-    AnswerResult(quizId = 3L, selectedOptionId = 2L, isCorrect = true,
-        correctOptionId = 2L, explanation = "", keyword = null,
+    AnswerResult(quizId = 3L, selectedOptionId = 2L, isCorrect = false,
+        correctOptionId = 1L, explanation = "", keyword = null,
         relatedArticle = RelatedArticle.EMPTY),
     AnswerResult(quizId = 4L, selectedOptionId = 4L, isCorrect = true,
         correctOptionId = 4L, explanation = "", keyword = null,
@@ -380,20 +402,6 @@ private fun ResultReportPreview() {
         ResultReportScreen(
             quizzes = previewQuizzes,
             answerHistory = previewAnswers,
-            onGoHome = {},
-            onRestart = {},
-            onWrongNote = {},
-        )
-    }
-}
-
-@Preview(showBackground = true, widthDp = 360, heightDp = 760)
-@Composable
-private fun ResultReportAllWrongPreview() {
-    PinQ_frontendTheme {
-        ResultReportScreen(
-            quizzes = previewQuizzes,
-            answerHistory = previewAnswers.map { it.copy(isCorrect = false) },
             onGoHome = {},
             onRestart = {},
             onWrongNote = {},

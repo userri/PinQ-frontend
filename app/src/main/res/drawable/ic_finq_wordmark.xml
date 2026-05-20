@@ -1,0 +1,25 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="84dp"
+    android:height="28dp"
+    android:viewportWidth="168"
+    android:viewportHeight="56">
+    <!-- F -->
+    <path
+        android:fillColor="#FF1E2D6B"
+        android:pathData="M4,4 L36,4 L36,14 L16,14 L16,24 L32,24 L32,34 L16,34 L16,52 L4,52 Z" />
+    <!-- i -->
+    <path
+        android:fillColor="#FF1E2D6B"
+        android:pathData="M44,4 m -6,0 a 6,6 0 1,0 12,0 a 6,6 0 1,0 -12,0 Z" />
+    <path
+        android:fillColor="#FF1E2D6B"
+        android:pathData="M38,18 L50,18 L50,52 L38,52 Z" />
+    <!-- n -->
+    <path
+        android:fillColor="#FF1E2D6B"
+        android:pathData="M58,18 L70,18 L70,24 C73,19 78,17 83,17 C92,17 96,23 96,32 L96,52 L84,52 L84,34 C84,30 82,28 78,28 C73,28 70,31 70,36 L70,52 L58,52 Z" />
+    <!-- Q (블루 액센트) -->
+    <path
+        android:fillColor="#FF2F58E0"
+        android:pathData="M122,4 C108,4 100,14 100,28 C100,42 108,52 122,52 C127,52 131,51 134,49 L141,56 L150,48 L143,41 C145,38 146,33 146,28 C146,14 138,4 122,4 Z M122,42 C115,42 112,36 112,28 C112,20 115,14 122,14 C129,14 132,20 132,28 C132,32 131,35 130,37 L124,31 L116,38 L122,42 Z" />
+</vector>

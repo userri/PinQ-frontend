@@ -6,6 +6,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import com.example.pinq_frontend.R
 
 /**
  * 하단 네비게이션 "북마크" 탭 진입 화면.
@@ -39,8 +40,8 @@ fun BookmarkTabRoute(
         items = state.bookmarks,
         isLoading = state.isLoadingBookmark,
         error = state.bookmarkError,
-        emptyMessage = "다시 보고 싶은 문제를 ⭐ 로 저장해보세요",
-        emptyEmoji = "⭐",
+        emptyMessage = "다시 보고 싶은 문제를 별 아이콘으로 저장해보세요",
+        emptyIconRes = R.drawable.ic_bookmark_star_filled,
         onRetry = viewModel::loadBookmarks,
         onToggleBookmark = { item -> viewModel.toggleBookmark(item.quizId, item.bookmarked) },
         modifier = modifier,

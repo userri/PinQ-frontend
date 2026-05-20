@@ -18,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.pinq_frontend.R
 
 /**
  * 마이페이지에서 진입하는 "전체 풀이 이력" 화면.
@@ -54,7 +55,11 @@ fun AttemptHistoryRoute(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
-                Text(text = "←", style = MaterialTheme.typography.titleLarge)
+                androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(R.drawable.ic_chevron_left),
+                    contentDescription = "뒤로",
+                    modifier = Modifier.size(22.dp),
+                )
             }
             Spacer(Modifier.size(4.dp))
         }
@@ -67,7 +72,7 @@ fun AttemptHistoryRoute(
             isLoading = state.isLoadingAttempts,
             error = state.attemptsError,
             emptyMessage = "아직 풀어본 문제가 없어요",
-            emptyEmoji = "📚",
+            emptyIconRes = R.drawable.ic_tab_book,
             onRetry = viewModel::loadAttempts,
             onToggleBookmark = { item ->
                 viewModel.toggleBookmark(item.quizId, item.bookmarked)
