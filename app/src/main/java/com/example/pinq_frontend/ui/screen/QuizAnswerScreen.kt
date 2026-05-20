@@ -24,11 +24,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,13 +48,10 @@ import com.example.pinq_frontend.data.model.RelatedArticle
 import com.example.pinq_frontend.data.repository.AnswerResult
 import com.example.pinq_frontend.data.repository.LibraryRepository
 import com.example.pinq_frontend.ui.theme.FinQBlue
-import com.example.pinq_frontend.ui.theme.FinQBlueSoft
-import com.example.pinq_frontend.ui.theme.FinQDivider
 import com.example.pinq_frontend.ui.theme.FinQNavy
+import com.example.pinq_frontend.ui.theme.FinQNavyDeep
 import com.example.pinq_frontend.ui.theme.FinQRed
 import com.example.pinq_frontend.ui.theme.FinQRedSoft
-import com.example.pinq_frontend.ui.theme.FinQSurfaceMuted
-import com.example.pinq_frontend.ui.theme.FinQTextMuted
 import com.example.pinq_frontend.ui.theme.FinQTextStrong
 import com.example.pinq_frontend.ui.theme.FinQYellowSoft
 import com.example.pinq_frontend.ui.theme.PinQ_frontendTheme
@@ -65,13 +60,13 @@ import kotlinx.coroutines.launch
 /**
  * 퀴즈 정답/해설 화면 — Stateless View.
  *
- * FinQ 디자인:
- *  - 상단: 뒤로 + 진행도 + N/M
- *  - 정답/오답 칩 (블루 또는 레드)
- *  - 보기 4개: 정답 옵션은 파란 보더 + "정답" 뱃지, 사용자 오답은 레드 보더
- *  - 해설 카드
+ * QuizScreen 과 동일한 풀블리드 네이비 톤으로 통일.
+ *  - 상단: 닫기/뒤로 + 진행도 도트 + 카테고리
+ *  - 정답/오답 칩 (블루 또는 레드 채움)
+ *  - 보기 4개 (흰 카드, 정답은 블루, 사용자 오답은 레드)
+ *  - 해설 카드 (흰 배경)
  *  - 알아두면 좋아요 (옐로우 콜아웃)
- *  - 하단 다음/결과 보기 버튼 (네이비)
+ *  - 하단 다음/결과 보기 (흰 풀블리드 — 퀴즈 화면 CTA 와 동일)
  */
 @Composable
 fun QuizAnswerScreen(
@@ -93,10 +88,14 @@ fun QuizAnswerScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(FinQNavyDeep)
             .padding(horizontal = 20.dp, vertical = 12.dp),
     ) {
-        // ── 상단 진행도 ──────────────────────────────────────────
+        // ── 상단 진행도 도트 (퀴즈 화면과 동일) ──────────────────
+        ProgressDotsHeader(quizIndex = quizIndex, totalCount = totalCount)
+        Spacer(Modifier.height(12.dp))
+
+        // ── 뒤로 + 카테고리 + 북마크 ────────────────────────────
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -111,77 +110,64 @@ fun QuizAnswerScreen(
                     painter = painterResource(R.drawable.ic_chevron_left),
                     contentDescription = "뒤로",
                     modifier = Modifier.size(22.dp),
+                    colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(Color.White),
                 )
             }
-            Spacer(Modifier.size(8.dp))
-            LinearProgressIndicator(
-                progress = {
-                    (quizIndex + 1).toFloat() / totalCount.coerceAtLeast(1).toFloat()
-                },
-                modifier = Modifier
-                    .weight(1f)
-                    .height(6.dp)
-                    .clip(RoundedCornerShape(3.dp)),
-                color = FinQBlue,
-                trackColor = FinQDivider,
-            )
-            Spacer(Modifier.size(10.dp))
+            Spacer(Modifier.weight(1f))
             Text(
-                text = "${quizIndex + 1}/$totalCount",
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = FinQTextMuted,
+                text = "Q${quizIndex + 1} · ${quiz.category.displayName}",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
             )
+            Spacer(Modifier.weight(1f))
+            if (libraryRepository != null) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clickable {
+                            val next = !bookmarked
+                            bookmarked = next
+                            scope.launch {
+                                runCatching {
+                                    if (next) libraryRepository.addBookmark(quiz.id)
+                                    else libraryRepository.removeBookmark(quiz.id)
+                                }.onFailure { bookmarked = !next }
+                            }
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Image(
+                        painter = painterResource(
+                            if (bookmarked) R.drawable.ic_bookmark_star_filled
+                            else R.drawable.ic_bookmark_star,
+                        ),
+                        contentDescription = "북마크",
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
+            } else {
+                Box(modifier = Modifier.size(32.dp))
+            }
         }
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(18.dp))
 
         Column(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState()),
         ) {
-            // ── 정답/오답 칩 + 북마크 ─────────────────────────────
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                ResultChip(isCorrect = answer.isCorrect, modifier = Modifier.weight(1f))
-                Spacer(Modifier.size(8.dp))
-                if (libraryRepository != null) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clickable {
-                                val next = !bookmarked
-                                bookmarked = next
-                                scope.launch {
-                                    runCatching {
-                                        if (next) libraryRepository.addBookmark(quiz.id)
-                                        else libraryRepository.removeBookmark(quiz.id)
-                                    }.onFailure {
-                                        bookmarked = !next
-                                    }
-                                }
-                            },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Image(
-                            painter = painterResource(
-                                if (bookmarked) R.drawable.ic_bookmark_star_filled
-                                else R.drawable.ic_bookmark_star,
-                            ),
-                            contentDescription = "북마크",
-                            modifier = Modifier.size(26.dp),
-                        )
-                    }
-                }
-            }
+            // ── 정답/오답 칩 ─────────────────────────────────────
+            ResultChip(isCorrect = answer.isCorrect)
             Spacer(Modifier.height(18.dp))
 
-            // ── 문제 ────────────────────────────────────────────
+            // ── 문제 (다크 배경 위 흰 텍스트) ────────────────────
             Text(
                 text = "Q. ${quiz.question}",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = FinQTextStrong,
+                color = Color.White,
             )
             Spacer(Modifier.height(14.dp))
 
@@ -197,10 +183,10 @@ fun QuizAnswerScreen(
             }
             Spacer(Modifier.height(20.dp))
 
-            // ── 해설 카드 ────────────────────────────────────────
+            // ── 해설 카드 (흰 풀블리드) ─────────────────────────
             ExplanationCard(explanation = answer.explanation)
 
-            // ── 알아두면 좋아요 (옐로우 콜아웃) ───────────────────
+            // ── 알아두면 좋아요 (옐로우) ────────────────────────
             if (!answer.keyword.isNullOrBlank()) {
                 Spacer(Modifier.height(12.dp))
                 KeywordCard(keyword = answer.keyword)
@@ -216,20 +202,23 @@ fun QuizAnswerScreen(
                     onClick = { onArticleClick(answer.relatedArticle) },
                 )
             }
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(4.dp))
         }
 
-        // ── 다음/결과 보기 버튼 ─────────────────────────────────
+        // 스크롤 영역과 하단 CTA 사이 여백
+        Spacer(Modifier.height(4.dp))
+
+        // ── 다음 / 결과 보기 (흰 풀블리드 — 퀴즈 화면 CTA 와 동일) ──
         Button(
             onClick = onNext,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.White,
+                contentColor = FinQNavy,
+            ),
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 54.dp),
             shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = FinQNavy,
-                contentColor = Color.White,
-            ),
         ) {
             Text(
                 text = if (isLast) "결과 보기" else "다음 문제",
@@ -237,51 +226,76 @@ fun QuizAnswerScreen(
                 fontWeight = FontWeight.Bold,
             )
         }
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(4.dp))
     }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 정답/오답 칩
+// 상단 진행도 도트 (QuizScreen 과 동일 비주얼)
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun ResultChip(isCorrect: Boolean, modifier: Modifier = Modifier) {
-    val bg = if (isCorrect) FinQBlueSoft else FinQRedSoft
-    val fg = if (isCorrect) FinQBlue else FinQRed
+private fun ProgressDotsHeader(quizIndex: Int, totalCount: Int) {
     Row(
-        modifier = modifier
-            .clip(RoundedCornerShape(14.dp))
-            .background(bg)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        repeat(totalCount.coerceAtLeast(1)) { i ->
+            val done = i <= quizIndex
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(
+                        if (done) Color.White
+                        else Color.White.copy(alpha = 0.25f)
+                    )
+            )
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 정답/오답 칩 — 다크 배경 위에 채움형
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun ResultChip(isCorrect: Boolean) {
+    val accent = if (isCorrect) FinQBlue else FinQRed
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(accent)
+            .padding(start = 6.dp, end = 14.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
             modifier = Modifier
-                .size(28.dp)
+                .size(26.dp)
                 .clip(CircleShape)
-                .background(fg),
+                .background(Color.White),
             contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = "Q",
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.ExtraBold,
-                color = Color.White,
+                color = accent,
             )
         }
-        Spacer(Modifier.size(10.dp))
+        Spacer(Modifier.size(8.dp))
         Text(
             text = if (isCorrect) "정답이에요!" else "아쉬워요, 다음에 맞혀봐요",
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
-            color = fg,
+            color = Color.White,
         )
     }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 보기 행
+// 보기 행 — 흰 카드, 정답/오답에 따라 컬러 보더
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
@@ -290,25 +304,19 @@ private fun AnswerOptionRow(
     isCorrect: Boolean,
     isUserSelected: Boolean,
 ) {
-    val container = Color.White
     val (border, accent) = when {
         isCorrect -> FinQBlue to FinQBlue
         isUserSelected -> FinQRed to FinQRed
-        else -> Color.Transparent to FinQTextMuted
-    }
-    val highlightBg = when {
-        isCorrect -> FinQBlueSoft
-        isUserSelected -> FinQRedSoft
-        else -> container
+        else -> Color.Transparent to Color(0xFF94A3B8)
     }
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(highlightBg)
+            .background(Color.White)
             .border(
-                width = if (isCorrect || isUserSelected) 1.5.dp else 1.dp,
-                color = if (border == Color.Transparent) FinQDivider else border,
+                width = if (isCorrect || isUserSelected) 2.dp else 0.dp,
+                color = border,
                 shape = RoundedCornerShape(14.dp),
             )
             .padding(horizontal = 14.dp, vertical = 14.dp),
@@ -374,7 +382,7 @@ private fun AnswerOptionRow(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 해설 카드
+// 해설 카드 (다크 배경 위 흰 카드)
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
@@ -382,21 +390,21 @@ private fun ExplanationCard(explanation: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = FinQSurfaceMuted),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
-                    .background(FinQBlueSoft)
+                    .background(FinQNavy)
                     .padding(horizontal = 10.dp, vertical = 4.dp),
             ) {
                 Text(
                     text = "해설",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
-                    color = FinQNavy,
+                    color = Color.White,
                 )
             }
             Spacer(Modifier.height(10.dp))
@@ -410,7 +418,7 @@ private fun ExplanationCard(explanation: String) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 알아두면 좋아요 (옐로우 콜아웃)
+// 알아두면 좋아요 (옐로우)
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
@@ -448,7 +456,7 @@ private fun KeywordCard(keyword: String) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 관련 기사
+// 관련 기사 — 다크 배경에 어울리는 톤
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
@@ -457,15 +465,15 @@ private fun RelatedArticleCard(article: RelatedArticle, onClick: () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
         onClick = onClick,
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, FinQDivider),
+        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.08f)),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.18f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = "관련 기사",
                 style = MaterialTheme.typography.labelMedium,
-                color = FinQBlue,
+                color = Color.White.copy(alpha = 0.7f),
                 fontWeight = FontWeight.Bold,
             )
             Spacer(Modifier.height(8.dp))
@@ -473,14 +481,14 @@ private fun RelatedArticleCard(article: RelatedArticle, onClick: () -> Unit) {
                 text = article.title,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = FinQTextStrong,
+                color = Color.White,
                 maxLines = 2,
             )
             Spacer(Modifier.height(6.dp))
             Text(
                 text = article.source,
                 style = MaterialTheme.typography.bodySmall,
-                color = FinQTextMuted,
+                color = Color.White.copy(alpha = 0.6f),
             )
         }
     }

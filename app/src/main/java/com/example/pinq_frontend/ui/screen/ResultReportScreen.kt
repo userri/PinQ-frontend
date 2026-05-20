@@ -75,9 +75,19 @@ fun ResultReportScreen(
     onWrongNote: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val correctCount = answerHistory.count { it.isCorrect }
-    val totalCount = quizzes.size
-    val wrongCount = answerHistory.count { !it.isCorrect }
+    val answerByQuizId = remember(answerHistory) {
+        answerHistory.associateBy { it.quizId }
+    }
+    val resultQuizzes = quizzes.filter { quiz ->
+        answerByQuizId.containsKey(quiz.id) || quiz.correct != null
+    }
+    val correctCount = resultQuizzes.count { quiz ->
+        answerByQuizId[quiz.id]?.isCorrect ?: (quiz.correct == true)
+    }
+    val totalCount = resultQuizzes.size
+    val wrongCount = resultQuizzes.count { quiz ->
+        answerByQuizId[quiz.id]?.isCorrect == false || quiz.correct == false
+    }
 
     Column(
         modifier = modifier
@@ -124,7 +134,7 @@ fun ResultReportScreen(
         Spacer(Modifier.height(20.dp))
 
         // ── 문제별 결과 ───────────────────────────────────────────
-        if (quizzes.isNotEmpty() && answerHistory.isNotEmpty()) {
+        if (resultQuizzes.isNotEmpty()) {
             Text(
                 text = "문제별 결과",
                 style = MaterialTheme.typography.titleMedium,
@@ -140,14 +150,15 @@ fun ResultReportScreen(
                 border = BorderStroke(1.dp, FinQDivider),
             ) {
                 Column {
-                    quizzes.forEachIndexed { index, quiz ->
-                        val answer = answerHistory.getOrNull(index)
+                    resultQuizzes.forEachIndexed { index, quiz ->
+                        val answer = answerByQuizId[quiz.id]
+                        val isCorrect = answer?.isCorrect ?: quiz.correct
                         QuizResultRow(
                             index = index,
                             question = quiz.question,
-                            isCorrect = answer?.isCorrect,
+                            isCorrect = isCorrect,
                         )
-                        if (index < quizzes.lastIndex) {
+                        if (index < resultQuizzes.lastIndex) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()

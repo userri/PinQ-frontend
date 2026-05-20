@@ -13,6 +13,7 @@ data class QuizApiResponse(
     val question: String,
     val choices: List<ChoiceApiResponse>,
     val solved: Boolean = false,
+    val correct: Boolean? = null,
 )
 
 data class ChoiceApiResponse(
