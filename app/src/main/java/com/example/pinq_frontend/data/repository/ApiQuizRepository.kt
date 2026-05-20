@@ -44,6 +44,7 @@ class ApiQuizRepository(
         question = question,
         options = choices.map { it.toDomain() },
         solved = solved,
+        correct = correct,
         // /today 응답에는 정답 정보가 빠져있다 (보안). placeholder 만 채워둠.
         // 실제 정답/해설/기사는 submitAnswer 의 AnswerResult 로만 전달된다.
         correctOptionId = 0L,
