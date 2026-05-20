@@ -12,7 +12,10 @@ data class QuizSessionUiState(
     val isLoading: Boolean = true,
     val error: String? = null,
 
-    /** 오늘의 퀴즈 전체. 로딩 끝나면 채워진다. */
+    /** 오늘의 퀴즈 전체. 진행도 표시 기준으로 사용한다. */
+    val allQuizzes: List<Quiz> = emptyList(),
+
+    /** 이번 세션에서 실제로 풀 미풀이 퀴즈 목록. */
     val quizzes: List<Quiz> = emptyList(),
 
     /** 지금 사용자가 풀고 있는 문제의 index (0-based). */
@@ -33,12 +36,18 @@ data class QuizSessionUiState(
     /**
      * 제출 완료된 문제들의 채점 결과 리스트 (제출 순서대로 누적).
      * 결과 리포트 화면에서 문제별 정오 표시에 사용한다.
-     * quizzes[i] 와 answerHistory[i] 가 같은 문제에 대응된다.
+     * 이번 세션의 quizzes[i] 와 answerHistory[i] 가 같은 문제에 대응된다.
      */
     val answerHistory: List<AnswerResult> = emptyList(),
 ) {
     val currentQuiz: Quiz? get() = quizzes.getOrNull(currentIndex)
-    val totalCount: Int get() = quizzes.size
+    val totalCount: Int get() = allQuizzes.ifEmpty { quizzes }.size
+    val progressIndex: Int
+        get() {
+            val quiz = currentQuiz ?: return currentIndex
+            val originalIndex = allQuizzes.indexOfFirst { it.id == quiz.id }
+            return if (originalIndex >= 0) originalIndex else currentIndex
+        }
     val isLastQuiz: Boolean get() = quizzes.isNotEmpty() && currentIndex >= quizzes.size - 1
     val canSubmit: Boolean get() = selectedOptionId != null && currentQuiz != null
 }

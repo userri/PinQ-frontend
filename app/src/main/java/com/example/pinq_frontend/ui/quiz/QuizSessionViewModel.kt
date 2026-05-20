@@ -15,9 +15,8 @@ import kotlinx.coroutines.launch
  * 퀴즈 세션 전체를 책임지는 ViewModel.
  *
  * [loadQuizzesIfNeeded] — quizzes 가 비어있을 때만 서버에서 로드한다.
- * 세션 중간에 홈으로 나갔다 돌아와도 ViewModel 인스턴스가 살아있으면
- * 이미 로드된 quizzes/answerHistory 를 그대로 유지한다.
- * (init 에서 무조건 loadQuizzes() 를 호출하지 않는 이유)
+ * 세션을 나갔다 다시 들어오면 Navigation 에서 ViewModel 을 새로 만들고,
+ * 서버의 solved 상태를 기준으로 아직 안 푼 문제만 이번 세션에 담는다.
  */
 class QuizSessionViewModel(
     private val quizRepository: QuizRepository,
@@ -50,7 +49,19 @@ class QuizSessionViewModel(
             _uiState.update { it.copy(isLoading = true, error = null) }
             runCatching { quizRepository.getTodayQuizzes() }
                 .onSuccess { quizzes ->
-                    _uiState.update { it.copy(isLoading = false, quizzes = quizzes) }
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            allQuizzes = quizzes,
+                            quizzes = quizzes.filterNot { quiz -> quiz.solved },
+                            currentIndex = 0,
+                            selectedOptionId = null,
+                            lastAnswer = null,
+                            isSubmitting = false,
+                            correctCount = 0,
+                            answerHistory = emptyList(),
+                        )
+                    }
                 }
                 .onFailure { e ->
                     _uiState.update {
