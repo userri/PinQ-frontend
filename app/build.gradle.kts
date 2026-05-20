@@ -12,11 +12,11 @@ val localProps = Properties().apply {
 }
 
 android {
-    namespace = "com.example.pinq_frontend"
+    namespace = "com.finq.app"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.pinq_frontend"
+        applicationId = "com.finq.app"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
