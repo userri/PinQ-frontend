@@ -7,7 +7,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -115,6 +114,15 @@ private val bottomNavRoutes = setOf(
     FinQRoutes.MY_PAGE,
 )
 
+/**
+ * 세션 진행 중에는 Scaffold 컨테이너까지 풀블리드 네이비로 깐다.
+ * 상태바·하단 인셋 영역도 모두 네이비로 채워져 끊김 없는 다크 톤이 유지된다.
+ */
+private val darkSessionRoutes = setOf(
+    FinQRoutes.QUIZ,
+    FinQRoutes.ANSWER,
+)
+
 data class BottomNavItem(
     val route: String,
     val label: String,
@@ -181,12 +189,18 @@ fun FinQNavHost(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val showBottomBar = currentRoute in bottomNavRoutes
+    val isDarkSession = currentRoute in darkSessionRoutes
 
     val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
         modifier = modifier,
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        // 세션 화면에서는 상태바·하단 인셋까지 네이비로 풀블리드.
+        containerColor = if (isDarkSession)
+            com.example.pinq_frontend.ui.theme.FinQNavyDeep
+        else
+            MaterialTheme.colorScheme.background,
         bottomBar = {
             if (showBottomBar) {
                 FinQBottomBar(
@@ -447,7 +461,7 @@ private fun FinQBottomBar(
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 0.dp,
-        windowInsets = WindowInsets(0),
+        // windowInsets 를 기본값으로 두어 기기 하단 시스템 바(제스처/3버튼)와 겹치지 않게 한다.
     ) {
         bottomNavItems.forEach { item ->
             val selected = currentRoute == item.route

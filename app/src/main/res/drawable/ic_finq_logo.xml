@@ -30,9 +30,9 @@
             </gradient>
         </aapt:attr>
     </path>
-    <!-- 큰 Q 원형 (흰 링) -->
+    <!-- 큰 Q 원형 (흰 링) — 원본 SVG 의 cx=48, cy=50 -->
     <path
-        android:pathData="M48,26 m -24,0 a 24,24 0 1,0 48,0 a 24,24 0 1,0 -48,0"
+        android:pathData="M48,50 m -24,0 a 24,24 0 1,0 48,0 a 24,24 0 1,0 -48,0"
         android:strokeColor="#FFFFFFFF"
         android:strokeWidth="11"
         android:strokeLineCap="round" />
