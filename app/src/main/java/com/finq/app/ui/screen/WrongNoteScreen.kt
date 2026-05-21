@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,6 +18,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.res.painterResource
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -25,6 +28,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.finq.app.data.model.AttemptItem
@@ -33,6 +37,7 @@ import com.finq.app.data.model.QuizOption
 import com.finq.app.data.repository.AnswerResult
 import com.finq.app.R
 import com.finq.app.ui.library.AttemptItemCard
+import com.finq.app.ui.theme.FinQNavy
 
 /**
  * 세션 결과 화면에서 진입하는 "이번 회차 오답노트" 화면.
@@ -49,13 +54,17 @@ fun WrongNoteScreen(
     quizzes: List<Quiz>,
     answerHistory: List<AnswerResult>,
     onBack: () -> Unit,
+    onGoHome: () -> Unit,
     onToggleBookmark: (Long, Boolean) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
 ) {
     val wrongItems: List<AttemptItem> = remember(quizzes, answerHistory) {
-        quizzes.zip(answerHistory)
-            .filter { (_, answer) -> !answer.isCorrect }
-            .map { (quiz, answer) -> buildAttemptItem(quiz, answer) }
+        val quizById = quizzes.associateBy { it.id }
+        answerHistory
+            .filter { answer -> !answer.isCorrect }
+            .mapNotNull { answer ->
+                quizById[answer.quizId]?.let { quiz -> buildAttemptItem(quiz, answer) }
+            }
     }
 
     // 로컬 북마크 상태 — wrongItems 는 세션 메모리 기반이라 bookmarked 가 항상 false.
@@ -134,18 +143,40 @@ fun WrongNoteScreen(
                 .background(MaterialTheme.colorScheme.surface)
                 .padding(horizontal = 20.dp, vertical = 12.dp),
         ) {
-            OutlinedButton(
-                onClick = onBack,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 48.dp),
-                shape = RoundedCornerShape(12.dp),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Text(
-                    text = "결과로 돌아가기",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
+                OutlinedButton(
+                    onClick = onBack,
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Text(
+                        text = "결과로",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+                Button(
+                    onClick = onGoHome,
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = FinQNavy,
+                        contentColor = Color.White,
+                    ),
+                ) {
+                    Text(
+                        text = "홈으로",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
             }
         }
     }

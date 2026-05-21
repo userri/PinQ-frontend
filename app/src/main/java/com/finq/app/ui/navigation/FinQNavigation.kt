@@ -195,10 +195,17 @@ fun FinQNavHost(
                 FinQBottomBar(
                     currentRoute = currentRoute,
                     onNavigate = { route ->
-                        navController.navigate(route) {
-                            popUpTo(FinQRoutes.HOME) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
+                        if (route == FinQRoutes.HOME) {
+                            navController.navigate(FinQRoutes.HOME) {
+                                popUpTo(FinQRoutes.HOME)
+                                launchSingleTop = true
+                            }
+                        } else {
+                            navController.navigate(route) {
+                                popUpTo(FinQRoutes.HOME) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
                         }
                     },
                 )
@@ -421,10 +428,7 @@ fun FinQNavHost(
                             }
                         },
                         onWrongNote = {
-                            navController.navigate(FinQRoutes.LIBRARY_TAB) {
-                                popUpTo(FinQRoutes.SESSION_GRAPH) { inclusive = true }
-                                launchSingleTop = true
-                            }
+                            navController.navigate(FinQRoutes.WRONG_NOTE)
                         },
                     )
                 }
@@ -434,6 +438,12 @@ fun FinQNavHost(
                         viewModel = vm,
                         libraryRepository = libraryRepository,
                         onBack = { navController.popBackStack() },
+                        onGoHome = {
+                            navController.navigate(FinQRoutes.HOME) {
+                                popUpTo(FinQRoutes.SESSION_GRAPH) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        },
                     )
                 }
             }
@@ -595,13 +605,15 @@ private fun WrongNoteRoute(
     viewModel: QuizSessionViewModel,
     libraryRepository: LibraryRepository,
     onBack: () -> Unit,
+    onGoHome: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsState()
     val libraryVm = libraryViewModel(libraryRepository)
     WrongNoteScreen(
-        quizzes = state.quizzes,
+        quizzes = state.allQuizzes.ifEmpty { state.quizzes },
         answerHistory = state.answerHistory,
         onBack = onBack,
+        onGoHome = onGoHome,
         onToggleBookmark = { quizId, currentlyBookmarked ->
             libraryVm.toggleBookmark(quizId, currentlyBookmarked)
         },

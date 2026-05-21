@@ -15,6 +15,7 @@ import com.kakao.sdk.common.model.ClientErrorCause
 import com.kakao.sdk.user.UserApiClient
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.NoCredentialException
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -80,6 +81,10 @@ class AuthRepository(
      * filterByAuthorizedAccounts = false 로 설정해 새 계정도 허용한다.
      */
     suspend fun loginWithGoogle(context: Context): Result<String> = runCatching {
+        if (BuildConfig.GOOGLE_WEB_CLIENT_ID.isBlank()) {
+            error("구글 웹 클라이언트 ID가 설정되지 않았어요. local.properties의 google.web.client.id를 확인해 주세요.")
+        }
+
         val credentialManager = CredentialManager.create(context)
 
         val googleIdOption = GetGoogleIdOption.Builder()
@@ -92,7 +97,14 @@ class AuthRepository(
             .addCredentialOption(googleIdOption)
             .build()
 
-        val result = credentialManager.getCredential(context, request)
+        val result = try {
+            credentialManager.getCredential(context, request)
+        } catch (e: NoCredentialException) {
+            throw IllegalStateException(
+                "사용 가능한 Google 계정을 찾지 못했어요. Google Play 서비스가 있는 기기에서 계정을 추가하고, 앱 패키지/SHA가 Google OAuth 설정에 등록되어 있는지 확인해 주세요.",
+                e,
+            )
+        }
         val credential = GoogleIdTokenCredential.createFrom(result.credential.data)
 
         val response = authApi.loginWithGoogle(GoogleLoginRequest(credential.idToken))
