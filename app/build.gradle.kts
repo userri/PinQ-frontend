@@ -1,3 +1,4 @@
+import java.io.File
 import java.util.Properties
 
 plugins {
@@ -10,6 +11,31 @@ val localProps = Properties().apply {
     val f = rootProject.file("local.properties")
     if (f.exists()) load(f.reader(Charsets.UTF_8))
 }
+
+// 카카오 네이티브 앱키 (local.properties: kakao.native.app.key=YOUR_KEY)
+val kakaoKey = localProps.getProperty("kakao.native.app.key", "")
+// 구글 웹 클라이언트 ID (local.properties: google.web.client.id=YOUR_ID)
+val googleClientId = localProps.getProperty("google.web.client.id", "")
+// 개발용 BASE_URL (local.properties: base.url=http://192.168.x.x:8080/)
+// 미설정 시 adb reverse 방식 기본값 사용
+val debugBaseUrl = localProps.getProperty("base.url", "http://localhost:8080/")
+// 운영 BASE_URL — 반드시 https. 재정의: local.properties 의 base.url.release
+val releaseBaseUrl = localProps.getProperty("base.url.release", "https://finq.duckdns.org/")
+
+// 업로드 키스토어 (local.properties 에 설정 — 절대 git 에 커밋 금지):
+//   keystore.path=pinq-upload.jks           (repo 루트 기준 상대경로 또는 절대경로)
+//   keystore.store.password=...
+//   keystore.key.alias=pinq
+//   keystore.key.password=...
+// 키스토어 생성:
+//   keytool -genkeypair -v -keystore pinq-upload.jks -alias pinq \
+//     -keyalg RSA -keysize 2048 -validity 10000
+val keystorePath = localProps.getProperty("keystore.path", "")
+val keystoreFile = keystorePath.takeIf { it.isNotBlank() }?.let { p ->
+    val f = File(p)
+    if (f.isAbsolute) f else rootProject.file(p)
+}
+val hasKeystore = keystoreFile?.exists() == true
 
 android {
     namespace = "com.finq.app"
@@ -24,36 +50,36 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // 카카오 네이티브 앱키 (local.properties: kakao.native.app.key=YOUR_KEY)
-        val kakaoKey = localProps.getProperty("kakao.native.app.key", "")
         buildConfigField("String", "KAKAO_NATIVE_APP_KEY", "\"$kakaoKey\"")
         manifestPlaceholders["kakaoNativeAppKey"] = kakaoKey
-
-        // 구글 웹 클라이언트 ID (local.properties: google.web.client.id=YOUR_ID)
-        val googleClientId = localProps.getProperty("google.web.client.id", "")
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleClientId\"")
+    }
 
-        // 백엔드 BASE_URL (local.properties: base.url=http://192.168.x.x:8080/)
-        // 미설정 시 adb reverse 방식 기본값 사용
-        val baseUrl = localProps.getProperty("base.url", "http://localhost:8080/")
-        buildConfigField("String", "BASE_URL", "\"$baseUrl\"")
+    signingConfigs {
+        if (hasKeystore) {
+            create("release") {
+                storeFile = keystoreFile
+                storePassword = localProps.getProperty("keystore.store.password", "")
+                keyAlias = localProps.getProperty("keystore.key.alias", "")
+                keyPassword = localProps.getProperty("keystore.key.password", "")
+            }
+        }
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "BASE_URL", "\"$debugBaseUrl\"")
+        }
         release {
-            isMinifyEnabled = false
+            buildConfigField("String", "BASE_URL", "\"$releaseBaseUrl\"")
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // release 빌드 시 필수 키가 비어 있으면 런타임 크래시 대신 빌드 시점에 차단
-            val kakaoKeyForCheck = localProps.getProperty("kakao.native.app.key", "")
-            val googleIdForCheck  = localProps.getProperty("google.web.client.id", "")
-            if (kakaoKeyForCheck.isBlank()) {
-                error("release 빌드에 kakao.native.app.key 가 설정되지 않았습니다. local.properties 를 확인하세요.")
-            }
-            if (googleIdForCheck.isBlank()) {
-                error("release 빌드에 google.web.client.id 가 설정되지 않았습니다. local.properties 를 확인하세요.")
+            if (hasKeystore) {
+                signingConfig = signingConfigs.getByName("release")
             }
         }
     }
@@ -65,6 +91,32 @@ android {
         compose = true
         buildConfig = true
     }
+}
+
+// 릴리즈 필수 설정 검증 — configuration 단계가 아닌 release 빌드 실행 시에만 실패한다.
+// (예전에는 buildTypes.release {} 안에서 error() 를 던져 debug 빌드/gradle sync 까지 깨졌음)
+val validateReleaseConfig = tasks.register("validateReleaseConfig") {
+    doFirst {
+        val problems = buildList {
+            if (kakaoKey.isBlank())
+                add("kakao.native.app.key 가 설정되지 않았습니다.")
+            if (googleClientId.isBlank())
+                add("google.web.client.id 가 설정되지 않았습니다.")
+            if (!releaseBaseUrl.startsWith("https://"))
+                add("release BASE_URL 은 https:// 로 시작해야 합니다. (현재: $releaseBaseUrl — base.url.release 로 재정의 가능)")
+            if (!hasKeystore)
+                add("업로드 키스토어가 없습니다. keytool 로 생성 후 keystore.* 항목을 설정하세요 (파일 상단 주석 참고). 없으면 서명 안 된 AAB 가 만들어져 Play Console 이 거부합니다.")
+        }
+        if (problems.isNotEmpty()) {
+            throw GradleException(
+                "릴리즈 빌드 검증 실패 — local.properties 를 확인하세요:\n" +
+                    problems.joinToString("\n") { " - $it" }
+            )
+        }
+    }
+}
+tasks.configureEach {
+    if (name == "preReleaseBuild") dependsOn(validateReleaseConfig)
 }
 
 dependencies {
