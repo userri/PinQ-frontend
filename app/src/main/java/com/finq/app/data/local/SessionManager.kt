@@ -6,6 +6,9 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.runBlocking
 
@@ -33,6 +36,15 @@ object SessionManager {
     val refreshToken: String?      get() = _refreshToken
     val userId:       Long?        get() = _userId
     val isLoggedIn:   Boolean      get() = !_accessToken.isNullOrEmpty()
+
+    /**
+     * refresh token 재발급 실패로 세션이 강제 종료됐을 때 발행되는 1회성 이벤트.
+     * UI(네비게이션)는 이를 수신해 로그인 화면으로 이동시킨다.
+     * 사용자가 직접 로그아웃/탈퇴한 경우(clearSession)에는 발행하지 않는다 —
+     * 해당 화면이 자체적으로 네비게이션을 처리한다.
+     */
+    private val _sessionExpiredEvents = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val sessionExpiredEvents: SharedFlow<Unit> = _sessionExpiredEvents.asSharedFlow()
 
     /** Application.onCreate에서 한 번 호출. DataStore에서 세션을 복원한다. */
     fun init(context: Context) {
@@ -80,7 +92,7 @@ object SessionManager {
         }
     }
 
-    /** 세션 전체 삭제 (동기 버전 — Authenticator용). */
+    /** 세션 전체 삭제 (동기 버전 — Authenticator용). 세션 만료 이벤트를 발행한다. */
     fun clearSessionSync(context: Context) {
         _accessToken  = null
         _refreshToken = null
@@ -92,5 +104,6 @@ object SessionManager {
                 prefs.remove(KEY_USER_ID)
             }
         }
+        _sessionExpiredEvents.tryEmit(Unit)
     }
 }

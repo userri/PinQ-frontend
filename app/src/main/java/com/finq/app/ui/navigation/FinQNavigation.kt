@@ -175,6 +175,18 @@ fun FinQNavHost(
 
     val startDestination = if (SessionManager.isLoggedIn) FinQRoutes.HOME else FinQRoutes.LOGIN
 
+    // refresh token 재발급 실패로 세션이 만료되면(Authenticator 의 clearSessionSync)
+    // 어느 화면에 있든 로그인 화면으로 보낸다. 이 이벤트가 없으면 사용자는
+    // 401 에러 화면에 갇혀 앱을 재시작해야만 로그인할 수 있다.
+    LaunchedEffect(Unit) {
+        SessionManager.sessionExpiredEvents.collect {
+            navController.navigate(FinQRoutes.LOGIN) {
+                popUpTo(0) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+    }
+
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val showBottomBar = currentRoute in bottomNavRoutes
