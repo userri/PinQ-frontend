@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  debug 빌드 전용 네트워크 보안 정책 — main 소스셋의 동명 파일을 대체한다.
+
+  로컬 백엔드 개발(adb reverse + http://localhost:8080, 또는 LAN IP)을 위해
+  cleartext 를 전체 허용한다.
+    - <domain> 태그는 정확한 IP/도메인 매칭만 지원하고 CIDR(서브넷) 매칭은 불가하므로,
+      WiFi IP 가 바뀔 때마다 XML 을 수정해야 하는 번거로움이 있어 전부 허용한다.
+  release 빌드에는 이 파일이 포함되지 않으며 main 의 설정(평문 차단)이 적용된다.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

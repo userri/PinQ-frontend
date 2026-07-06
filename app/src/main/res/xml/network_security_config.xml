@@ -1,15 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Phase 2 개발용 네트워크 보안 정책.
+  운영 네트워크 보안 정책 — 평문 HTTP 전면 차단.
 
-  base-config 에서 cleartext 를 전체 허용한다.
-    - <domain> 태그는 정확한 IP/도메인 매칭만 지원하고 CIDR(서브넷) 매칭은 불가하므로,
-      WiFi IP 가 바뀔 때마다 XML 을 수정해야 하는 번거로움이 있다.
-    - 개발 편의를 위해 전부 허용하고, 운영 빌드 전에는 반드시 false 로 바꾸거나
-      이 파일 자체를 제거해야 한다.
+  개발 중 로컬 백엔드(http://localhost, LAN IP)에 붙어야 할 때는
+  debug 소스셋(app/src/debug/res/xml/network_security_config.xml)의
+  설정이 이 파일을 대체하므로 여기를 수정할 필요가 없다.
 -->
 <network-security-config>
-    <base-config cleartextTrafficPermitted="true">
+    <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>
