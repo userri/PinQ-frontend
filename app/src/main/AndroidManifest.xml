@@ -35,6 +35,11 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.FinQ">
+        <!-- AdMob 앱 ID — 비밀 아님, APK 에 항상 포함되는 공개 식별자 -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-4958708999777591~9394793802" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

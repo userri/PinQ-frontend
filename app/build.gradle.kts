@@ -45,8 +45,8 @@ android {
         applicationId = "com.finq.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -69,9 +69,19 @@ android {
     buildTypes {
         debug {
             buildConfigField("String", "BASE_URL", "\"$debugBaseUrl\"")
+            // 구글 공식 테스트 배너 광고 단위 — 개발 중 실광고 클릭으로 인한 계정 제재 방지
+            buildConfigField(
+                "String", "ADMOB_BANNER_UNIT_ID",
+                "\"ca-app-pub-3940256099942544/9214589741\""
+            )
         }
         release {
             buildConfigField("String", "BASE_URL", "\"$releaseBaseUrl\"")
+            // FinQ 실제 배너 광고 단위 (정답화면_하단배너)
+            buildConfigField(
+                "String", "ADMOB_BANNER_UNIT_ID",
+                "\"ca-app-pub-4958708999777591/9464900396\""
+            )
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -147,6 +157,9 @@ dependencies {
 
     // DataStore (JWT 토큰 영구 저장)
     implementation(libs.datastore.preferences)
+
+    // AdMob 배너 광고
+    implementation(libs.play.services.ads)
 
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))

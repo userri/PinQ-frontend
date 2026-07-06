@@ -47,6 +47,7 @@ import com.finq.app.data.model.QuizOption
 import com.finq.app.data.model.RelatedArticle
 import com.finq.app.data.repository.AnswerResult
 import com.finq.app.data.repository.LibraryRepository
+import com.finq.app.ui.components.AdBanner
 import com.finq.app.ui.theme.FinQBlue
 import com.finq.app.ui.theme.FinQNavy
 import com.finq.app.ui.theme.FinQNavyDeep
@@ -202,6 +203,10 @@ fun QuizAnswerScreen(
                     onClick = { onArticleClick(answer.relatedArticle) },
                 )
             }
+
+            // ── 배너 광고 (스크롤 콘텐츠 맨 아래 — CTA 를 가리지 않는 자리) ──
+            Spacer(Modifier.height(16.dp))
+            AdBanner(horizontalPaddingDp = 40) // 화면 좌우 패딩 20+20
             Spacer(Modifier.height(4.dp))
         }
 

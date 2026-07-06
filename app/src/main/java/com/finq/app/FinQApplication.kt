@@ -3,7 +3,11 @@ package com.finq.app
 import android.app.Application
 import com.finq.app.data.local.SessionManager
 import com.finq.app.data.remote.NetworkModule
+import com.google.android.gms.ads.MobileAds
 import com.kakao.sdk.common.KakaoSdk
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 /**
  * Phase 4 메모:
@@ -17,5 +21,9 @@ class FinQApplication : Application() {
         NetworkModule.init(this)
         // Kakao SDK 초기화 — BuildConfig 에서 네이티브 앱키 주입
         KakaoSdk.init(this, BuildConfig.KAKAO_NATIVE_APP_KEY)
+        // AdMob 초기화 — 수십~수백 ms 걸릴 수 있어 백그라운드에서 실행 (콜드 스타트 보호)
+        CoroutineScope(Dispatchers.IO).launch {
+            MobileAds.initialize(this@FinQApplication)
+        }
     }
 }
