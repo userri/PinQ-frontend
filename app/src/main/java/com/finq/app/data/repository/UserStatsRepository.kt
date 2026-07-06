@@ -18,7 +18,7 @@ interface UserStatsRepository {
     suspend fun updateNickname(nickname: String): String
 
     /**
-     * 회원탈퇴. Phase 2 에서는 demo 닉네임으로 호출.
+     * 회원탈퇴 — JWT 인증 기반, 본인 계정 삭제.
      */
-    suspend fun withdraw(nickname: String)
+    suspend fun withdraw()
 }

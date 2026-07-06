@@ -22,7 +22,7 @@ class ApiUserStatsRepository(private val api: UserApi) : UserStatsRepository {
         return response.nickname
     }
 
-    override suspend fun withdraw(nickname: String) {
-        api.withdraw(nickname)
+    override suspend fun withdraw() {
+        api.withdraw()
     }
 }

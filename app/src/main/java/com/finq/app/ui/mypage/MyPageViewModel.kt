@@ -30,9 +30,6 @@ data class MyPageUiState(
     val nicknameUpdateError: String? = null,
 )
 
-/** Phase 2: 인증이 없으므로 단일 demo 닉네임을 사용한다. */
-private const val DEMO_NICKNAME = "demo"
-
 class MyPageViewModel(private val statsRepository: UserStatsRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MyPageUiState())
@@ -76,13 +73,13 @@ class MyPageViewModel(private val statsRepository: UserStatsRepository) : ViewMo
     }
 
     /**
-     * 회원탈퇴 — 성공 시 [withdrawEvents] 로 1회성 이벤트를 발행한다.
-     * Phase 2 에서는 demo 유저 1명 운영이므로 탈퇴 후 다음 요청에서 다시 생성된다.
+     * 회원탈퇴 — JWT 의 userId 로 본인 계정을 삭제한다.
+     * 성공 시 [withdrawEvents] 로 1회성 이벤트를 발행한다.
      */
     fun withdraw() {
         viewModelScope.launch {
             _uiState.update { it.copy(isWithdrawing = true, withdrawError = null) }
-            runCatching { statsRepository.withdraw(DEMO_NICKNAME) }
+            runCatching { statsRepository.withdraw() }
                 .onSuccess {
                     _uiState.update { it.copy(isWithdrawing = false) }
                     _withdrawEvents.tryEmit(Unit)
