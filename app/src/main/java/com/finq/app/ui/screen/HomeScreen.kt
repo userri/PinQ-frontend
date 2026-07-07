@@ -314,7 +314,7 @@ private fun HeroCard(quizCount: Int, onStartQuiz: () -> Unit) {
             Spacer(Modifier.height(8.dp))
             Text(
                 text = if (quizCount > 0) "${quizCount}문제 준비됐어요"
-                       else "내일 오전 6시에 새 퀴즈가 도착해요",
+                       else "매일 오전 6시에 새 퀴즈가 도착해요",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.ExtraBold,
                 color = Color.White,
