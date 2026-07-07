@@ -27,5 +27,30 @@
 -keep class com.finq.app.data.remote.dto.** { *; }
 -keep class com.finq.app.data.model.** { *; }
 
+# ── WorkManager / Room (play-services-ads 가 끌어오는 전이 의존성) ──
+# Room 은 DB 구현 클래스를 "클래스명 + _Impl" 문자열 리플렉션으로 찾는다.
+# R8 이 이름을 바꾸면 매칭이 깨져 앱 시작 즉시 크래시한다
+# ("Failed to create an instance of androidx.work.impl.WorkDatabase" —
+#  v1.1 스토어 설치판에서 실제 발생, 폰 crash 로그로 확인).
+-keep class androidx.work.** { *; }
+-keepnames class * extends androidx.room.RoomDatabase
+
+# ── Kakao SDK (내부적으로 Gson 리플렉션 사용) ──
+# Gson 이 enum 상수를 Class.getField(이름) 로 찾는데 R8 full mode 가
+# enum 필드를 제거해 시작 시 크래시했다 (NoSuchFieldException: TokenNotFound
+# — ClientErrorCause enum, v1.1.1 검증 중 에뮬레이터에서 확인).
+# 카카오 공식 가이드 규칙:
+-keep class com.kakao.sdk.**.model.* { <fields>; }
+-keep class * extends com.google.gson.TypeAdapter
+
+# ── enum 리플렉션 전역 보호 ──
+# Gson/Moshi 모두 enum 을 리플렉션으로 다루므로 모든 enum 의
+# values()/valueOf()/필드를 유지한다 (우리 Category enum 포함).
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+    <fields>;
+}
+
 # 카카오 SDK, Credential Manager(Google 로그인), OkHttp, Compose 는
 # 각 라이브러리가 AAR 에 동봉한 consumer rules 로 처리된다.
