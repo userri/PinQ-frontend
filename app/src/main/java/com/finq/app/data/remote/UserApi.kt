@@ -1,12 +1,18 @@
 package com.finq.app.data.remote
 
+import com.finq.app.data.remote.dto.DeviceTokenRequest
+import com.finq.app.data.remote.dto.NotificationSettingsResponse
 import com.finq.app.data.remote.dto.RegisterApiResponse
 import com.finq.app.data.remote.dto.UpdateNicknameRequest
+import com.finq.app.data.remote.dto.UpdateNotificationSettingsRequest
 import com.finq.app.data.remote.dto.UserStatsApiResponse
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.PATCH
+import retrofit2.http.POST
+import retrofit2.http.PUT
+import retrofit2.http.Query
 
 interface UserApi {
 
@@ -25,4 +31,23 @@ interface UserApi {
      */
     @DELETE("api/users/me")
     suspend fun withdraw()
+
+    // ── FCM 푸시알림 ─────────────────────────────────────────────────────────
+
+    /** FCM 디바이스 토큰 등록 — 로그인 직후 + onNewToken 시 호출. */
+    @POST("api/users/me/device-tokens")
+    suspend fun registerDeviceToken(@Body request: DeviceTokenRequest)
+
+    /** FCM 디바이스 토큰 해제 — 로그아웃 시 호출. */
+    @DELETE("api/users/me/device-tokens")
+    suspend fun unregisterDeviceToken(@Query("token") token: String)
+
+    @GET("api/users/me/notification-settings")
+    suspend fun getNotificationSettings(): NotificationSettingsResponse
+
+    /** time 은 30분 단위(HH:00/HH:30)만 허용, null 이면 기존 시각 유지. */
+    @PUT("api/users/me/notification-settings")
+    suspend fun updateNotificationSettings(
+        @Body request: UpdateNotificationSettingsRequest,
+    ): NotificationSettingsResponse
 }

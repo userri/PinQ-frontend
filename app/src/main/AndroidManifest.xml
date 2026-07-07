@@ -5,6 +5,8 @@
     <!-- 네트워크 접근 권한 -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- FCM 푸시알림 표시 (Android 13+ 런타임 권한 — 알림 설정 켤 때 요청) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- 외부 브라우저로 관련 기사 열기 + 카카오 앱 (Android 11+) -->
     <queries>
@@ -50,6 +52,22 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- FCM 수신 서비스 -->
+        <service
+            android:name=".push.FinQMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+        <!-- 백그라운드 notification 메시지 기본 채널/아이콘 -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="daily_quiz" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_bell" />
 
         <!-- 카카오 로그인 콜백 처리 Activity -->
         <activity

@@ -4,6 +4,16 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.google.services) apply false
+}
+
+// google-services.json 이 있을 때만 플러그인 적용 — 파일을 아직 받지 않아도 빌드는 통과한다.
+// 단, 플러그인 미적용 상태에서는 FCM 초기화가 안 되므로 푸시알림이 동작하지 않는다.
+// Firebase 콘솔 → 프로젝트 설정 → Android 앱(com.finq.app) → google-services.json 을 app/ 에 배치할 것.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+} else {
+    logger.warn("WARNING: app/google-services.json 이 없어 google-services 플러그인을 건너뜁니다 — FCM 푸시가 동작하지 않습니다.")
 }
 
 // local.properties 에서 앱키 읽기
@@ -160,6 +170,10 @@ dependencies {
 
     // AdMob 배너 광고
     implementation(libs.play.services.ads)
+
+    // FCM 푸시알림
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
 
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))

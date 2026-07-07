@@ -7,6 +7,7 @@ import com.finq.app.data.remote.AuthApi
 import com.finq.app.data.remote.dto.GoogleLoginRequest
 import com.finq.app.data.remote.dto.KakaoLoginRequest
 import com.finq.app.data.remote.dto.LogoutRequest
+import com.finq.app.push.FcmTokenManager
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.kakao.sdk.auth.model.OAuthToken
@@ -40,6 +41,8 @@ class AuthRepository(
         val token = getKakaoToken(context)
         val response = authApi.loginWithKakao(KakaoLoginRequest(token.accessToken))
         SessionManager.saveSession(context, response.accessToken, response.refreshToken, response.userId)
+        // FCM 토큰 등록 — 실패해도 로그인 흐름을 막지 않는다 (내부에서 예외 처리)
+        FcmTokenManager.registerCurrentToken()
         response.nickname
     }
 
@@ -109,12 +112,16 @@ class AuthRepository(
 
         val response = authApi.loginWithGoogle(GoogleLoginRequest(credential.idToken))
         SessionManager.saveSession(context, response.accessToken, response.refreshToken, response.userId)
+        // FCM 토큰 등록 — 실패해도 로그인 흐름을 막지 않는다 (내부에서 예외 처리)
+        FcmTokenManager.registerCurrentToken()
         response.nickname
     }
 
     // ── 로그아웃 ─────────────────────────────────────────────────────────────
 
     suspend fun logout(context: Context) {
+        // FCM 디바이스 토큰 해제 — JWT 가 필요하므로 세션 삭제 전에 수행
+        FcmTokenManager.unregisterCurrentToken()
         // 서버 측 refresh token 삭제
         SessionManager.refreshToken?.let { token ->
             runCatching { authApi.logout(LogoutRequest(token)) }

@@ -49,6 +49,7 @@ import com.finq.app.data.remote.NetworkModule
 import com.finq.app.data.repository.ApiLibraryRepository
 import com.finq.app.data.repository.ApiQuizRepository
 import com.finq.app.data.repository.ApiUserStatsRepository
+import com.finq.app.data.repository.NotificationRepository
 import com.finq.app.data.repository.LibraryRepository
 import com.finq.app.data.repository.QuizRepository
 import com.finq.app.data.repository.UserStatsRepository
@@ -171,6 +172,7 @@ fun FinQNavHost(
     val statsRepository: UserStatsRepository = remember { ApiUserStatsRepository(NetworkModule.userApi) }
     val authRepository: AuthRepository = remember { AuthRepository(NetworkModule.authApi) }
     val libraryRepository: LibraryRepository = remember { ApiLibraryRepository(NetworkModule.libraryApi) }
+    val notificationRepository: NotificationRepository = remember { NotificationRepository(NetworkModule.userApi) }
     val context = LocalContext.current
 
     val startDestination = if (SessionManager.isLoggedIn) FinQRoutes.HOME else FinQRoutes.LOGIN
@@ -305,7 +307,7 @@ fun FinQNavHost(
             // ── 마이페이지 ────────────────────────────────────────────
             composable(FinQRoutes.MY_PAGE) { entry ->
                 val myPageVm: MyPageViewModel = viewModel(
-                    factory = MyPageViewModel.factory(statsRepository),
+                    factory = MyPageViewModel.factory(statsRepository, notificationRepository),
                 )
                 val state by myPageVm.uiState.collectAsState()
 
@@ -356,6 +358,13 @@ fun FinQNavHost(
                     nicknameUpdateError = state.nicknameUpdateError,
                     onUpdateNickname = myPageVm::updateNickname,
                     onClearNicknameUpdateError = myPageVm::clearNicknameUpdateError,
+                    notificationsEnabled = state.notificationsEnabled,
+                    notificationTime = state.notificationTime,
+                    isSavingNotification = state.isSavingNotification,
+                    notificationError = state.notificationError,
+                    onToggleNotifications = myPageVm::setNotificationsEnabled,
+                    onChangeNotificationTime = myPageVm::setNotificationTime,
+                    onClearNotificationError = myPageVm::clearNotificationError,
                 )
             }
 

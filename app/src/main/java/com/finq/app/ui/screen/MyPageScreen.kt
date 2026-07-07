@@ -1,6 +1,15 @@
 package com.finq.app.ui.screen
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,6 +39,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -37,8 +47,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.Alignment
+import androidx.core.content.ContextCompat
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -90,6 +102,13 @@ fun MyPageScreen(
     nicknameUpdateError: String? = null,
     onUpdateNickname: (String) -> Unit = {},
     onClearNicknameUpdateError: () -> Unit = {},
+    notificationsEnabled: Boolean = false,
+    notificationTime: String = "09:00",
+    isSavingNotification: Boolean = false,
+    notificationError: String? = null,
+    onToggleNotifications: (Boolean) -> Unit = {},
+    onChangeNotificationTime: (String) -> Unit = {},
+    onClearNotificationError: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     when {
@@ -131,6 +150,13 @@ fun MyPageScreen(
                 nicknameUpdateError = nicknameUpdateError,
                 onUpdateNickname = onUpdateNickname,
                 onClearNicknameUpdateError = onClearNicknameUpdateError,
+                notificationsEnabled = notificationsEnabled,
+                notificationTime = notificationTime,
+                isSavingNotification = isSavingNotification,
+                notificationError = notificationError,
+                onToggleNotifications = onToggleNotifications,
+                onChangeNotificationTime = onChangeNotificationTime,
+                onClearNotificationError = onClearNotificationError,
                 modifier = modifier,
             )
         }
@@ -155,11 +181,37 @@ fun MyPageContent(
     nicknameUpdateError: String? = null,
     onUpdateNickname: (String) -> Unit = {},
     onClearNicknameUpdateError: () -> Unit = {},
+    notificationsEnabled: Boolean = false,
+    notificationTime: String = "09:00",
+    isSavingNotification: Boolean = false,
+    notificationError: String? = null,
+    onToggleNotifications: (Boolean) -> Unit = {},
+    onChangeNotificationTime: (String) -> Unit = {},
+    onClearNotificationError: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var showWithdrawDialog by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showNicknameDialog by remember { mutableStateOf(false) }
+    var showTimePickerDialog by remember { mutableStateOf(false) }
+
+    // Android 13+ 알림 권한 — 토글을 켤 때 요청하고, 결과와 무관하게 서버 설정은 켠다.
+    // (거부해도 설정은 저장되고, 이후 시스템 설정에서 권한을 켜면 바로 알림을 받는다)
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { onToggleNotifications(true) }
+    val context = LocalContext.current
+    val requestEnable: () -> Unit = {
+        val needsPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
+                context, Manifest.permission.POST_NOTIFICATIONS,
+            ) != PackageManager.PERMISSION_GRANTED
+        if (needsPermission) {
+            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            onToggleNotifications(true)
+        }
+    }
 
     Column(
         modifier = modifier
@@ -231,6 +283,67 @@ fun MyPageContent(
         )
         Spacer(Modifier.height(8.dp))
         InfoRow(label = "버전", value = appVersion)
+
+        Spacer(Modifier.height(24.dp))
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        Spacer(Modifier.height(16.dp))
+
+        // ── 알림 ──────────────────────────────────────────────────
+        Text(
+            text = "알림",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Spacer(Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "데일리 퀴즈 알림",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = "매일 설정한 시각에 오늘의 퀴즈를 알려드려요",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(
+                checked = notificationsEnabled,
+                enabled = !isSavingNotification,
+                onCheckedChange = { checked ->
+                    if (checked) requestEnable() else onToggleNotifications(false)
+                },
+            )
+        }
+        if (notificationsEnabled) {
+            Spacer(Modifier.height(4.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = !isSavingNotification) { showTimePickerDialog = true }
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "알림 시각",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = notificationTime,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = FinQBlue,
+                )
+            }
+        }
 
         Spacer(Modifier.height(24.dp))
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -440,6 +553,30 @@ fun MyPageContent(
                 TextButton(onClick = { showNicknameDialog = false }) {
                     Text(text = "취소")
                 }
+            },
+        )
+    }
+
+    // 알림 시각 선택 다이얼로그 (30분 단위 슬롯)
+    if (showTimePickerDialog) {
+        NotificationTimePickerDialog(
+            currentTime = notificationTime,
+            onSelect = { time ->
+                showTimePickerDialog = false
+                if (time != notificationTime) onChangeNotificationTime(time)
+            },
+            onDismiss = { showTimePickerDialog = false },
+        )
+    }
+
+    // 알림 설정 실패 에러 다이얼로그
+    if (notificationError != null) {
+        AlertDialog(
+            onDismissRequest = onClearNotificationError,
+            title = { Text(text = "알림 설정 실패", fontWeight = FontWeight.Bold) },
+            text = { Text(text = notificationError, style = MaterialTheme.typography.bodyMedium) },
+            confirmButton = {
+                TextButton(onClick = onClearNotificationError) { Text("확인") }
             },
         )
     }
@@ -785,6 +922,73 @@ private fun ActivityHeatmapCard(activityGrid: List<Int>) {
             )
         }
     }
+}
+
+/**
+ * 알림 시각 선택 다이얼로그 — 백엔드가 30분 단위(HH:00/HH:30)만 허용하므로
+ * 자유 입력 타임피커 대신 48개 슬롯 목록에서 고른다.
+ */
+@Composable
+private fun NotificationTimePickerDialog(
+    currentTime: String,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val slots = remember {
+        (0 until 24).flatMap { hour ->
+            listOf("%02d:00".format(hour), "%02d:30".format(hour))
+        }
+    }
+    val selectedIndex = slots.indexOf(currentTime).coerceAtLeast(0)
+    val listState = rememberLazyListState(
+        initialFirstVisibleItemIndex = (selectedIndex - 2).coerceAtLeast(0),
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = "알림 시각 선택", fontWeight = FontWeight.Bold) },
+        text = {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 320.dp),
+            ) {
+                items(slots) { slot ->
+                    val selected = slot == currentTime
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(if (selected) Color(0xFFE8EFFE) else Color.Transparent)
+                            .clickable { onSelect(slot) }
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = slot,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                            color = if (selected) FinQBlue else MaterialTheme.colorScheme.onSurface,
+                        )
+                        if (selected) {
+                            Text(
+                                text = "✓",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = FinQBlue,
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("취소") }
+        },
+    )
 }
 
 @Composable

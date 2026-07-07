@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.finq.app.data.repository.NotificationRepository
 import com.finq.app.data.repository.UserStatsRepository
+import com.finq.app.push.FcmTokenManager
 import retrofit2.HttpException
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,9 +30,17 @@ data class MyPageUiState(
     val withdrawError: String? = null,
     val isUpdatingNickname: Boolean = false,
     val nicknameUpdateError: String? = null,
+    // ── 푸시알림 설정 ─────────────────────────────────────────
+    val notificationsEnabled: Boolean = false,
+    val notificationTime: String = "09:00",       // "HH:mm" (30분 단위)
+    val isSavingNotification: Boolean = false,
+    val notificationError: String? = null,
 )
 
-class MyPageViewModel(private val statsRepository: UserStatsRepository) : ViewModel() {
+class MyPageViewModel(
+    private val statsRepository: UserStatsRepository,
+    private val notificationRepository: NotificationRepository,
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MyPageUiState())
     val uiState: StateFlow<MyPageUiState> = _uiState.asStateFlow()
@@ -45,6 +55,7 @@ class MyPageViewModel(private val statsRepository: UserStatsRepository) : ViewMo
 
     init {
         loadStats()
+        loadNotificationSettings()
     }
 
     fun loadStats() {
@@ -133,9 +144,97 @@ class MyPageViewModel(private val statsRepository: UserStatsRepository) : ViewMo
         _logoutEvents.tryEmit(Unit)
     }
 
+    // ── 푸시알림 설정 ─────────────────────────────────────────────────────────
+
+    fun loadNotificationSettings() {
+        viewModelScope.launch {
+            runCatching { notificationRepository.getSettings() }
+                .onSuccess { settings ->
+                    _uiState.update {
+                        it.copy(
+                            notificationsEnabled = settings.enabled,
+                            notificationTime = settings.time,
+                        )
+                    }
+                }
+            // 실패는 조용히 무시 — 화면 진입만으로 에러 다이얼로그를 띄우지 않는다.
+        }
+    }
+
+    /** 알림 on/off. 켤 때는 FCM 토큰도 재등록해 로그인 시 등록 실패를 보완한다. */
+    fun setNotificationsEnabled(enabled: Boolean) {
+        val previous = _uiState.value.notificationsEnabled
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(notificationsEnabled = enabled, isSavingNotification = true, notificationError = null)
+            }
+            runCatching { notificationRepository.updateSettings(enabled = enabled) }
+                .onSuccess { settings ->
+                    _uiState.update {
+                        it.copy(
+                            isSavingNotification = false,
+                            notificationsEnabled = settings.enabled,
+                            notificationTime = settings.time,
+                        )
+                    }
+                    if (enabled) FcmTokenManager.registerCurrentToken()
+                }
+                .onFailure { e ->
+                    _uiState.update {
+                        it.copy(
+                            isSavingNotification = false,
+                            notificationsEnabled = previous,
+                            notificationError = e.message ?: "알림 설정 변경에 실패했어요",
+                        )
+                    }
+                }
+        }
+    }
+
+    /** 알림 시각 변경 — time 은 "HH:mm" 30분 단위(HH:00/HH:30)만 허용. */
+    fun setNotificationTime(time: String) {
+        val previous = _uiState.value.notificationTime
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(notificationTime = time, isSavingNotification = true, notificationError = null)
+            }
+            runCatching {
+                notificationRepository.updateSettings(
+                    enabled = _uiState.value.notificationsEnabled,
+                    time = time,
+                )
+            }
+                .onSuccess { settings ->
+                    _uiState.update {
+                        it.copy(
+                            isSavingNotification = false,
+                            notificationsEnabled = settings.enabled,
+                            notificationTime = settings.time,
+                        )
+                    }
+                }
+                .onFailure { e ->
+                    _uiState.update {
+                        it.copy(
+                            isSavingNotification = false,
+                            notificationTime = previous,
+                            notificationError = e.message ?: "알림 시각 변경에 실패했어요",
+                        )
+                    }
+                }
+        }
+    }
+
+    fun clearNotificationError() {
+        _uiState.update { it.copy(notificationError = null) }
+    }
+
     companion object {
-        fun factory(repository: UserStatsRepository) = viewModelFactory {
-            initializer { MyPageViewModel(repository) }
+        fun factory(
+            repository: UserStatsRepository,
+            notificationRepository: NotificationRepository,
+        ) = viewModelFactory {
+            initializer { MyPageViewModel(repository, notificationRepository) }
         }
     }
 }
