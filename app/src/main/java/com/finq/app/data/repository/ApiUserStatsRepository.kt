@@ -44,9 +44,13 @@ private fun GrassApiResponse.toDomain(): GrassCalendar {
     val toDate = (parseDate(to) ?: LocalDate.now()).coerceAtLeast(fromDate)
 
     // 날짜가 파싱되지 않는 항목은 조용히 버린다 — 서버가 이상한 값을 줘도 그리드는 그려져야 한다.
-    val levels = days.mapNotNull { day ->
+    val dayMap = days.mapNotNull { day ->
         val date = parseDate(day.date) ?: return@mapNotNull null
-        date to day.level.coerceIn(0, MAX_GRASS_LEVEL)
+        date to GrassDay(
+            level = day.level.coerceIn(0, MAX_GRASS_LEVEL),
+            solved = day.solved,
+            reviewed = day.reviewed,
+        )
     }.toMap()
 
     return GrassCalendar(
@@ -56,7 +60,8 @@ private fun GrassApiResponse.toDomain(): GrassCalendar {
         perfectDays = perfectDays,
         currentStreak = currentStreak,
         maxStreak = maxStreak,
-        levelByDate = levels,
+        graduatedTrees = graduatedTrees,
+        dayByDate = dayMap,
     )
 }
 

@@ -3,6 +3,7 @@ package com.finq.app.ui.components
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,6 +23,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.finq.app.data.repository.GrassCalendar
+import com.finq.app.data.repository.GrassDay
 import com.finq.app.ui.theme.BgSurface
 import com.finq.app.ui.theme.FinQTheme
 import com.finq.app.ui.theme.Lime
@@ -40,6 +45,7 @@ import com.finq.app.ui.theme.TextSecondary
 import com.finq.app.ui.theme.streakColor
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
 private val CELL = 13.dp
@@ -73,6 +79,9 @@ fun GrassCalendarCard(
     // 최근이 오른쪽이므로 진입 시 끝으로 보낸다.
     LaunchedEffect(weeks) { scrollState.scrollTo(scrollState.maxValue) }
 
+    // 셀 탭 시 그날 상세("N문제 풀이 · M문제 복습")를 그리드 아래에 띄운다.
+    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
+
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -81,12 +90,25 @@ fun GrassCalendarCard(
         border = BorderStroke(1.dp, Outline),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "잔디밭",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "잔디밭",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary,
+                )
+                // 복습으로 졸업한 문제 = 키운 나무.
+                Text(
+                    text = "🌳 키운 나무 ${grass.graduatedTrees}그루",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = TextSecondary,
+                )
+            }
             Spacer(Modifier.height(12.dp))
 
             GrassSummaryRow(grass)
@@ -120,7 +142,12 @@ fun GrassCalendarCard(
                             Column(verticalArrangement = Arrangement.spacedBy(GAP)) {
                                 repeat(DAYS_PER_WEEK) { dayOfWeek ->
                                     val date = gridStart.plusDays((week.toLong() * DAYS_PER_WEEK) + dayOfWeek)
-                                    GrassCell(date = date, grass = grass)
+                                    GrassCell(
+                                        date = date,
+                                        grass = grass,
+                                        isSelected = date == selectedDate,
+                                        onClick = { selectedDate = date },
+                                    )
                                 }
                             }
                         }
@@ -130,12 +157,21 @@ fun GrassCalendarCard(
 
             Spacer(Modifier.height(12.dp))
             GrassLegend()
+
+            // 선택한 날짜 상세 — 없으면 안내 문구.
+            Spacer(Modifier.height(10.dp))
+            GrassDayDetail(date = selectedDate, day = selectedDate?.let(grass::dayAt))
         }
     }
 }
 
 @Composable
-private fun GrassCell(date: LocalDate, grass: GrassCalendar) {
+private fun GrassCell(
+    date: LocalDate,
+    grass: GrassCalendar,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+) {
     // 집계 범위 밖(from 이전 / 오늘 이후)은 빈 자리로 남겨 격자만 유지한다.
     val outOfRange = date < grass.from || date > grass.to
     if (outOfRange) {
@@ -144,15 +180,39 @@ private fun GrassCell(date: LocalDate, grass: GrassCalendar) {
     }
 
     val isToday = date == grass.to
+    val borderColor = when {
+        isSelected -> Lime
+        isToday -> TextPrimary
+        else -> null
+    }
     Box(
         modifier = Modifier
             .size(CELL)
             .clip(RoundedCornerShape(3.dp))
             .background(streakColor(grass.levelAt(date)))
             .then(
-                if (isToday) Modifier.border(1.5.dp, TextPrimary, RoundedCornerShape(3.dp))
+                if (borderColor != null) Modifier.border(1.5.dp, borderColor, RoundedCornerShape(3.dp))
                 else Modifier
-            ),
+            )
+            .clickable(onClick = onClick),
+    )
+}
+
+private val DETAIL_DATE_FORMAT = DateTimeFormatter.ofPattern("M월 d일")
+
+/** 선택한 날짜의 풀이/복습 상세. 복습만 한 날은 그 맥락을 함께 보여준다. */
+@Composable
+private fun GrassDayDetail(date: LocalDate?, day: GrassDay?) {
+    val text = when {
+        date == null -> "날짜를 눌러 그날의 활동을 확인해요"
+        day == null -> "${date.format(DETAIL_DATE_FORMAT)} · 활동 없음"
+        day.reviewOnly -> "${date.format(DETAIL_DATE_FORMAT)} · 복습만 한 날 — 연한 잔디 (복습 ${day.reviewed}문제)"
+        else -> "${date.format(DETAIL_DATE_FORMAT)} · ${day.solved}문제 풀이 · ${day.reviewed}문제 복습"
+    }
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelSmall,
+        color = if (date == null) TextMuted else TextSecondary,
     )
 }
 
@@ -261,10 +321,11 @@ private fun LocalDate.startOfWeek(): LocalDate =
 private fun GrassCalendarCardPreview() {
     val today = LocalDate.of(2026, 7, 8)
     val from = today.minusDays(364)
-    val levels = (0..364).mapNotNull { offset ->
+    val dayMap = (0..364).mapNotNull { offset ->
         val date = from.plusDays(offset.toLong())
         val level = (offset * 7) % 6   // 0~4 + 빈날
-        if (level == 0 || level > 4) null else date to level
+        if (level == 0 || level > 4) null
+        else date to GrassDay(level = level, solved = level, reviewed = if (level == 1) 2 else 0)
     }.toMap()
 
     FinQTheme {
@@ -272,11 +333,12 @@ private fun GrassCalendarCardPreview() {
             grass = GrassCalendar(
                 from = from,
                 to = today,
-                totalActiveDays = levels.size,
-                perfectDays = levels.count { it.value == 4 },
+                totalActiveDays = dayMap.size,
+                perfectDays = dayMap.count { it.value.level == 4 },
                 currentStreak = 7,
                 maxStreak = 15,
-                levelByDate = levels,
+                graduatedTrees = 4,
+                dayByDate = dayMap,
             ),
             modifier = Modifier.padding(16.dp),
         )

@@ -33,7 +33,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -46,10 +45,8 @@ import com.finq.app.ui.components.WaterGrassCard
 import com.finq.app.ui.theme.FinQTheme
 import java.time.LocalDate
 import java.util.Calendar
-import com.finq.app.ui.theme.BgBase
 import com.finq.app.ui.theme.BgElevated
 import com.finq.app.ui.theme.BgSubtle
-import com.finq.app.ui.theme.BgSurface
 import com.finq.app.ui.theme.Lime
 import com.finq.app.ui.theme.OnLime
 import com.finq.app.ui.theme.Outline
@@ -68,7 +65,8 @@ fun HomeScreen(
     quizCount: Int,
     streak: Int,
     maxStreak: Int,
-    activityGrid: List<Int>,
+    /** 이번 주(월~일) 잔디 level. grass days[].level 슬라이스. 미래 날짜는 -1. */
+    weekLevels: List<Int>,
     isLoading: Boolean,
     error: String?,
     onStartQuiz: () -> Unit,
@@ -148,27 +146,22 @@ fun HomeScreen(
 
         Spacer(Modifier.height(20.dp))
 
-        // ── 위클리 스트릭 카드 ────────────────────────────────────
-        val todayDowForGrid = remember {
-            (Calendar.getInstance().get(Calendar.DAY_OF_WEEK) + 5) % 7
+        // ── 히어로 카드 (오늘의 퀴즈 = 제1 CTA) ─────────────────────
+        when {
+            isLoading -> HeroCardLoading()
+            error != null -> HeroCardError(error = error, onRetry = onRetry)
+            else -> HeroCard(
+                quizCount = quizCount,
+                reviewCount = reviewCount,
+                onStartQuiz = onStartQuiz,
+                onWaterGrass = onWaterGrass,
+            )
         }
-        val weekActivity = remember(activityGrid, todayDowForGrid) {
-            List(7) { i ->
-                val gridIndex = 55 - todayDowForGrid + i
-                activityGrid.getOrElse(gridIndex) { 0 }
-            }
-        }
-        WeeklyStreakCard(
-            streak = streak,
-            maxStreak = maxStreak,
-            weekActivity = weekActivity,
-            todayDow = todayDowForGrid,
-        )
 
         // ── 오답 복습 진입 ("잔디에 물 주기") ─────────────────────
         // 복습 큐가 아예 비었으면(개수 0 + 다음 날짜 없음) 카드를 그리지 않는다.
         if (reviewCount > 0 || nextReviewDate != null) {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(16.dp))
             WaterGrassCard(
                 reviewCount = reviewCount,
                 nextDueDate = nextReviewDate,
@@ -178,12 +171,16 @@ fun HomeScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        // ── 히어로 카드 ──────────────────────────────────────────
-        when {
-            isLoading -> HeroCardLoading()
-            error != null -> HeroCardError(error = error, onRetry = onRetry)
-            else -> HeroCard(quizCount = quizCount, onStartQuiz = onStartQuiz)
+        // ── 이번 주 학습 (주간 스트릭) ─────────────────────────────
+        val todayDow = remember {
+            (Calendar.getInstance().get(Calendar.DAY_OF_WEEK) + 5) % 7
         }
+        WeeklyStreakCard(
+            streak = streak,
+            maxStreak = maxStreak,
+            weekLevels = weekLevels,
+            todayDow = todayDow,
+        )
     }
 }
 
@@ -195,10 +192,11 @@ fun HomeScreen(
 private fun WeeklyStreakCard(
     streak: Int,
     maxStreak: Int,
-    weekActivity: List<Int>,
+    /** 월~일 7일치 잔디 level (grass days[].level). 미래 날짜는 -1. */
+    weekLevels: List<Int>,
     todayDow: Int,
 ) {
-    val solvedToday = weekActivity.getOrElse(todayDow) { 0 } > 0
+    val solvedToday = weekLevels.getOrElse(todayDow) { 0 } > 0
     val dayLabels = listOf("월", "화", "수", "목", "금", "토", "일")
 
     Card(
@@ -240,9 +238,10 @@ private fun WeeklyStreakCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 dayLabels.forEachIndexed { index, label ->
-                    val isFuture = index > todayDow
-                    val intensity = weekActivity.getOrElse(index) { 0 }
-                    val isFilled = !isFuture && intensity > 0
+                    // level 은 grass days[].level 를 그대로 사용(자체 계산 없음). -1 = 미래.
+                    val level = weekLevels.getOrElse(index) { 0 }
+                    val isFuture = level < 0
+                    val isFilled = level > 0
                     val isToday = index == todayDow
 
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -257,9 +256,8 @@ private fun WeeklyStreakCard(
                                         Modifier
                                 )
                                 .background(
-                                    // 잔디 그리드: 연간 히트맵과 같은 라임 램프.
-                                    // 빈칸/미래 칸은 반투명(BgElevated).
-                                    if (isFilled) streakColor(intensity) else BgElevated
+                                    // level 1=Grass1 … 4(만점)=Lime. 빈칸/미래는 BgElevated.
+                                    if (isFilled) streakColor(level) else BgElevated
                                 ),
                         )
                         Spacer(Modifier.height(6.dp))
@@ -322,26 +320,25 @@ private fun StatPill(iconRes: Int, text: String) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun HeroCard(quizCount: Int, onStartQuiz: () -> Unit) {
+private fun HeroCard(
+    quizCount: Int,
+    reviewCount: Int,
+    onStartQuiz: () -> Unit,
+    onWaterGrass: () -> Unit,
+) {
+    val hasQuiz = quizCount > 0
+    // 다 풀었고 복습할 게 있으면 CTA 를 "복습하러 가기"(활성 라임)로 전환한다.
+    val fallbackToReview = !hasQuiz && reviewCount > 0
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            // 다른 카드와 동일한 문법: BgElevated 배경 + Outline 1dp 테두리.
             .clip(RoundedCornerShape(20.dp))
-            .background(
-                brush = Brush.linearGradient(
-                    colors = listOf(BgElevated, BgSurface, BgBase),
-                )
-            )
+            .background(BgElevated)
+            .border(1.dp, Outline, RoundedCornerShape(20.dp))
             .padding(24.dp),
     ) {
-        // 우측 상단 반투명 원형 데코
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .size(140.dp)
-                .clip(CircleShape)
-                .background(Outline.copy(alpha = 0.4f)),
-        )
         Column {
             Text(
                 text = "오늘의 퀴즈",
@@ -351,46 +348,84 @@ private fun HeroCard(quizCount: Int, onStartQuiz: () -> Unit) {
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = if (quizCount > 0) "${quizCount}문제 준비됐어요"
-                       else "매일 오전 6시에 새 퀴즈가 도착해요",
+                text = if (hasQuiz) "${quizCount}문제 준비됐어요"
+                       else "오늘 분량을 다 풀었어요",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.ExtraBold,
                 color = TextPrimary,
             )
             Spacer(Modifier.height(6.dp))
             Text(
-                text = if (quizCount > 0) "예상 소요 3분 · 매일 오전 6시 발송"
-                       else "오늘 분량은 다 풀었어요",
+                text = when {
+                    hasQuiz -> "예상 소요 3분 · 매일 오전 6시 발송"
+                    fallbackToReview -> "물 줄 잔디 ${reviewCount}개가 기다려요"
+                    else -> "내일 오전 6시에 새 퀴즈가 도착해요"
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = TextMuted,
             )
             Spacer(Modifier.height(20.dp))
-            Button(
-                onClick = onStartQuiz,
-                enabled = quizCount > 0,
-                shape = RoundedCornerShape(50),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Lime,
-                    contentColor = OnLime,
-                    disabledContainerColor = Lime.copy(alpha = 0.35f),
-                    disabledContentColor = OnLime.copy(alpha = 0.5f),
-                ),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
-                modifier = Modifier.heightIn(min = 42.dp),
-            ) {
-                Text(
-                    text = "풀기",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                )
-                Spacer(Modifier.size(8.dp))
-                Text(
-                    text = "→",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
+            HeroCta(
+                hasQuiz = hasQuiz,
+                fallbackToReview = fallbackToReview,
+                onStartQuiz = onStartQuiz,
+                onWaterGrass = onWaterGrass,
+            )
         }
+    }
+}
+
+/**
+ * 히어로 CTA — 세 상태.
+ *  1) 퀴즈 있음 → "풀기" (활성 라임)
+ *  2) 퀴즈 없고 복습 있음 → "복습하러 가기" (활성 라임)
+ *  3) 둘 다 없음 → "오늘 분량 완료" (비활성: BgSubtle + TextMuted, 라임 저채도 금지)
+ */
+@Composable
+private fun HeroCta(
+    hasQuiz: Boolean,
+    fallbackToReview: Boolean,
+    onStartQuiz: () -> Unit,
+    onWaterGrass: () -> Unit,
+) {
+    val active = hasQuiz || fallbackToReview
+    if (!active) {
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(50))
+                .background(BgSubtle)
+                .heightIn(min = 42.dp)
+                .padding(horizontal = 24.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = "오늘 분량 완료",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = TextMuted,
+            )
+        }
+        return
+    }
+
+    Button(
+        onClick = if (hasQuiz) onStartQuiz else onWaterGrass,
+        shape = RoundedCornerShape(50),
+        colors = ButtonDefaults.buttonColors(containerColor = Lime, contentColor = OnLime),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+        modifier = Modifier.heightIn(min = 42.dp),
+    ) {
+        Text(
+            text = if (hasQuiz) "풀기" else "복습하러 가기",
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+        )
+        Spacer(Modifier.size(8.dp))
+        Text(
+            text = "→",
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+        )
     }
 }
 
@@ -401,11 +436,8 @@ private fun HeroCardLoading() {
             .fillMaxWidth()
             .height(180.dp)
             .clip(RoundedCornerShape(20.dp))
-            .background(
-                brush = Brush.linearGradient(
-                    colors = listOf(BgElevated, BgSurface, BgBase),
-                )
-            ),
+            .background(BgElevated)
+            .border(1.dp, Outline, RoundedCornerShape(20.dp)),
         contentAlignment = Alignment.Center,
     ) {
         CircularProgressIndicator(color = Lime)
@@ -458,7 +490,8 @@ private fun HomeScreenPreview() {
             quizCount = 4,
             streak = 1,
             maxStreak = 1,
-            activityGrid = List(56) { i -> if (i % 3 == 0) 2 else 0 },
+            weekLevels = listOf(2, 0, 4, 1, 0, -1, -1),
+            reviewCount = 3,
             isLoading = false,
             error = null,
             onStartQuiz = {},

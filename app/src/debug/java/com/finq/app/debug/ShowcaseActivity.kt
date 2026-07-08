@@ -152,7 +152,7 @@ class ShowcaseActivity : ComponentActivity() {
                         quizCount = 3,
                         streak = 7,
                         maxStreak = 15,
-                        activityGrid = activityGrid,
+                        weekLevels = listOf(2, 0, 4, 1, 3, -1, -1),
                         isLoading = false,
                         error = null,
                         onStartQuiz = {},
@@ -168,18 +168,24 @@ class ShowcaseActivity : ComponentActivity() {
     private val sampleGrass: GrassCalendar by lazy {
         val today = LocalDate.now()
         val from = today.minusDays(364)
-        val levels = (0..364).mapNotNull { offset ->
+        val dayMap = (0..364).mapNotNull { offset ->
             val level = (offset * 7) % 6
-            if (level in 1..4) from.plusDays(offset.toLong()) to level else null
+            if (level !in 1..4) null
+            else from.plusDays(offset.toLong()) to com.finq.app.data.repository.GrassDay(
+                level = level,
+                solved = if (level == 1) 0 else level,   // level 1 은 복습만 한 날로 흉내
+                reviewed = if (level == 1) 2 else 0,
+            )
         }.toMap()
         GrassCalendar(
             from = from,
             to = today,
-            totalActiveDays = levels.size,
-            perfectDays = levels.count { it.value == 4 },
+            totalActiveDays = dayMap.size,
+            perfectDays = dayMap.count { it.value.level == 4 },
             currentStreak = 7,
             maxStreak = 15,
-            levelByDate = levels,
+            graduatedTrees = 4,
+            dayByDate = dayMap,
         )
     }
 

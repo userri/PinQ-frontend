@@ -292,7 +292,7 @@ fun FinQNavHost(
                     quizCount = state.quizCount,
                     streak = state.streak,
                     maxStreak = state.maxStreak,
-                    activityGrid = state.activityGrid,
+                    weekLevels = state.weekLevels,
                     isLoading = state.isLoading,
                     error = state.error,
                     nickname = state.nickname,

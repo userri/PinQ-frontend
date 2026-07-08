@@ -7,12 +7,13 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.finq.app.data.repository.QuizRepository
 import com.finq.app.data.repository.ReviewRepository
 import com.finq.app.data.repository.UserStatsRepository
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.DayOfWeek
+import java.time.LocalDate
 
 class HomeViewModel(
     private val quizRepository: QuizRepository,
@@ -53,6 +54,13 @@ class HomeViewModel(
                 null
             }
 
+            // 잔디: 주간 스트릭 동그라미가 grass 의 days[].level 을 그대로 쓴다(자체 계산 제거).
+            val grass = try {
+                statsRepository.getGrass()
+            } catch (e: Exception) {
+                null
+            }
+
             _uiState.update {
                 it.copy(
                     isLoading = false,
@@ -60,11 +68,24 @@ class HomeViewModel(
                     quizCount = quizzes.count { !it.solved },
                     streak = stats?.streak ?: 0,
                     maxStreak = stats?.maxStreak ?: 0,
-                    activityGrid = stats?.activityGrid ?: emptyList(),
+                    weekLevels = grass?.let(::weekLevelsFrom) ?: List(7) { 0 },
                     reviewCount = reviews?.items?.size ?: 0,
                     nextReviewDate = reviews?.nextDueDate,
                 )
             }
+        }
+    }
+
+    /**
+     * 이번 주(월~일) 각 날짜의 잔디 level 을 grass 에서 그대로 뽑는다.
+     * 오늘 이후(미래)는 -1 로 표시해 화면이 미래 칸을 구분할 수 있게 한다.
+     */
+    private fun weekLevelsFrom(grass: com.finq.app.data.repository.GrassCalendar): List<Int> {
+        val today = LocalDate.now()
+        val monday = today.minusDays((today.dayOfWeek.value - DayOfWeek.MONDAY.value).toLong())
+        return (0 until 7).map { offset ->
+            val date = monday.plusDays(offset.toLong())
+            if (date > today) -1 else grass.levelAt(date)
         }
     }
 

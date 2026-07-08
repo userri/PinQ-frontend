@@ -11,11 +11,23 @@ data class UserStats(
     val activityGrid: List<Int>,
 )
 
+/** 잔디밭 하루치 상세 — 셀 탭 시 "N문제 풀이 · M문제 복습" 표시에 쓴다. */
+data class GrassDay(
+    val level: Int,
+    val solved: Int,
+    val reviewed: Int,
+) {
+    /** 푼 문제 없이 복습만 한 날(연한 잔디). */
+    val reviewOnly: Boolean get() = solved == 0 && reviewed > 0
+}
+
 /**
  * 연간 잔디밭.
  *
  * 서버는 활동한 날만 내려주므로(sparse), 없는 날짜는 [levelAt] 이 0(활동 없음)으로 메꾼다.
  * level 은 [com.finq.app.ui.theme.streakColor] 의 강도 규약(0~4)과 1:1 이다.
+ *
+ * @param graduatedTrees 복습으로 졸업한(나무가 된) 문제 수.
  */
 data class GrassCalendar(
     val from: LocalDate,
@@ -24,9 +36,11 @@ data class GrassCalendar(
     val perfectDays: Int,
     val currentStreak: Int,
     val maxStreak: Int,
-    val levelByDate: Map<LocalDate, Int>,
+    val graduatedTrees: Int,
+    val dayByDate: Map<LocalDate, GrassDay>,
 ) {
-    fun levelAt(date: LocalDate): Int = levelByDate[date] ?: 0
+    fun levelAt(date: LocalDate): Int = dayByDate[date]?.level ?: 0
+    fun dayAt(date: LocalDate): GrassDay? = dayByDate[date]
 
     companion object {
         val EMPTY = GrassCalendar(
@@ -36,7 +50,8 @@ data class GrassCalendar(
             perfectDays = 0,
             currentStreak = 0,
             maxStreak = 0,
-            levelByDate = emptyMap(),
+            graduatedTrees = 0,
+            dayByDate = emptyMap(),
         )
     }
 }
