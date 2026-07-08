@@ -100,6 +100,10 @@ import com.finq.app.ui.theme.TextMuted
  *   홈에서 다시 "풀기"를 누르면 서버의 solved 상태를 새로 받아 아직 안 푼 문제부터 시작한다.
  *   진행도는 전체 오늘 문제 기준으로 표시해, 남은 문제만 풀어도 Q3/4 같은 맥락이 유지된다.
  */
+/** 복습 "다음 물 주기" 날짜 표기. */
+private val reviewDueDateFormat: java.time.format.DateTimeFormatter =
+    java.time.format.DateTimeFormatter.ofPattern("M월 d일")
+
 object FinQRoutes {
     const val LOGIN = "login"
     const val HOME = "home"
@@ -540,8 +544,11 @@ fun FinQNavHost(
                                 onSubmit = vm::submitAnswer,
                                 onClose = { navController.exitReviewToHome() },
                                 isSubmitting = state.isSubmitting,
-                                categoryLabel = "${item.stage.emoji} ${item.categoryLabel}",
-                                headerNote = "복습은 기록에 영향 없어요",
+                                categoryLabel = "${item.stage.emoji} ${item.stage.label} · ${item.categoryLabel}",
+                                // 마지막 단계(나무 직전)면 졸업 힌트를 함께 보여준다.
+                                headerNote = if (item.stage.isFinalStage)
+                                    "한 번 더 맞히면 나무가 돼요 · 복습은 기록에 영향 없어요"
+                                else "복습은 기록에 영향 없어요",
                             )
                         }
                     }
@@ -569,8 +576,11 @@ fun FinQNavHost(
                             onNext = vm::moveToNext,
                             onBack = { navController.exitReviewToHome() },
                             onArticleClick = {},
-                            categoryLabel = "${item.stage.emoji} ${item.categoryLabel}",
+                            categoryLabel = "${item.stage.emoji} ${item.stage.label} · ${item.categoryLabel}",
                             graduated = answer.graduated,
+                            nextReviewText = answer.nextDueDate?.let {
+                                "다음 물 주기: ${it.format(reviewDueDateFormat)}"
+                            },
                             nextLabel = if (state.isLastItem) "복습 완료" else "다음 복습",
                         )
                     }

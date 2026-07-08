@@ -85,6 +85,39 @@ class ShowcaseActivity : ComponentActivity() {
                         )
                     }
 
+                    // 복습 졸업 순간 (graduated=true) — 나무 축하 배너
+                    "review_graduated" -> QuizAnswerScreen(
+                        quiz = sampleQuiz,
+                        answer = AnswerResult(
+                            quizId = 1L, selectedOptionId = 1L, isCorrect = true,
+                            correctOptionId = 1L,
+                            explanation = "기준금리가 오르면 시중 금리가 따라 올라 예금 금리도 상승합니다.",
+                            keyword = "기준금리", relatedArticle = RelatedArticle.EMPTY,
+                        ),
+                        isLast = true, quizIndex = 0, totalCount = 2,
+                        onNext = {}, onBack = {}, onArticleClick = {},
+                        categoryLabel = "🪴 나무 직전 · 금리",
+                        graduated = true,
+                        nextLabel = "복습 완료",
+                    )
+
+                    // 복습 미졸업 (graduated=false) — 다음 물 주기 안내
+                    "review_next" -> QuizAnswerScreen(
+                        quiz = sampleQuiz,
+                        answer = AnswerResult(
+                            quizId = 1L, selectedOptionId = 1L, isCorrect = true,
+                            correctOptionId = 1L,
+                            explanation = "기준금리가 오르면 시중 금리가 따라 올라 예금 금리도 상승합니다.",
+                            keyword = "기준금리", relatedArticle = RelatedArticle.EMPTY,
+                        ),
+                        isLast = false, quizIndex = 0, totalCount = 2,
+                        onNext = {}, onBack = {}, onArticleClick = {},
+                        categoryLabel = "🌿 풀 · 금리",
+                        graduated = false,
+                        nextReviewText = "다음 물 주기: 7월 15일",
+                        nextLabel = "다음 복습",
+                    )
+
                     "concept" -> Column(
                         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)
                     ) {

@@ -11,8 +11,11 @@ import java.time.LocalDate
 enum class ReviewStage(val label: String, val emoji: String) {
     SPROUT("새싹", "🌱"),
     GRASS("풀", "🌿"),
-    TREE("나무", "🌳"),
+    ALMOST_TREE("나무 직전", "🪴"),
     ;
+
+    /** 이번에 맞히면 졸업(나무)하는 마지막 단계인가. */
+    val isFinalStage: Boolean get() = this == ALMOST_TREE
 
     companion object {
         /** 서버 stage 가 범위를 벗어나면 가장 가까운 단계로 클램프한다. */

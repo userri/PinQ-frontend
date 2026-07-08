@@ -92,6 +92,8 @@ fun QuizAnswerScreen(
     categoryLabel: String? = null,
     /** 복습에서 이 문제를 완전히 익혔을 때 축하 배너를 띄운다. */
     graduated: Boolean = false,
+    /** 졸업하지 않은 복습에서 "다음 물 주기: M월 D일" 안내. graduated 면 무시. */
+    nextReviewText: String? = null,
     /** 하단 CTA 라벨 override (예: "다음 복습"). */
     nextLabel: String? = null,
 ) {
@@ -174,10 +176,18 @@ fun QuizAnswerScreen(
             // ── 정답/오답 칩 ─────────────────────────────────────
             ResultChip(isCorrect = answer.isCorrect)
 
-            // ── 복습 졸업 축하 ───────────────────────────────────
+            // ── 복습 보상: 졸업(나무) 또는 다음 물 주기 안내 ──────────
             if (graduated) {
                 Spacer(Modifier.height(12.dp))
                 GraduatedBanner()
+            } else if (nextReviewText != null) {
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = nextReviewText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextSecondary,
+                )
             }
             Spacer(Modifier.height(18.dp))
 
@@ -297,7 +307,7 @@ private fun GraduatedBanner() {
         Text(text = "🌳", style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.size(10.dp))
         Text(
-            text = "이 문제를 완전히 익혔어요",
+            text = "이 문제를 완전히 익혔어요! 나무가 됐어요",
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = TextPrimary,

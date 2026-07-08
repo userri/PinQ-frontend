@@ -88,7 +88,7 @@ fun WaterGrassCard(
                 Spacer(Modifier.height(2.dp))
                 Text(
                     text = when {
-                        hasReviews -> "틀린 문제를 다시 만나 잔디를 키워요"
+                        hasReviews -> "물 주면 문제가 자라요 — 3번 맞히면 나무가 돼요"
                         nextDueDate != null -> "다음 물 주기 ${nextDueDate.format(DUE_DATE_FORMAT)}"
                         else -> "복습할 오답이 없어요"
                     },
