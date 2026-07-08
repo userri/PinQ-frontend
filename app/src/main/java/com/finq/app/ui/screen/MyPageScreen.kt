@@ -67,10 +67,7 @@ import com.finq.app.ui.theme.AccentFill
 import com.finq.app.ui.theme.OnAccent
 import com.finq.app.ui.theme.AccentSoft
 import com.finq.app.ui.theme.StreakEmpty
-import com.finq.app.ui.theme.StreakBlue1
-import com.finq.app.ui.theme.StreakBlue2
-import com.finq.app.ui.theme.StreakBlue3
-import com.finq.app.ui.theme.StreakBlue4
+import com.finq.app.ui.theme.streakColor
 import com.finq.app.ui.theme.StreakMax
 import java.util.Calendar
 
@@ -701,24 +698,7 @@ private fun StatCard(
     }
 }
 
-/**
- * 히트맵 강도(0~4) → 배경색 매핑.
- *
- * 참여 강도를 연한→진한 파랑 램프로 올리고, 최고 단계 칸만 쨍한 라임으로 터뜨린다.
- * (홈의 "이번 주 학습"은 단순 채움/미채움이라 AccentFill 만 쓴다 — 다른 컴포넌트다.)
- *  0 → StreakEmpty  (활동 없음)
- *  1 → StreakBlue1  (연한 파랑)
- *  2 → StreakBlue2
- *  3 → StreakBlue3
- *  4 → StreakMax    (최고 단계 — 쨍한 라임)
- */
-private fun intensityColor(intensity: Int): Color = when (intensity) {
-    0    -> StreakEmpty
-    1    -> StreakBlue1
-    2    -> StreakBlue2
-    3    -> StreakBlue3
-    else -> StreakMax           // 4 이상
-}
+// 강도 → 색 변환은 주간(홈) 그리드와 공유한다: ui/theme/StreakColors.kt 의 streakColor()
 
 /**
  * 풀이 활동 카드 — 8주×7일 GitHub 스타일 히트맵.
@@ -836,7 +816,7 @@ private fun ActivityHeatmapCard(activityGrid: List<Int>) {
 
                                     val bgColor = when {
                                         cell.isFuture && !cell.isToday -> Color.Transparent
-                                        else -> intensityColor(cell.intensity)
+                                        else -> streakColor(cell.intensity)
                                     }
 
                                     // 오늘 셀: 진한 테두리 강조
@@ -844,7 +824,7 @@ private fun ActivityHeatmapCard(activityGrid: List<Int>) {
                                         cell.isToday && cell.intensity == 0 ->
                                             Modifier.border(
                                                 width = 2.dp,
-                                                color = StreakBlue4,
+                                                color = BrandNavy,
                                                 shape = RoundedCornerShape(4.dp),
                                             )
                                         cell.isToday && cell.intensity > 0 ->
@@ -886,7 +866,7 @@ private fun ActivityHeatmapCard(activityGrid: List<Int>) {
                             .background(StreakEmpty)
                             .border(
                                 width = 2.dp,
-                                color = StreakBlue4,
+                                color = BrandNavy,
                                 shape = RoundedCornerShape(3.dp),
                             ),
                     )
@@ -912,7 +892,7 @@ private fun ActivityHeatmapCard(activityGrid: List<Int>) {
                                 .padding(horizontal = 2.dp)
                                 .size(12.dp)
                                 .clip(RoundedCornerShape(3.dp))
-                                .background(intensityColor(intensity)),
+                                .background(streakColor(intensity)),
                         )
                     }
                     Spacer(Modifier.width(4.dp))

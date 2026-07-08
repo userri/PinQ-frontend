@@ -58,15 +58,15 @@ val TextSubtle = Color(0xFF93A3B8)
 /** 네이비 등 다크 표면 위 텍스트. */
 val OnDark = Color(0xFFFFFFFF)
 
-// ── 마이페이지 스트릭 히트맵 (강도 램프) ──────────────────────────────────────
-// 홈의 "이번 주 학습"(단순 채움/미채움, AccentFill 사용)과는 다른 컴포넌트다.
-// 참여 강도를 연한→진한 파랑으로 올리고, 최고 단계 칸만 쨍한 라임으로 터뜨린다.
-val StreakEmpty = SurfaceSubtle
-val StreakBlue1 = Color(0xFFBECEF8)
-val StreakBlue2 = Color(0xFF8AAAF2)
-val StreakBlue3 = Color(0xFF6086EC)
-val StreakBlue4 = Color(0xFF3D63DD)   // 가장 진한 파랑 — 오늘 셀 테두리·범례 강조
-/** 최고 단계 칸만 쨍한 라임. */
+// ── 활동/스트릭 그리드 램프 (주간·연간 공용) ─────────────────────────────────
+// 파랑은 그리드에서 쓰지 않는다. 빈칸=반투명, 1~3단계=연한→진한 라임,
+// 최고 단계(만점)만 쨍한 라임. 강도 → 색 변환은 streakColor(intensity) 를 쓸 것.
+/** 미참여 칸 — 반투명(카드 배경이 비쳐 보인다). */
+val StreakEmpty = Color(0x0F0E2540)
+val StreakL1 = Color(0xFFDDF2B4)   // 1단계 — 연한 라임
+val StreakL2 = Color(0xFFBBE377)   // 2단계 — 중간 라임
+val StreakL3 = BrandLimeDeep       // 3단계 — 진한 라임 (#7FB528)
+/** 최고 단계(만점) — 쨍한 라임. */
 val StreakMax = BrandLime
 
 // ── 외부 파트너 브랜드색 (규정색 — 임의 변경 금지) ────────────────────────────

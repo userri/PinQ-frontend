@@ -46,6 +46,8 @@ import com.finq.app.ui.theme.AccentSoft
 import com.finq.app.ui.theme.DividerColor
 import com.finq.app.ui.theme.CorrectFill
 import com.finq.app.ui.theme.AccentFill
+import com.finq.app.ui.theme.StreakEmpty
+import com.finq.app.ui.theme.streakColor
 import com.finq.app.ui.theme.AccentText
 import com.finq.app.ui.theme.BrandNavy
 import com.finq.app.ui.theme.BrandNavyDeep
@@ -241,8 +243,9 @@ private fun WeeklyStreakCard(
                                         Modifier
                                 )
                                 .background(
-                                    // 잔디 그리드: 참여한 날은 모두 같은 라임(단일 톤), 나머지는 연한 회색
-                                    if (isFilled) AccentFill else SurfaceMuted
+                                    // 잔디 그리드: 연간 히트맵과 같은 라임 램프.
+                                    // 빈칸/미래 칸은 반투명(StreakEmpty).
+                                    if (isFilled) streakColor(intensity) else StreakEmpty
                                 ),
                         )
                         Spacer(Modifier.height(6.dp))
