@@ -41,8 +41,10 @@ import com.finq.app.data.model.AttemptItem
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import com.finq.app.ui.theme.BgSubtle
+import com.finq.app.ui.theme.Grass1
 import com.finq.app.ui.theme.Lime
-import com.finq.app.ui.theme.LimeFaint
+import com.finq.app.ui.theme.TextSecondary
 
 /**
  * 오답노트 / 북마크 / 전체이력 화면이 공통으로 사용하는 항목 카드.
@@ -84,15 +86,16 @@ fun AttemptItemCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    // 카테고리 태그는 중립 — 유채색은 포인트/정답/오답에만 쓴다.
                     Surface(
                         shape = RoundedCornerShape(50),
-                        color = LimeFaint,
+                        color = BgSubtle,
                     ) {
                         Text(
                             text = item.categoryDisplay,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                             style = MaterialTheme.typography.labelSmall,
-                            color = Lime,
+                            color = TextSecondary,
                             fontWeight = FontWeight.SemiBold,
                         )
                     }
@@ -199,7 +202,7 @@ fun AttemptItemCard(
                         )
                         Surface(
                             shape = RoundedCornerShape(6.dp),
-                            color = LimeFaint,
+                            color = BgSubtle,
                         ) {
                             Text(
                                 text = item.keyword,
@@ -270,7 +273,7 @@ fun AttemptItemCard(
 
 @Composable
 private fun AnswerRow(label: String, text: String, isCorrect: Boolean) {
-    val bgColor = if (isCorrect) LimeFaint else MaterialTheme.colorScheme.errorContainer
+    val bgColor = if (isCorrect) Grass1 else MaterialTheme.colorScheme.errorContainer
     val textColor = if (isCorrect) Lime else MaterialTheme.colorScheme.onErrorContainer
 
     Row(verticalAlignment = Alignment.Top) {

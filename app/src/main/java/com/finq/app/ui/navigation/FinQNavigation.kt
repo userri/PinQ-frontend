@@ -71,8 +71,8 @@ import com.finq.app.ui.login.LoginEvent
 import com.finq.app.ui.login.LoginViewModel
 import com.finq.app.ui.screen.LoginScreen
 import com.finq.app.ui.theme.BgBase
+import com.finq.app.ui.theme.BgSubtle
 import com.finq.app.ui.theme.Lime
-import com.finq.app.ui.theme.LimeFaint
 import com.finq.app.ui.theme.TextMuted
 
 /**
@@ -515,7 +515,7 @@ private fun FinQBottomBar(
                 colors = NavigationBarItemDefaults.colors(
                     selectedTextColor = Lime,
                     unselectedTextColor = TextMuted,
-                    indicatorColor = LimeFaint,
+                    indicatorColor = BgSubtle,
                 ),
             )
         }

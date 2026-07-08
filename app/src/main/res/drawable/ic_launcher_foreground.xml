@@ -14,7 +14,7 @@
         <!-- 줄기 (짙은 라임) -->
         <path
             android:pathData="M50,84 L50,50"
-            android:strokeColor="@color/lime_deep"
+            android:strokeColor="@color/grass_2"
             android:strokeWidth="8"
             android:strokeLineCap="round" />
         <!-- 왼쪽 잎 (라임) -->
@@ -28,12 +28,12 @@
         <!-- 잎맥 (짙은 라임, 얇게) -->
         <path
             android:pathData="M50,56 C46,48 40,42 30,38"
-            android:strokeColor="@color/lime_deep"
+            android:strokeColor="@color/grass_2"
             android:strokeWidth="2"
             android:strokeLineCap="round" />
         <path
             android:pathData="M50,56 C54,48 60,42 70,38"
-            android:strokeColor="@color/lime_deep"
+            android:strokeColor="@color/grass_2"
             android:strokeWidth="2"
             android:strokeLineCap="round" />
     </group>

@@ -19,10 +19,14 @@
 
     <!-- 브랜드 -->
     <color name="lime">#FFAEF23C</color>
-    <color name="lime_deep">#FF7FB528</color>
-    <color name="lime_mid">#FF5A8A1E</color>
-    <color name="lime_faint">#FF35551A</color>
     <color name="on_lime">#FF0E2540</color>
+
+    <!-- 잔디 램프 (그리드 전용, 5단계) -->
+    <color name="grass_empty">@color/bg_elevated</color>
+    <color name="grass_1">#FF124A2E</color>
+    <color name="grass_2">#FF1E7A42</color>
+    <color name="grass_3">#FF3ECF63</color>
+    <color name="grass_max">@color/lime</color>
 
     <!-- 기타 -->
     <color name="outline">#FF2A4A6E</color>

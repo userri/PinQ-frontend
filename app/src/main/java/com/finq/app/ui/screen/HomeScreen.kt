@@ -46,9 +46,9 @@ import com.finq.app.ui.theme.FinQTheme
 import java.util.Calendar
 import com.finq.app.ui.theme.BgBase
 import com.finq.app.ui.theme.BgElevated
+import com.finq.app.ui.theme.BgSubtle
 import com.finq.app.ui.theme.BgSurface
 import com.finq.app.ui.theme.Lime
-import com.finq.app.ui.theme.LimeFaint
 import com.finq.app.ui.theme.OnLime
 import com.finq.app.ui.theme.Outline
 import com.finq.app.ui.theme.TextMuted
@@ -280,7 +280,7 @@ private fun StatPill(iconRes: Int, text: String) {
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(50))
-            .background(LimeFaint)
+            .background(BgSubtle)
             .padding(horizontal = 10.dp, vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

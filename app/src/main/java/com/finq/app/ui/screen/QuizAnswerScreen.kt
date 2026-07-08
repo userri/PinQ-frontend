@@ -56,8 +56,8 @@ import com.finq.app.ui.theme.BgSubtle
 import com.finq.app.ui.theme.BgSurface
 import com.finq.app.ui.theme.Error
 import com.finq.app.ui.theme.ErrorFaint
+import com.finq.app.ui.theme.Grass1
 import com.finq.app.ui.theme.Lime
-import com.finq.app.ui.theme.LimeFaint
 import com.finq.app.ui.theme.OnLime
 import com.finq.app.ui.theme.Outline
 import com.finq.app.ui.theme.TextMuted
@@ -316,9 +316,9 @@ private fun AnswerOptionRow(
     isUserSelected: Boolean,
 ) {
     // 보기 카드 4상태 — 기본: BgSurface+Outline
-    //   정답 공개: LimeFaint 배경 + Lime 테두리 / 오답 공개: ErrorFaint 배경 + Error 테두리
+    //   정답 공개: Grass1 배경 + Lime 테두리 / 오답 공개: ErrorFaint 배경 + Error 테두리
     val (background, border, accent) = when {
-        isCorrect -> Triple(LimeFaint, Lime, Lime)
+        isCorrect -> Triple(Grass1, Lime, Lime)
         isUserSelected -> Triple(ErrorFaint, Error, Error)
         else -> Triple(BgSurface, Outline, TextMuted)
     }
@@ -440,7 +440,7 @@ private fun KeywordCard(keyword: String) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(LimeFaint)
+            .background(BgElevated)
             .padding(horizontal = 14.dp, vertical = 14.dp),
     ) {
         Row {

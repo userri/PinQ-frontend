@@ -9,7 +9,7 @@ private val DarkColorScheme = darkColorScheme(
     // 주요 버튼·토글 ON·활성 인디케이터 = 라임, 그 위 텍스트/아이콘 = 네이비
     primary = Lime,
     onPrimary = OnLime,
-    primaryContainer = LimeFaint,
+    primaryContainer = BgSubtle,
     onPrimaryContainer = TextPrimary,
 
     // 보조 = 본문 톤(다크 배경 위 읽히는 밝은 청회색)
@@ -20,7 +20,7 @@ private val DarkColorScheme = darkColorScheme(
 
     tertiary = Lime,
     onTertiary = OnLime,
-    tertiaryContainer = LimeFaint,
+    tertiaryContainer = BgSubtle,
     onTertiaryContainer = TextPrimary,
 
     background = BgBase,

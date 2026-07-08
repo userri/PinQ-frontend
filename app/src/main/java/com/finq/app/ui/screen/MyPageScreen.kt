@@ -62,9 +62,9 @@ import androidx.compose.material3.ButtonDefaults
 import com.finq.app.ui.theme.FinQTheme
 import java.util.Calendar
 import com.finq.app.ui.theme.BgElevated
+import com.finq.app.ui.theme.BgSubtle
 import com.finq.app.ui.theme.Error
 import com.finq.app.ui.theme.Lime
-import com.finq.app.ui.theme.LimeFaint
 import com.finq.app.ui.theme.OnLime
 import com.finq.app.ui.theme.TextPrimary
 import com.finq.app.ui.theme.streakColor
@@ -948,7 +948,7 @@ private fun NotificationTimePickerDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(10.dp))
-                            .background(if (selected) LimeFaint else Color.Transparent)
+                            .background(if (selected) BgSubtle else Color.Transparent)
                             .clickable { onSelect(slot) }
                             .padding(horizontal = 16.dp, vertical = 12.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
