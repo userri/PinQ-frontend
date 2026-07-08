@@ -51,7 +51,9 @@ import com.finq.app.data.repository.ApiQuizRepository
 import com.finq.app.data.repository.ApiUserStatsRepository
 import com.finq.app.data.repository.NotificationRepository
 import com.finq.app.data.repository.LibraryRepository
+import com.finq.app.data.repository.ApiReviewRepository
 import com.finq.app.data.repository.QuizRepository
+import com.finq.app.data.repository.ReviewRepository
 import com.finq.app.data.repository.UserStatsRepository
 import com.finq.app.ui.home.HomeViewModel
 import com.finq.app.ui.library.AttemptHistoryRoute
@@ -59,11 +61,15 @@ import com.finq.app.ui.library.LibraryTabScreen
 import com.finq.app.ui.library.LibraryViewModel
 import com.finq.app.ui.mypage.MyPageViewModel
 import com.finq.app.ui.quiz.QuizSessionViewModel
+import com.finq.app.ui.review.ReviewSessionViewModel
+import com.finq.app.ui.review.toAnswerResult
+import com.finq.app.ui.review.toQuiz
 import com.finq.app.ui.screen.HomeScreen
 import com.finq.app.ui.screen.MyPageScreen
 import com.finq.app.ui.screen.QuizAnswerScreen
 import com.finq.app.ui.screen.QuizScreen
 import com.finq.app.ui.screen.ResultReportScreen
+import com.finq.app.ui.screen.ReviewDoneScreen
 import com.finq.app.ui.screen.WrongNoteScreen
 import com.finq.app.data.local.SessionManager
 import com.finq.app.data.repository.AuthRepository
@@ -107,6 +113,12 @@ object FinQRoutes {
     const val ANSWER = "session/answer"
     const val DONE = "session/done"
     const val WRONG_NOTE = "session/wrongnote"
+
+    // ── 오답 복습 ("잔디에 물 주기") ──────────────────────────────
+    const val REVIEW_GRAPH = "review"
+    const val REVIEW_QUIZ = "review/quiz"
+    const val REVIEW_ANSWER = "review/answer"
+    const val REVIEW_DONE = "review/done"
 }
 
 private val bottomNavRoutes = setOf(
@@ -122,6 +134,9 @@ private val bottomNavRoutes = setOf(
 private val darkSessionRoutes = setOf(
     FinQRoutes.QUIZ,
     FinQRoutes.ANSWER,
+    FinQRoutes.REVIEW_QUIZ,
+    FinQRoutes.REVIEW_ANSWER,
+    FinQRoutes.REVIEW_DONE,
 )
 
 data class BottomNavItem(
@@ -176,6 +191,7 @@ fun FinQNavHost(
     val authRepository: AuthRepository = remember { AuthRepository(NetworkModule.authApi) }
     val libraryRepository: LibraryRepository = remember { ApiLibraryRepository(NetworkModule.libraryApi) }
     val notificationRepository: NotificationRepository = remember { NotificationRepository(NetworkModule.userApi) }
+    val reviewRepository: ReviewRepository = remember { ApiReviewRepository(NetworkModule.reviewApi) }
     val context = LocalContext.current
 
     val startDestination = if (SessionManager.isLoggedIn) FinQRoutes.HOME else FinQRoutes.LOGIN
@@ -263,7 +279,7 @@ fun FinQNavHost(
             // ── 홈 ────────────────────────────────────────────────────
             composable(FinQRoutes.HOME) { entry ->
                 val homeVm: HomeViewModel = viewModel(
-                    factory = HomeViewModel.factory(repository, statsRepository),
+                    factory = HomeViewModel.factory(repository, statsRepository, reviewRepository),
                 )
                 val state by homeVm.uiState.collectAsState()
                 // RESUMED 때마다 재로드 — 퀴즈 완료 후 돌아왔을 때도 최신 스트릭을 반영한다.
@@ -280,6 +296,9 @@ fun FinQNavHost(
                     isLoading = state.isLoading,
                     error = state.error,
                     nickname = state.nickname,
+                    reviewCount = state.reviewCount,
+                    nextReviewDate = state.nextReviewDate,
+                    onWaterGrass = { navController.navigate(FinQRoutes.REVIEW_GRAPH) },
                     onStartQuiz = {
                         // SESSION_GRAPH 가 이미 백스택에 있으면 복귀(중간 이탈 케이스),
                         // 없으면 신규 생성(첫 진입 또는 컴플리티 후 재풌).
@@ -348,6 +367,8 @@ fun FinQNavHost(
                     totalSolved = state.totalSolved,
                     correctRate = state.correctRate,
                     activityGrid = state.activityGrid,
+                    grass = state.grass,
+                    conceptStats = state.conceptStats,
                     appVersion = BuildConfig.VERSION_NAME,
                     isLoading = state.isLoading,
                     error = state.error,
@@ -471,6 +492,136 @@ fun FinQNavHost(
                     )
                 }
             }
+
+            // ── 오답 복습 그래프 ("잔디에 물 주기") ────────────────────
+            // 복습 결과는 스트릭·정답률에 반영되지 않으므로 퀴즈 세션과 완전히 분리한다.
+            navigation(
+                startDestination = FinQRoutes.REVIEW_QUIZ,
+                route = FinQRoutes.REVIEW_GRAPH,
+            ) {
+                composable(FinQRoutes.REVIEW_QUIZ) { entry ->
+                    val vm = entry.reviewViewModel(navController, reviewRepository)
+                    val state by vm.uiState.collectAsState()
+
+                    BackHandler { navController.exitReviewToHome() }
+
+                    // 복습할 게 없거나 모두 끝나면 완료 화면으로.
+                    LaunchedEffect(state.isFinished) {
+                        if (state.isFinished) {
+                            navController.navigate(FinQRoutes.REVIEW_DONE) {
+                                popUpTo(FinQRoutes.REVIEW_QUIZ) { inclusive = true }
+                            }
+                        }
+                    }
+                    // 채점이 끝나면 정답 화면으로.
+                    LaunchedEffect(state.lastAnswer, state.isSubmitting) {
+                        if (!state.isSubmitting && state.lastAnswer != null) {
+                            navController.navigate(FinQRoutes.REVIEW_ANSWER)
+                        }
+                    }
+
+                    val item = state.currentItem
+                    when {
+                        state.isLoading || (item == null && !state.isFinished) -> {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(color = Lime)
+                            }
+                        }
+                        state.error != null && item == null -> {
+                            ReviewErrorBox(message = state.error!!, onRetry = vm::loadReviews)
+                        }
+                        item != null -> {
+                            QuizScreen(
+                                quizIndex = state.currentIndex,
+                                totalCount = state.totalCount,
+                                quiz = item.toQuiz(),
+                                selectedOptionId = state.selectedOptionId,
+                                onSelectOption = vm::selectOption,
+                                onSubmit = vm::submitAnswer,
+                                onClose = { navController.exitReviewToHome() },
+                                isSubmitting = state.isSubmitting,
+                                categoryLabel = "${item.stage.emoji} ${item.categoryLabel}",
+                                headerNote = "복습은 기록에 영향 없어요",
+                            )
+                        }
+                    }
+                }
+
+                composable(FinQRoutes.REVIEW_ANSWER) { entry ->
+                    val vm = entry.reviewViewModel(navController, reviewRepository)
+                    val state by vm.uiState.collectAsState()
+                    val item = state.currentItem
+                    val answer = state.lastAnswer
+
+                    // moveToNext() 가 lastAnswer 를 비우면 이 화면을 빠져나간다.
+                    LaunchedEffect(answer) {
+                        if (answer == null) navController.popBackStack()
+                    }
+
+                    if (item != null && answer != null) {
+                        BackHandler { /* 채점 후 뒤로가기 차단 — "다음"으로만 진행 */ }
+                        QuizAnswerScreen(
+                            quiz = item.toQuiz(),
+                            answer = answer.toAnswerResult(state.selectedOptionId ?: 0L),
+                            isLast = state.isLastItem,
+                            quizIndex = state.currentIndex,
+                            totalCount = state.totalCount,
+                            onNext = vm::moveToNext,
+                            onBack = { navController.exitReviewToHome() },
+                            onArticleClick = {},
+                            categoryLabel = "${item.stage.emoji} ${item.categoryLabel}",
+                            graduated = answer.graduated,
+                            nextLabel = if (state.isLastItem) "복습 완료" else "다음 복습",
+                        )
+                    }
+                }
+
+                composable(FinQRoutes.REVIEW_DONE) { entry ->
+                    val vm = entry.reviewViewModel(navController, reviewRepository)
+                    val state by vm.uiState.collectAsState()
+
+                    BackHandler { navController.exitReviewToHome() }
+                    ReviewDoneScreen(
+                        reviewedCount = state.totalCount,
+                        correctCount = state.correctCount,
+                        graduatedCount = state.graduatedCount,
+                        nextDueDate = state.nextDueDate,
+                        onGoHome = { navController.exitReviewToHome() },
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** 복습 그래프를 통째로 걷어내고 홈으로. 홈은 RESUMED 마다 재로드하므로 카운트가 갱신된다. */
+private fun NavHostController.exitReviewToHome() {
+    navigate(FinQRoutes.HOME) {
+        popUpTo(FinQRoutes.REVIEW_GRAPH) { inclusive = true }
+        launchSingleTop = true
+    }
+}
+
+/** 복습 그래프 전체가 공유하는 ViewModel. */
+@Composable
+private fun NavBackStackEntry.reviewViewModel(
+    navController: NavHostController,
+    reviewRepository: ReviewRepository,
+): ReviewSessionViewModel {
+    val parentEntry = remember(this) {
+        navController.getBackStackEntry(FinQRoutes.REVIEW_GRAPH)
+    }
+    val factory = remember(reviewRepository) { ReviewSessionViewModel.factory(reviewRepository) }
+    return viewModel(viewModelStoreOwner = parentEntry, factory = factory)
+}
+
+@Composable
+private fun ReviewErrorBox(message: String, onRetry: () -> Unit) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(text = message, color = MaterialTheme.colorScheme.error)
+            Spacer(Modifier.height(16.dp))
+            Button(onClick = onRetry) { Text("다시 시도") }
         }
     }
 }

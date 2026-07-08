@@ -149,6 +149,7 @@ object NetworkModule {
     val userApi:    UserApi    by lazy { retrofit.create(UserApi::class.java) }
     val authApi:    AuthApi    by lazy { retrofit.create(AuthApi::class.java) }
     val libraryApi: LibraryApi by lazy { retrofit.create(LibraryApi::class.java) }
+    val reviewApi:  ReviewApi  by lazy { retrofit.create(ReviewApi::class.java) }
 
     private fun Response.responseCount(): Int {
         var count = 1

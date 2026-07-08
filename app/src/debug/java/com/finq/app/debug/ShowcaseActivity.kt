@@ -4,9 +4,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.ui.Modifier
 import com.finq.app.data.model.AttemptItem
 import com.finq.app.data.model.Category
@@ -15,18 +18,27 @@ import com.finq.app.ui.library.AttemptItemCard
 import com.finq.app.data.model.Quiz
 import com.finq.app.data.model.RelatedArticle
 import com.finq.app.data.repository.AnswerResult
+import com.finq.app.data.repository.GrassCalendar
+import com.finq.app.data.repository.ConceptStat
+import com.finq.app.data.repository.ConceptStats
+import com.finq.app.ui.components.ConceptStatsCard
+import com.finq.app.ui.components.GrassCalendarCard
+import com.finq.app.ui.components.WaterGrassCard
+import com.finq.app.ui.screen.ReviewDoneScreen
 import com.finq.app.ui.screen.HomeScreen
 import com.finq.app.ui.screen.MyPageContent
 import com.finq.app.ui.screen.QuizAnswerScreen
 import com.finq.app.ui.screen.QuizScreen
 import com.finq.app.ui.theme.FinQTheme
+import androidx.compose.ui.unit.dp
+import java.time.LocalDate
 
 /**
  * 디버그 전용 색상 검증 화면. 로그인/네트워크 없이 각 화면을 실제 테마로 렌더링한다.
  *
  *   adb shell am start -n com.finq.app/com.finq.app.debug.ShowcaseActivity --es screen home
  *
- * screen: home | quiz | answer | mypage | wrongnote
+ * screen: home | quiz | answer | mypage | wrongnote | grass | review | concept
  * 릴리즈 빌드에는 포함되지 않는다(app/src/debug 소스셋).
  */
 class ShowcaseActivity : ComponentActivity() {
@@ -48,7 +60,42 @@ class ShowcaseActivity : ComponentActivity() {
         setContent {
             FinQTheme {
                 when (screen) {
+                    "grass" -> Column(
+                        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)
+                    ) {
+                        GrassCalendarCard(grass = sampleGrass)
+                    }
+
+                    // 복습 진입 카드 3상태 + 완료 화면
+                    "review" -> Column(
+                        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)
+                    ) {
+                        WaterGrassCard(reviewCount = 3, nextDueDate = null, onClick = {})
+                        Spacer(Modifier.height(12.dp))
+                        WaterGrassCard(reviewCount = 0, nextDueDate = LocalDate.now().plusDays(4), onClick = {})
+                        Spacer(Modifier.height(12.dp))
+                        WaterGrassCard(reviewCount = 0, nextDueDate = null, onClick = {})
+                        Spacer(Modifier.height(24.dp))
+                        ReviewDoneScreen(
+                            reviewedCount = 3,
+                            correctCount = 2,
+                            graduatedCount = 1,
+                            nextDueDate = LocalDate.now().plusDays(4),
+                            onGoHome = {},
+                        )
+                    }
+
+                    "concept" -> Column(
+                        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)
+                    ) {
+                        ConceptStatsCard(sampleConcepts)
+                        Spacer(Modifier.height(16.dp))
+                        ConceptStatsCard(sampleConcepts.copy(weakest = null))
+                    }
+
                     "mypage" -> MyPageContent(
+                        grass = sampleGrass,
+                        conceptStats = sampleConcepts,
                         nickname = "유리",
                         streak = 7,
                         maxStreak = 15,
@@ -115,6 +162,35 @@ class ShowcaseActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    /** 1년치 잔디 — 강도 0~4 가 모두 나오도록. days 는 서버처럼 활동일만 담는다(sparse). */
+    private val sampleGrass: GrassCalendar by lazy {
+        val today = LocalDate.now()
+        val from = today.minusDays(364)
+        val levels = (0..364).mapNotNull { offset ->
+            val level = (offset * 7) % 6
+            if (level in 1..4) from.plusDays(offset.toLong()) to level else null
+        }.toMap()
+        GrassCalendar(
+            from = from,
+            to = today,
+            totalActiveDays = levels.size,
+            perfectDays = levels.count { it.value == 4 },
+            currentStreak = 7,
+            maxStreak = 15,
+            levelByDate = levels,
+        )
+    }
+
+    private val sampleConcepts: ConceptStats by lazy {
+        val cats = listOf(
+            ConceptStat("INTEREST_RATE", "금리", 20, 16, 0.80f),
+            ConceptStat("EXCHANGE_RATE", "환율", 12, 4, 0.33f),
+            ConceptStat("STOCK", "증시", 18, 13, 0.72f),
+            ConceptStat("REAL_ESTATE", "부동산", 9, 6, 0.67f),
+        )
+        ConceptStats(categories = cats, weakest = cats[1])
     }
 
     private val sampleQuiz = Quiz(

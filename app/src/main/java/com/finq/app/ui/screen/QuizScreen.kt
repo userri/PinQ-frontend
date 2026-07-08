@@ -31,6 +31,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.finq.app.R
@@ -62,6 +63,10 @@ fun QuizScreen(
     modifier: Modifier = Modifier,
     onClose: () -> Unit = {},
     isSubmitting: Boolean = false,
+    /** 헤더 카테고리 라벨 override. 복습처럼 서버가 라벨을 직접 주는 경우에 쓴다. */
+    categoryLabel: String? = null,
+    /** 헤더 아래 안내 한 줄 (예: "복습은 기록에 영향 없어요"). null 이면 표시하지 않는다. */
+    headerNote: String? = null,
 ) {
     Column(
         modifier = modifier
@@ -90,7 +95,7 @@ fun QuizScreen(
             }
             Spacer(Modifier.weight(1f))
             Text(
-                text = "Q${quizIndex + 1} · ${quiz.category.displayName}",
+                text = "Q${quizIndex + 1} · ${categoryLabel ?: quiz.category.displayName}",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary,
@@ -98,6 +103,17 @@ fun QuizScreen(
             Spacer(Modifier.weight(1f))
             // 닫기 아이콘과 좌우 시각 균형을 맞추기 위한 보이지 않는 placeholder.
             Box(modifier = Modifier.size(32.dp))
+        }
+
+        if (headerNote != null) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = headerNote,
+                style = MaterialTheme.typography.labelSmall,
+                color = TextMuted,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+            )
         }
 
         Spacer(Modifier.height(20.dp))

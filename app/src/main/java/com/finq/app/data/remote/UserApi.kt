@@ -1,6 +1,8 @@
 package com.finq.app.data.remote
 
+import com.finq.app.data.remote.dto.ConceptStatsApiResponse
 import com.finq.app.data.remote.dto.DeviceTokenRequest
+import com.finq.app.data.remote.dto.GrassApiResponse
 import com.finq.app.data.remote.dto.NotificationSettingsResponse
 import com.finq.app.data.remote.dto.RegisterApiResponse
 import com.finq.app.data.remote.dto.UpdateNicknameRequest
@@ -18,6 +20,14 @@ interface UserApi {
 
     @GET("api/users/me/stats")
     suspend fun getUserStats(): UserStatsApiResponse
+
+    /** 연간 잔디밭. days 는 활동일만 오는 sparse 배열. */
+    @GET("api/users/me/grass")
+    suspend fun getGrass(): GrassApiResponse
+
+    /** 카테고리별 정답률 + 취약 개념. 표본이 부족하면 weakest 가 null. */
+    @GET("api/users/me/concept-stats")
+    suspend fun getConceptStats(): ConceptStatsApiResponse
 
     /**
      * 닉네임 수정. 성공 시 200 OK + { userId, nickname }.

@@ -42,7 +42,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.finq.app.R
+import com.finq.app.ui.components.WaterGrassCard
 import com.finq.app.ui.theme.FinQTheme
+import java.time.LocalDate
 import java.util.Calendar
 import com.finq.app.ui.theme.BgBase
 import com.finq.app.ui.theme.BgElevated
@@ -73,6 +75,10 @@ fun HomeScreen(
     onRetry: () -> Unit,
     onMyPage: () -> Unit = {},
     nickname: String = "",
+    /** 오늘 복습할 오답 수. 0 이고 nextReviewDate 도 null 이면 카드를 숨긴다. */
+    reviewCount: Int = 0,
+    nextReviewDate: LocalDate? = null,
+    onWaterGrass: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -158,6 +164,17 @@ fun HomeScreen(
             weekActivity = weekActivity,
             todayDow = todayDowForGrid,
         )
+
+        // ── 오답 복습 진입 ("잔디에 물 주기") ─────────────────────
+        // 복습 큐가 아예 비었으면(개수 0 + 다음 날짜 없음) 카드를 그리지 않는다.
+        if (reviewCount > 0 || nextReviewDate != null) {
+            Spacer(Modifier.height(12.dp))
+            WaterGrassCard(
+                reviewCount = reviewCount,
+                nextDueDate = nextReviewDate,
+                onClick = onWaterGrass,
+            )
+        }
 
         Spacer(Modifier.height(16.dp))
 

@@ -88,6 +88,12 @@ fun QuizAnswerScreen(
     libraryRepository: LibraryRepository? = null,
     initialBookmarked: Boolean = false,
     modifier: Modifier = Modifier,
+    /** 헤더 카테고리 라벨 override. 복습처럼 서버가 라벨을 직접 주는 경우에 쓴다. */
+    categoryLabel: String? = null,
+    /** 복습에서 이 문제를 완전히 익혔을 때 축하 배너를 띄운다. */
+    graduated: Boolean = false,
+    /** 하단 CTA 라벨 override (예: "다음 복습"). */
+    nextLabel: String? = null,
 ) {
     var bookmarked by remember(quiz.id) { mutableStateOf(initialBookmarked) }
     val scope = rememberCoroutineScope()
@@ -122,7 +128,7 @@ fun QuizAnswerScreen(
             }
             Spacer(Modifier.weight(1f))
             Text(
-                text = "Q${quizIndex + 1} · ${quiz.category.displayName}",
+                text = "Q${quizIndex + 1} · ${categoryLabel ?: quiz.category.displayName}",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary,
@@ -167,6 +173,12 @@ fun QuizAnswerScreen(
         ) {
             // ── 정답/오답 칩 ─────────────────────────────────────
             ResultChip(isCorrect = answer.isCorrect)
+
+            // ── 복습 졸업 축하 ───────────────────────────────────
+            if (graduated) {
+                Spacer(Modifier.height(12.dp))
+                GraduatedBanner()
+            }
             Spacer(Modifier.height(18.dp))
 
             // ── 문제 (다크 배경 위 흰 텍스트) ────────────────────
@@ -232,7 +244,7 @@ fun QuizAnswerScreen(
             shape = RoundedCornerShape(14.dp),
         ) {
             Text(
-                text = if (isLast) "결과 보기" else "다음 문제",
+                text = nextLabel ?: if (isLast) "결과 보기" else "다음 문제",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
@@ -270,6 +282,28 @@ private fun ProgressDotsHeader(quizIndex: Int, totalCount: Int) {
 // ─────────────────────────────────────────────────────────────────────────────
 // 정답/오답 칩 — 다크 배경 위에 채움형
 // ─────────────────────────────────────────────────────────────────────────────
+
+/** 복습 졸업 — 이 문제를 완전히 익혔을 때. */
+@Composable
+private fun GraduatedBanner() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(Grass1)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(text = "🌳", style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.size(10.dp))
+        Text(
+            text = "이 문제를 완전히 익혔어요",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = TextPrimary,
+        )
+    }
+}
 
 @Composable
 private fun ResultChip(isCorrect: Boolean) {

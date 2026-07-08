@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.finq.app.data.repository.ConceptStats
+import com.finq.app.data.repository.GrassCalendar
 import com.finq.app.data.repository.NotificationRepository
 import com.finq.app.data.repository.UserStatsRepository
 import com.finq.app.push.FcmTokenManager
@@ -26,6 +28,10 @@ data class MyPageUiState(
     val totalSolved: Int = 0,
     val correctRate: Float = 0f,
     val activityGrid: List<Int> = emptyList(),
+    /** 연간 잔디밭. 못 받으면 null — 화면이 8주 히트맵으로 폴백한다. */
+    val grass: GrassCalendar? = null,
+    /** 카테고리별 정답률 + 취약 개념. 못 받으면 null — 섹션을 숨긴다. */
+    val conceptStats: ConceptStats? = null,
     val isWithdrawing: Boolean = false,
     val withdrawError: String? = null,
     val isUpdatingNickname: Boolean = false,
@@ -55,7 +61,30 @@ class MyPageViewModel(
 
     init {
         loadStats()
+        loadGrass()
+        loadConceptStats()
         loadNotificationSettings()
+    }
+
+    /**
+     * 연간 잔디밭. 부가 정보이므로 실패해도 화면 전체를 에러로 만들지 않는다
+     * (null 로 두면 MyPageScreen 이 기존 8주 히트맵으로 폴백한다).
+     */
+    fun loadGrass() {
+        viewModelScope.launch {
+            runCatching { statsRepository.getGrass() }
+                .onSuccess { grass -> _uiState.update { it.copy(grass = grass) } }
+                .onFailure { _uiState.update { it.copy(grass = null) } }
+        }
+    }
+
+    /** 취약 개념 진단. 실패하면 섹션을 숨긴다(null). */
+    fun loadConceptStats() {
+        viewModelScope.launch {
+            runCatching { statsRepository.getConceptStats() }
+                .onSuccess { stats -> _uiState.update { it.copy(conceptStats = stats) } }
+                .onFailure { _uiState.update { it.copy(conceptStats = null) } }
+        }
     }
 
     fun loadStats() {

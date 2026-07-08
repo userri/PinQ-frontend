@@ -1,5 +1,7 @@
 package com.finq.app.ui.home
 
+import java.time.LocalDate
+
 /**
  * 홈 화면 UI 상태.
  *
@@ -16,4 +18,8 @@ data class HomeUiState(
     val streak: Int = 0,
     val maxStreak: Int = 0,
     val activityGrid: List<Int> = emptyList(),
+    /** 오늘 복습할 오답 수 ("오늘 물 줄 잔디 N개"). */
+    val reviewCount: Int = 0,
+    /** reviewCount == 0 일 때 안내할 다음 물 주기 날짜. */
+    val nextReviewDate: LocalDate? = null,
 )

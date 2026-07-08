@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.finq.app.data.repository.QuizRepository
+import com.finq.app.data.repository.ReviewRepository
 import com.finq.app.data.repository.UserStatsRepository
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,6 +17,7 @@ import kotlinx.coroutines.launch
 class HomeViewModel(
     private val quizRepository: QuizRepository,
     private val statsRepository: UserStatsRepository,
+    private val reviewRepository: ReviewRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -44,6 +46,13 @@ class HomeViewModel(
                 null
             }
 
+            // 복습 큐: 역시 부가 정보 — 실패하면 카드를 숨긴다(진입 자체를 막지 않음).
+            val reviews = try {
+                reviewRepository.getTodayReviews()
+            } catch (e: Exception) {
+                null
+            }
+
             _uiState.update {
                 it.copy(
                     isLoading = false,
@@ -52,6 +61,8 @@ class HomeViewModel(
                     streak = stats?.streak ?: 0,
                     maxStreak = stats?.maxStreak ?: 0,
                     activityGrid = stats?.activityGrid ?: emptyList(),
+                    reviewCount = reviews?.items?.size ?: 0,
+                    nextReviewDate = reviews?.nextDueDate,
                 )
             }
         }
@@ -61,8 +72,9 @@ class HomeViewModel(
         fun factory(
             quizRepository: QuizRepository,
             statsRepository: UserStatsRepository,
+            reviewRepository: ReviewRepository,
         ) = viewModelFactory {
-            initializer { HomeViewModel(quizRepository, statsRepository) }
+            initializer { HomeViewModel(quizRepository, statsRepository, reviewRepository) }
         }
     }
 }

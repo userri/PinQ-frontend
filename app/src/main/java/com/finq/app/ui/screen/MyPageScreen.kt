@@ -61,6 +61,10 @@ import androidx.compose.ui.unit.times
 import androidx.compose.material3.ButtonDefaults
 import com.finq.app.ui.theme.FinQTheme
 import java.util.Calendar
+import com.finq.app.data.repository.ConceptStats
+import com.finq.app.data.repository.GrassCalendar
+import com.finq.app.ui.components.ConceptStatsCard
+import com.finq.app.ui.components.GrassCalendarCard
 import com.finq.app.ui.theme.BgElevated
 import com.finq.app.ui.theme.BgSubtle
 import com.finq.app.ui.theme.Error
@@ -93,6 +97,10 @@ fun MyPageScreen(
     totalSolved: Int,
     correctRate: Float,
     activityGrid: List<Int>,
+    /** 연간 잔디밭. null 이면 아직 못 받은 것 — 8주 히트맵으로 폴백한다. */
+    grass: GrassCalendar? = null,
+    /** 개념별 정답률. null 이거나 카테고리가 비면 섹션을 숨긴다. */
+    conceptStats: ConceptStats? = null,
     appVersion: String,
     isLoading: Boolean = false,
     error: String? = null,
@@ -144,6 +152,8 @@ fun MyPageScreen(
                 totalSolved = totalSolved,
                 correctRate = correctRate,
                 activityGrid = activityGrid,
+                grass = grass,
+                conceptStats = conceptStats,
                 appVersion = appVersion,
                 isWithdrawing = isWithdrawing,
                 onWithdraw = onWithdraw,
@@ -175,6 +185,10 @@ fun MyPageContent(
     totalSolved: Int,
     correctRate: Float,
     activityGrid: List<Int>,
+    /** 연간 잔디밭. null 이면 아직 못 받은 것 — 8주 히트맵으로 폴백한다. */
+    grass: GrassCalendar? = null,
+    /** 개념별 정답률. null 이거나 카테고리가 비면 섹션을 숨긴다. */
+    conceptStats: ConceptStats? = null,
     appVersion: String,
     isWithdrawing: Boolean = false,
     onWithdraw: () -> Unit = {},
@@ -271,8 +285,20 @@ fun MyPageContent(
 
         Spacer(Modifier.height(20.dp))
 
-        // ── 풀이 활동 카드 ────────────────────────────────────────
-        ActivityHeatmapCard(activityGrid = activityGrid)
+        // ── 잔디밭 (연간) ─────────────────────────────────────────
+        // grass 를 못 받았으면(로딩/실패) 기존 8주 히트맵으로 폴백해 화면이 비지 않게 한다.
+        if (grass != null) {
+            GrassCalendarCard(grass = grass)
+        } else {
+            ActivityHeatmapCard(activityGrid = activityGrid)
+        }
+
+        // ── 개념별 정답률 / 취약 개념 ─────────────────────────────
+        // 표본이 아예 없으면(카테고리 비었음) 섹션 자체를 숨긴다.
+        if (conceptStats != null && conceptStats.categories.isNotEmpty()) {
+            Spacer(Modifier.height(16.dp))
+            ConceptStatsCard(stats = conceptStats)
+        }
 
         Spacer(Modifier.height(20.dp))
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
