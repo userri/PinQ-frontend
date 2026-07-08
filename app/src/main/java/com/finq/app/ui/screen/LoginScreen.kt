@@ -33,16 +33,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.finq.app.R
-import com.finq.app.ui.theme.FinQLimeDeep
-import com.finq.app.ui.theme.FinQNavy
-import com.finq.app.ui.theme.FinQTextMuted
-
-// 외부 브랜드 컬러 (가이드라인 준수 — 함부로 바꾸지 않는다)
-private val KakaoYellow = Color(0xFFFEE500)
-private val KakaoLabel  = Color(0xFF191919)
-private val GoogleWhite  = Color(0xFFFFFFFF)
-private val GoogleBorder = Color(0xFFDADADA)
-private val GoogleLabel  = Color(0xFF3C4043)
+import com.finq.app.ui.theme.AccentText
+import com.finq.app.ui.theme.BrandNavy
+import com.finq.app.ui.theme.GoogleBorder
+import com.finq.app.ui.theme.GoogleLabel
+import com.finq.app.ui.theme.GoogleWhite
+import com.finq.app.ui.theme.KakaoLabel
+import com.finq.app.ui.theme.KakaoYellow
+import com.finq.app.ui.theme.TextMuted
 
 @Composable
 fun LoginScreen(
@@ -90,14 +88,14 @@ fun LoginScreen(
                     text = "경제",
                     fontSize = 36.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = FinQNavy,
+                    color = BrandNavy,
                     letterSpacing = (-0.5).sp,
                 )
                 Text(
                     text = "잔디",
                     fontSize = 36.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = FinQLimeDeep,
+                    color = AccentText,
                     letterSpacing = (-0.5).sp,
                 )
             }
@@ -107,7 +105,7 @@ fun LoginScreen(
             Text(
                 text = "오늘의 금융 퀴즈",
                 style = MaterialTheme.typography.bodyLarge,
-                color = FinQTextMuted,
+                color = TextMuted,
                 textAlign = TextAlign.Center,
                 fontWeight = FontWeight.Medium,
             )
@@ -190,7 +188,7 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(28.dp))
                 CircularProgressIndicator(
                     modifier = Modifier.size(28.dp),
-                    color = FinQNavy,
+                    color = BrandNavy,
                     strokeWidth = 2.5.dp,
                 )
             }

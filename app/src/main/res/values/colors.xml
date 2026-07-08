@@ -1,10 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  경제잔디 Design Tokens (XML)
+
+  ⚠️ 드로어블/테마에서 hex 를 직접 쓰지 말고 반드시 아래 역할 토큰을 참조할 것.
+     Compose 쪽 대응 정의는 ui/theme/Color.kt 에 있다. 두 파일의 값은 항상 같이 바꾼다.
+-->
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <!-- 브랜드 원색 -->
+    <color name="brand_navy">#FF0E2540</color>
+    <color name="brand_navy_mid">#FF16385C</color>
+    <color name="brand_navy_deep">#FF081A2E</color>
+    <color name="brand_lime">#FFAEF23C</color>
+    <color name="brand_lime_deep">#FF7FB528</color>
+    <color name="brand_lime_soft">#FFEAF8CE</color>
+
+    <!-- 강조(Accent) 역할 -->
+    <color name="accent_fill">@color/brand_lime</color>
+    <color name="on_accent">@color/brand_navy</color>
+    <color name="accent_text">@color/brand_lime_deep</color>
+    <color name="accent_soft">@color/brand_lime_soft</color>
+
+    <!-- 아이콘 글로우(라임, 알파 포함) — 런처/로고 배경용 -->
+    <color name="accent_glow_strong">#3DAEF23C</color>
+    <color name="accent_glow_mid">#33AEF23C</color>
+    <color name="accent_glow_none">#00AEF23C</color>
+
+    <!-- 퀴즈 의미색 -->
+    <color name="correct_fill">#FF3E7A15</color>
+    <color name="incorrect_fill">#FFEF4444</color>
+    <color name="success_green">#FF22C55E</color>
+
+    <!-- 표면 / 텍스트 -->
+    <color name="surface_white">#FFFFFFFF</color>
+    <color name="text_strong">@color/brand_navy</color>
+    <color name="text_subtle">#FF93A3B8</color>
+    <color name="on_dark">#FFFFFFFF</color>
+
+    <!-- 아이콘 기본색: Icon(tint=) 로 런타임에 덮어쓰는 벡터의 플레이스홀더 -->
+    <color name="icon_tint_base">#FF000000</color>
+
+    <!-- 외부 파트너 브랜드색 (규정색 — 임의 변경 금지) -->
+    <color name="kakao_label">#FF191919</color>
+    <color name="google_blue">#FF4285F4</color>
+    <color name="google_red">#FFEA4335</color>
+    <color name="google_green">#FF34A853</color>
+    <color name="google_yellow">#FFFBBC05</color>
 </resources>

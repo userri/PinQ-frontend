@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 새싹 — 연속 학습(잔디) / 아바타용. 단색이라 Icon(tint=) 으로 브랜드 색 적용.
+     잎은 원호 두 개로 만든 렌즈 모양이라 작은 크기(16~22dp)에서도 뭉개지지 않는다. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="@color/icon_tint_base">
+    <!-- 줄기 -->
+    <path
+        android:pathData="M12,21.2 L12,13"
+        android:strokeColor="@color/icon_tint_base"
+        android:strokeWidth="2.4"
+        android:strokeLineCap="round" />
+    <!-- 왼쪽 잎 -->
+    <path
+        android:fillColor="@color/icon_tint_base"
+        android:pathData="M12,14.4 A6.5,6.5 0 0,1 4,8 A6.5,6.5 0 0,1 12,14.4 Z" />
+    <!-- 오른쪽 잎 -->
+    <path
+        android:fillColor="@color/icon_tint_base"
+        android:pathData="M12,14.4 A6.5,6.5 0 0,0 20,8 A6.5,6.5 0 0,0 12,14.4 Z" />
+</vector>

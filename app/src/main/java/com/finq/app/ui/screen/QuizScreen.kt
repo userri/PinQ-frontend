@@ -37,11 +37,12 @@ import com.finq.app.R
 import com.finq.app.data.DummyQuizData
 import com.finq.app.data.model.Quiz
 import com.finq.app.data.model.QuizOption
-import com.finq.app.ui.theme.FinQBlue
-import com.finq.app.ui.theme.FinQNavy
-import com.finq.app.ui.theme.FinQNavyDeep
-import com.finq.app.ui.theme.FinQTextStrong
+import com.finq.app.ui.theme.BrandNavy
+import com.finq.app.ui.theme.BrandNavyDeep
+import com.finq.app.ui.theme.TextStrong
 import com.finq.app.ui.theme.FinQTheme
+import com.finq.app.ui.theme.OutlineStrong
+import com.finq.app.ui.theme.TextMuted
 
 /**
  * 퀴즈 풀이 화면 — 풀블리드 네이비 배경 + 흰 카드.
@@ -61,7 +62,7 @@ fun QuizScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(FinQNavyDeep)
+            .background(BrandNavyDeep)
             .padding(horizontal = 20.dp, vertical = 12.dp),
     ) {
         // ── 진행도 + 닫기 + 즐겨찾기 ────────────────────────────
@@ -147,9 +148,9 @@ fun QuizScreen(
             enabled = selectedOptionId != null && !isSubmitting,
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color.White,
-                contentColor = FinQNavy,
+                contentColor = BrandNavy,
                 disabledContainerColor = Color.White.copy(alpha = 0.4f),
-                disabledContentColor = FinQNavy.copy(alpha = 0.6f),
+                disabledContentColor = BrandNavy.copy(alpha = 0.6f),
             ),
             modifier = Modifier
                 .fillMaxWidth()
@@ -160,7 +161,7 @@ fun QuizScreen(
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
                     strokeWidth = 2.dp,
-                    color = FinQNavy,
+                    color = BrandNavy,
                 )
             } else {
                 Text(
@@ -210,7 +211,7 @@ private fun OptionCard(
             .background(Color.White)
             .border(
                 width = if (selected) 2.dp else 1.dp,
-                color = if (selected) FinQBlue else Color.Transparent,
+                color = if (selected) BrandNavy else Color.Transparent,
                 shape = RoundedCornerShape(14.dp),
             )
             .clickable(enabled = enabled, onClick = onClick)
@@ -222,8 +223,8 @@ private fun OptionCard(
                 .size(28.dp)
                 .clip(CircleShape)
                 .background(
-                    if (selected) FinQBlue
-                    else Color(0xFFE5E7EB)
+                    if (selected) BrandNavy
+                    else OutlineStrong
                 ),
             contentAlignment = Alignment.Center,
         ) {
@@ -231,14 +232,14 @@ private fun OptionCard(
                 text = "${option.optionNumber}",
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
-                color = if (selected) Color.White else Color(0xFF6B7280),
+                color = if (selected) Color.White else TextMuted,
             )
         }
         Spacer(Modifier.size(12.dp))
         Text(
             text = option.text,
             style = MaterialTheme.typography.bodyLarge,
-            color = FinQTextStrong,
+            color = TextStrong,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
             modifier = Modifier.weight(1f),
         )

@@ -65,7 +65,8 @@ import com.finq.app.ui.screen.QuizAnswerScreen
 import com.finq.app.ui.screen.QuizScreen
 import com.finq.app.ui.screen.ResultReportScreen
 import com.finq.app.ui.screen.WrongNoteScreen
-import com.finq.app.ui.theme.FinQBlue
+import com.finq.app.ui.theme.BrandNavy
+import com.finq.app.ui.theme.AccentFill
 import com.finq.app.data.local.SessionManager
 import com.finq.app.data.repository.AuthRepository
 import com.finq.app.ui.login.LoginEvent
@@ -201,7 +202,7 @@ fun FinQNavHost(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         // 세션 화면에서는 상태바·하단 인셋까지 네이비로 풀블리드.
         containerColor = if (isDarkSession)
-            com.finq.app.ui.theme.FinQNavyDeep
+            com.finq.app.ui.theme.BrandNavyDeep
         else
             MaterialTheme.colorScheme.background,
         bottomBar = {
@@ -496,7 +497,7 @@ private fun FinQBottomBar(
                         painter = androidx.compose.ui.res.painterResource(item.iconRes),
                         contentDescription = item.label,
                         colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(
-                            if (selected) FinQBlue
+                            if (selected) BrandNavy
                             else MaterialTheme.colorScheme.onSurfaceVariant
                         ),
                         modifier = Modifier.size(22.dp),
@@ -510,9 +511,9 @@ private fun FinQBottomBar(
                     )
                 },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedTextColor = FinQBlue,
+                    selectedTextColor = BrandNavy,
                     unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    indicatorColor = Color(0xFFE8EFFE),
+                    indicatorColor = AccentFill,
                 ),
             )
         }

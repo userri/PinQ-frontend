@@ -38,9 +38,10 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import com.finq.app.R
 import com.finq.app.data.model.AttemptItem
-import com.finq.app.ui.theme.FinQBlue
-import com.finq.app.ui.theme.FinQBlueSoft
-import com.finq.app.ui.theme.FinQNavy
+import com.finq.app.ui.theme.CorrectFill
+import com.finq.app.ui.theme.AccentSoft
+import com.finq.app.ui.theme.BrandNavy
+import com.finq.app.ui.theme.AccentText
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -87,13 +88,13 @@ fun AttemptItemCard(
                 ) {
                     Surface(
                         shape = RoundedCornerShape(50),
-                        color = FinQBlueSoft,
+                        color = AccentSoft,
                     ) {
                         Text(
                             text = item.categoryDisplay,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                             style = MaterialTheme.typography.labelSmall,
-                            color = FinQBlue,
+                            color = CorrectFill,
                             fontWeight = FontWeight.SemiBold,
                         )
                     }
@@ -152,7 +153,7 @@ fun AttemptItemCard(
                 Text(
                     text = "자세히 보기",
                     style = MaterialTheme.typography.labelSmall,
-                    color = FinQBlue,
+                    color = AccentText,
                     fontWeight = FontWeight.SemiBold,
                 )
             }
@@ -200,13 +201,13 @@ fun AttemptItemCard(
                         )
                         Surface(
                             shape = RoundedCornerShape(6.dp),
-                            color = FinQBlueSoft,
+                            color = AccentSoft,
                         ) {
                             Text(
                                 text = item.keyword,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                                 style = MaterialTheme.typography.labelSmall,
-                                color = FinQBlue,
+                                color = CorrectFill,
                                 fontWeight = FontWeight.SemiBold,
                             )
                         }
@@ -242,7 +243,7 @@ fun AttemptItemCard(
                                 text = "관련 기사",
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = FinQNavy,
+                                color = BrandNavy,
                             )
                             Spacer(Modifier.height(4.dp))
                             Text(
@@ -271,8 +272,8 @@ fun AttemptItemCard(
 
 @Composable
 private fun AnswerRow(label: String, text: String, isCorrect: Boolean) {
-    val bgColor = if (isCorrect) FinQBlueSoft else MaterialTheme.colorScheme.errorContainer
-    val textColor = if (isCorrect) FinQBlue else MaterialTheme.colorScheme.onErrorContainer
+    val bgColor = if (isCorrect) AccentSoft else MaterialTheme.colorScheme.errorContainer
+    val textColor = if (isCorrect) CorrectFill else MaterialTheme.colorScheme.onErrorContainer
 
     Row(verticalAlignment = Alignment.Top) {
         Image(

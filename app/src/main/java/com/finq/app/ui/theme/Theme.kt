@@ -5,37 +5,37 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
 private val LightColorScheme = lightColorScheme(
-    // 주요 버튼·포인트 = 라임, 그 위 텍스트 = 네이비 (대비 확보)
-    primary = FinQLime,
-    onPrimary = FinQNavy,
-    primaryContainer = FinQLimeSoft,
-    onPrimaryContainer = FinQNavy,
+    // 주요 버튼·토글 ON·활성 인디케이터 = 쨍한 라임, 그 위 텍스트 = 네이비
+    primary = AccentFill,
+    onPrimary = OnAccent,
+    primaryContainer = AccentSoft,
+    onPrimaryContainer = BrandNavy,
 
     // 헤더·본문 강조 = 네이비
-    secondary = FinQNavy,
-    onSecondary = White,
-    secondaryContainer = FinQLimeSoft,
-    onSecondaryContainer = FinQNavy,
+    secondary = BrandNavy,
+    onSecondary = OnDark,
+    secondaryContainer = AccentSoft,
+    onSecondaryContainer = BrandNavy,
 
-    tertiary = FinQLime,
-    onTertiary = FinQNavy,
-    tertiaryContainer = FinQLimeSoft,
-    onTertiaryContainer = FinQNavy,
+    tertiary = AccentFill,
+    onTertiary = OnAccent,
+    tertiaryContainer = AccentSoft,
+    onTertiaryContainer = BrandNavy,
 
-    background = FinQBackground,
-    onBackground = FinQTextStrong,
-    surface = FinQSurface,
-    onSurface = FinQTextStrong,
-    surfaceVariant = FinQSurfaceMuted,
-    onSurfaceVariant = FinQTextMuted,
+    background = ScreenBackground,
+    onBackground = TextStrong,
+    surface = SurfaceWhite,
+    onSurface = TextStrong,
+    surfaceVariant = SurfaceMuted,
+    onSurfaceVariant = TextMuted,
 
-    error = FinQRed,
-    onError = White,
-    errorContainer = FinQRedSoft,
-    onErrorContainer = FinQRed,
+    error = IncorrectFill,
+    onError = OnDark,
+    errorContainer = IncorrectSoft,
+    onErrorContainer = IncorrectFill,
 
-    outline = FinQOutline,
-    outlineVariant = FinQDivider,
+    outline = OutlineColor,
+    outlineVariant = DividerColor,
 )
 
 @Composable

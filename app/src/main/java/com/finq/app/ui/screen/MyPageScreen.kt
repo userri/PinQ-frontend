@@ -59,10 +59,19 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import androidx.compose.material3.ButtonDefaults
-import com.finq.app.ui.theme.FinQBlue
-import com.finq.app.ui.theme.FinQNavy
-import com.finq.app.ui.theme.FinQRed
+import com.finq.app.ui.theme.AccentText
+import com.finq.app.ui.theme.BrandNavy
+import com.finq.app.ui.theme.IncorrectFill
 import com.finq.app.ui.theme.FinQTheme
+import com.finq.app.ui.theme.AccentFill
+import com.finq.app.ui.theme.OnAccent
+import com.finq.app.ui.theme.AccentSoft
+import com.finq.app.ui.theme.StreakEmpty
+import com.finq.app.ui.theme.StreakBlue1
+import com.finq.app.ui.theme.StreakBlue2
+import com.finq.app.ui.theme.StreakBlue3
+import com.finq.app.ui.theme.StreakBlue4
+import com.finq.app.ui.theme.StreakMax
 import java.util.Calendar
 
 /**
@@ -340,7 +349,7 @@ fun MyPageContent(
                     text = notificationTime,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = FinQBlue,
+                    color = AccentText,
                 )
             }
         }
@@ -375,14 +384,14 @@ fun MyPageContent(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = FinQRed,
+                contentColor = IncorrectFill,
             ),
         ) {
             if (isWithdrawing) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(18.dp),
                     strokeWidth = 2.dp,
-                    color = FinQRed,
+                    color = IncorrectFill,
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
@@ -468,7 +477,7 @@ fun MyPageContent(
                 ) {
                     Text(
                         text = "탈퇴하기",
-                        color = FinQRed,
+                        color = IncorrectFill,
                         fontWeight = FontWeight.Bold,
                     )
                 }
@@ -545,7 +554,7 @@ fun MyPageContent(
                     if (isUpdatingNickname) {
                         CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                     } else {
-                        Text(text = "변경", fontWeight = FontWeight.Bold, color = FinQBlue)
+                        Text(text = "변경", fontWeight = FontWeight.Bold, color = AccentText)
                     }
                 }
             },
@@ -622,14 +631,14 @@ private fun ProfileCard(
                 modifier = Modifier
                     .size(52.dp)
                     .clip(CircleShape)
-                    .background(FinQBlue),
+                    .background(AccentFill),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = initial,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Color.White,
+                    color = OnAccent,
                 )
             }
             Spacer(Modifier.width(14.dp))
@@ -649,7 +658,7 @@ private fun ProfileCard(
                 Text(
                     text = "변경",
                     style = MaterialTheme.typography.labelMedium,
-                    color = FinQBlue,
+                    color = AccentText,
                 )
             }
         }
@@ -680,7 +689,7 @@ private fun StatCard(
                 text = value,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.ExtraBold,
-                color = FinQBlue,
+                color = AccentText,
             )
             Spacer(Modifier.height(2.dp))
             Text(
@@ -695,19 +704,20 @@ private fun StatCard(
 /**
  * 히트맵 강도(0~4) → 배경색 매핑.
  *
- * FinQBlue(#3D63DD) 기준 5단계:
- *  0 → 활동 없음 (연한 회색)
- *  1 → 10% 채도 블루
- *  2 → 35% 채도 블루
- *  3 → 65% 채도 블루
- *  4 → 풀 FinQBlue
+ * 참여 강도를 연한→진한 파랑 램프로 올리고, 최고 단계 칸만 쨍한 라임으로 터뜨린다.
+ * (홈의 "이번 주 학습"은 단순 채움/미채움이라 AccentFill 만 쓴다 — 다른 컴포넌트다.)
+ *  0 → StreakEmpty  (활동 없음)
+ *  1 → StreakBlue1  (연한 파랑)
+ *  2 → StreakBlue2
+ *  3 → StreakBlue3
+ *  4 → StreakMax    (최고 단계 — 쨍한 라임)
  */
 private fun intensityColor(intensity: Int): Color = when (intensity) {
-    0    -> Color(0xFFEDF0F7)
-    1    -> Color(0xFFBECEF8)
-    2    -> Color(0xFF8AAAF2)
-    3    -> Color(0xFF6086EC)
-    else -> FinQBlue           // 4 이상
+    0    -> StreakEmpty
+    1    -> StreakBlue1
+    2    -> StreakBlue2
+    3    -> StreakBlue3
+    else -> StreakMax           // 4 이상
 }
 
 /**
@@ -834,13 +844,13 @@ private fun ActivityHeatmapCard(activityGrid: List<Int>) {
                                         cell.isToday && cell.intensity == 0 ->
                                             Modifier.border(
                                                 width = 2.dp,
-                                                color = FinQBlue,
+                                                color = StreakBlue4,
                                                 shape = RoundedCornerShape(4.dp),
                                             )
                                         cell.isToday && cell.intensity > 0 ->
                                             Modifier.border(
                                                 width = 2.dp,
-                                                color = FinQNavy,
+                                                color = BrandNavy,
                                                 shape = RoundedCornerShape(4.dp),
                                             )
                                         else -> Modifier
@@ -873,10 +883,10 @@ private fun ActivityHeatmapCard(activityGrid: List<Int>) {
                         modifier = Modifier
                             .size(12.dp)
                             .clip(RoundedCornerShape(3.dp))
-                            .background(Color(0xFFEDF0F7))
+                            .background(StreakEmpty)
                             .border(
                                 width = 2.dp,
-                                color = FinQBlue,
+                                color = StreakBlue4,
                                 shape = RoundedCornerShape(3.dp),
                             ),
                     )
@@ -960,7 +970,7 @@ private fun NotificationTimePickerDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(10.dp))
-                            .background(if (selected) Color(0xFFE8EFFE) else Color.Transparent)
+                            .background(if (selected) AccentSoft else Color.Transparent)
                             .clickable { onSelect(slot) }
                             .padding(horizontal = 16.dp, vertical = 12.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -970,14 +980,14 @@ private fun NotificationTimePickerDialog(
                             text = slot,
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                            color = if (selected) FinQBlue else MaterialTheme.colorScheme.onSurface,
+                            color = if (selected) AccentText else MaterialTheme.colorScheme.onSurface,
                         )
                         if (selected) {
                             Text(
                                 text = "✓",
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Bold,
-                                color = FinQBlue,
+                                color = AccentText,
                             )
                         }
                     }

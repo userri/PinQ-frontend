@@ -6,13 +6,13 @@
     android:tint="?attr/colorControlNormal">
     <path
         android:pathData="M3.5,11 L12,4 L20.5,11"
-        android:strokeColor="#FF94A3B8"
+        android:strokeColor="@color/text_subtle"
         android:strokeWidth="1.6"
         android:strokeLineCap="round"
         android:strokeLineJoin="round" />
     <path
         android:pathData="M5.5,10 V19 H18.5 V10"
-        android:strokeColor="#FF94A3B8"
+        android:strokeColor="@color/text_subtle"
         android:strokeWidth="1.6"
         android:strokeLineCap="round"
         android:strokeLineJoin="round" />

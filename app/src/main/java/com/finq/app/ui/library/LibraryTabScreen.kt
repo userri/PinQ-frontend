@@ -20,7 +20,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import com.finq.app.R
-import com.finq.app.ui.theme.FinQBlue
+import com.finq.app.ui.theme.BrandNavy
+import com.finq.app.ui.theme.AccentFill
 import kotlinx.coroutines.launch
 
 /**
@@ -50,11 +51,11 @@ fun LibraryTabScreen(
         TabRow(
             selectedTabIndex = selectedTab,
             containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = FinQBlue,
+            contentColor = BrandNavy,
             indicator = { tabPositions ->
                 TabRowDefaults.SecondaryIndicator(
                     modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                    color = FinQBlue,
+                    color = AccentFill,
                 )
             },
         ) {
@@ -71,7 +72,7 @@ fun LibraryTabScreen(
                             text = title,
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal,
-                            color = if (selectedTab == index) FinQBlue
+                            color = if (selectedTab == index) BrandNavy
                             else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     },

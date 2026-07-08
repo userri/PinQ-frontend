@@ -48,13 +48,12 @@ import com.finq.app.data.model.Category
 import com.finq.app.data.model.Quiz
 import com.finq.app.data.model.RelatedArticle
 import com.finq.app.data.repository.AnswerResult
-import com.finq.app.ui.theme.FinQBlue
-import com.finq.app.ui.theme.FinQDivider
-import com.finq.app.ui.theme.FinQLime
-import com.finq.app.ui.theme.FinQNavy
-import com.finq.app.ui.theme.FinQSurfaceMuted
-import com.finq.app.ui.theme.FinQTextMuted
-import com.finq.app.ui.theme.FinQTextStrong
+import com.finq.app.ui.theme.AccentFill
+import com.finq.app.ui.theme.DividerColor
+import com.finq.app.ui.theme.BrandNavy
+import com.finq.app.ui.theme.SurfaceMuted
+import com.finq.app.ui.theme.TextMuted
+import com.finq.app.ui.theme.TextStrong
 import com.finq.app.ui.theme.FinQTheme
 
 /**
@@ -102,7 +101,7 @@ fun ResultReportScreen(
             text = "오늘의 결과",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.ExtraBold,
-            color = FinQTextStrong,
+            color = TextStrong,
         )
 
         Spacer(Modifier.height(16.dp))
@@ -113,7 +112,7 @@ fun ResultReportScreen(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-            border = BorderStroke(1.dp, FinQDivider),
+            border = BorderStroke(1.dp, DividerColor),
         ) {
             Column(
                 modifier = Modifier
@@ -127,7 +126,7 @@ fun ResultReportScreen(
                     text = gradeMessage(correctCount, totalCount),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
-                    color = FinQTextStrong,
+                    color = TextStrong,
                 )
             }
         }
@@ -140,7 +139,7 @@ fun ResultReportScreen(
                 text = "문제별 결과",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = FinQTextStrong,
+                color = TextStrong,
             )
             Spacer(Modifier.height(12.dp))
             Card(
@@ -148,7 +147,7 @@ fun ResultReportScreen(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                border = BorderStroke(1.dp, FinQDivider),
+                border = BorderStroke(1.dp, DividerColor),
             ) {
                 Column {
                     resultQuizzes.forEachIndexed { index, quiz ->
@@ -165,7 +164,7 @@ fun ResultReportScreen(
                                     .fillMaxWidth()
                                     .padding(horizontal = 14.dp)
                                     .height(1.dp)
-                                    .background(FinQDivider)
+                                    .background(DividerColor)
                             )
                         }
                     }
@@ -184,8 +183,8 @@ fun ResultReportScreen(
                     .heightIn(min = 54.dp),
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = FinQLime,
-                    contentColor = FinQNavy,
+                    containerColor = AccentFill,
+                    contentColor = BrandNavy,
                 ),
             ) {
                 Text(
@@ -205,8 +204,8 @@ fun ResultReportScreen(
                     .weight(1f)
                     .heightIn(min = 48.dp),
                 shape = RoundedCornerShape(14.dp),
-                border = BorderStroke(1.dp, FinQDivider),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = FinQTextStrong),
+                border = BorderStroke(1.dp, DividerColor),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = TextStrong),
             ) {
                 Text(
                     text = "홈으로",
@@ -220,8 +219,8 @@ fun ResultReportScreen(
                     .weight(1f)
                     .heightIn(min = 48.dp),
                 shape = RoundedCornerShape(14.dp),
-                border = BorderStroke(1.dp, FinQDivider),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = FinQTextStrong),
+                border = BorderStroke(1.dp, DividerColor),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = TextStrong),
             ) {
                 Text(
                     text = "다시 풀기",
@@ -253,8 +252,8 @@ private fun DonutChart(
         )
     }
 
-    val trackColor = FinQSurfaceMuted
-    val arcColor = FinQBlue
+    val trackColor = SurfaceMuted
+    val arcColor = AccentFill
 
     Box(
         modifier = modifier.size(160.dp),
@@ -296,13 +295,13 @@ private fun DonutChart(
                 text = "$correctCount/$totalCount",
                 fontSize = 36.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = FinQTextStrong,
+                color = TextStrong,
             )
             Spacer(Modifier.height(2.dp))
             Text(
                 text = "정답률",
                 style = MaterialTheme.typography.labelMedium,
-                color = FinQTextMuted,
+                color = TextMuted,
                 fontWeight = FontWeight.SemiBold,
             )
         }
@@ -329,14 +328,14 @@ private fun QuizResultRow(
             text = "Q${index + 1}",
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,
-            color = FinQTextMuted,
+            color = TextMuted,
             modifier = Modifier.width(28.dp),
         )
         Spacer(Modifier.width(8.dp))
         Text(
             text = question,
             style = MaterialTheme.typography.bodyMedium,
-            color = FinQTextStrong,
+            color = TextStrong,
             modifier = Modifier.weight(1f),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

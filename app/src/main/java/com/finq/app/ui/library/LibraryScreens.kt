@@ -35,7 +35,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.finq.app.data.model.AttemptItem
 import com.finq.app.data.model.Category
-import com.finq.app.ui.theme.FinQBlue
+import com.finq.app.ui.theme.AccentFill
+import com.finq.app.ui.theme.OnAccent
 
 /**
  * 오답노트 / 북마크 화면 공용 본문.
@@ -146,14 +147,14 @@ private fun CategoryFilterRow(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
-                    .background(if (isSelected) FinQBlue else MaterialTheme.colorScheme.surfaceVariant)
+                    .background(if (isSelected) AccentFill else MaterialTheme.colorScheme.surfaceVariant)
                     .clickable { onSelect(cat) }
                     .padding(horizontal = 14.dp, vertical = 6.dp),
             ) {
                 Text(
                     text = label,
                     style = MaterialTheme.typography.labelMedium,
-                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (isSelected) OnAccent else MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                 )
             }

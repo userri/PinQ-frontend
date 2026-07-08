@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 최고 기록용 별 — 모서리를 둥글려 부드럽게. 단색이라 Icon(tint=) 으로 색 적용. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="@color/icon_tint_base">
+    <path
+        android:pathData="M12,3.4 L14.6,8.7 L20.4,9.5 L16.2,13.6 L17.2,19.4 L12,16.7 L6.8,19.4 L7.8,13.6 L3.6,9.5 L9.4,8.7 Z"
+        android:fillColor="@color/icon_tint_base"
+        android:strokeColor="@color/icon_tint_base"
+        android:strokeWidth="2.4"
+        android:strokeLineJoin="round"
+        android:strokeLineCap="round" />
+</vector>

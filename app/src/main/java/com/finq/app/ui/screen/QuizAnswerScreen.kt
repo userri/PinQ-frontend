@@ -48,14 +48,18 @@ import com.finq.app.data.model.RelatedArticle
 import com.finq.app.data.repository.AnswerResult
 import com.finq.app.data.repository.LibraryRepository
 import com.finq.app.ui.components.AdBanner
-import com.finq.app.ui.theme.FinQBlue
-import com.finq.app.ui.theme.FinQNavy
-import com.finq.app.ui.theme.FinQNavyDeep
-import com.finq.app.ui.theme.FinQRed
-import com.finq.app.ui.theme.FinQRedSoft
-import com.finq.app.ui.theme.FinQTextStrong
-import com.finq.app.ui.theme.FinQYellowSoft
+import com.finq.app.ui.theme.CorrectFill
+import com.finq.app.ui.theme.BrandNavy
+import com.finq.app.ui.theme.BrandNavyDeep
+import com.finq.app.ui.theme.IncorrectFill
+import com.finq.app.ui.theme.IncorrectSoft
+import com.finq.app.ui.theme.TextStrong
+import com.finq.app.ui.theme.AccentSoft
 import com.finq.app.ui.theme.FinQTheme
+import com.finq.app.ui.theme.TextSubtle
+import com.finq.app.ui.theme.OutlineStrong
+import com.finq.app.ui.theme.TextMuted
+import com.finq.app.ui.theme.TextBody
 import kotlinx.coroutines.launch
 
 /**
@@ -89,7 +93,7 @@ fun QuizAnswerScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(FinQNavyDeep)
+            .background(BrandNavyDeep)
             .padding(horizontal = 20.dp, vertical = 12.dp),
     ) {
         // ── 상단 진행도 도트 (퀴즈 화면과 동일) ──────────────────
@@ -218,7 +222,7 @@ fun QuizAnswerScreen(
             onClick = onNext,
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color.White,
-                contentColor = FinQNavy,
+                contentColor = BrandNavy,
             ),
             modifier = Modifier
                 .fillMaxWidth()
@@ -267,7 +271,7 @@ private fun ProgressDotsHeader(quizIndex: Int, totalCount: Int) {
 
 @Composable
 private fun ResultChip(isCorrect: Boolean) {
-    val accent = if (isCorrect) FinQBlue else FinQRed
+    val accent = if (isCorrect) CorrectFill else IncorrectFill
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(50))
@@ -310,9 +314,9 @@ private fun AnswerOptionRow(
     isUserSelected: Boolean,
 ) {
     val (border, accent) = when {
-        isCorrect -> FinQBlue to FinQBlue
-        isUserSelected -> FinQRed to FinQRed
-        else -> Color.Transparent to Color(0xFF94A3B8)
+        isCorrect -> CorrectFill to CorrectFill
+        isUserSelected -> IncorrectFill to IncorrectFill
+        else -> Color.Transparent to TextSubtle
     }
     Row(
         modifier = Modifier
@@ -333,7 +337,7 @@ private fun AnswerOptionRow(
                 .clip(CircleShape)
                 .background(
                     if (isCorrect || isUserSelected) accent
-                    else Color(0xFFE5E7EB)
+                    else OutlineStrong
                 ),
             contentAlignment = Alignment.Center,
         ) {
@@ -341,14 +345,14 @@ private fun AnswerOptionRow(
                 text = "${option.optionNumber}",
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
-                color = if (isCorrect || isUserSelected) Color.White else Color(0xFF6B7280),
+                color = if (isCorrect || isUserSelected) Color.White else TextMuted,
             )
         }
         Spacer(Modifier.size(12.dp))
         Text(
             text = option.text,
             style = MaterialTheme.typography.bodyLarge,
-            color = FinQTextStrong,
+            color = TextStrong,
             fontWeight = if (isCorrect || isUserSelected) FontWeight.SemiBold else FontWeight.Normal,
             modifier = Modifier.weight(1f),
         )
@@ -357,7 +361,7 @@ private fun AnswerOptionRow(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
-                    .background(FinQBlue)
+                    .background(CorrectFill)
                     .padding(horizontal = 10.dp, vertical = 4.dp),
             ) {
                 Text(
@@ -372,7 +376,7 @@ private fun AnswerOptionRow(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
-                    .background(FinQRed)
+                    .background(IncorrectFill)
                     .padding(horizontal = 10.dp, vertical = 4.dp),
             ) {
                 Text(
@@ -402,7 +406,7 @@ private fun ExplanationCard(explanation: String) {
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
-                    .background(FinQNavy)
+                    .background(BrandNavy)
                     .padding(horizontal = 10.dp, vertical = 4.dp),
             ) {
                 Text(
@@ -416,7 +420,7 @@ private fun ExplanationCard(explanation: String) {
             Text(
                 text = explanation,
                 style = MaterialTheme.typography.bodyMedium,
-                color = FinQTextStrong,
+                color = TextStrong,
             )
         }
     }
@@ -432,7 +436,7 @@ private fun KeywordCard(keyword: String) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(FinQYellowSoft)
+            .background(AccentSoft)
             .padding(horizontal = 14.dp, vertical = 14.dp),
     ) {
         Row {
@@ -447,13 +451,13 @@ private fun KeywordCard(keyword: String) {
                     text = "알아두면 좋아요",
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF7A5B00),
+                    color = BrandNavy,
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = keyword,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF5A4400),
+                    color = TextBody,
                 )
             }
         }

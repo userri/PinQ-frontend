@@ -14,26 +14,26 @@
         <!-- 줄기 (짙은 라임) -->
         <path
             android:pathData="M50,84 L50,50"
-            android:strokeColor="#FF7FB528"
+            android:strokeColor="@color/brand_lime_deep"
             android:strokeWidth="8"
             android:strokeLineCap="round" />
         <!-- 왼쪽 잎 (라임) -->
         <path
-            android:fillColor="#FFAEF23C"
+            android:fillColor="@color/brand_lime"
             android:pathData="M50,56 C39,58 25,52 20,34 C34,30 48,40 50,56 Z" />
         <!-- 오른쪽 잎 (라임) -->
         <path
-            android:fillColor="#FFAEF23C"
+            android:fillColor="@color/brand_lime"
             android:pathData="M50,56 C61,58 75,52 80,34 C66,30 52,40 50,56 Z" />
         <!-- 잎맥 (짙은 라임, 얇게) -->
         <path
             android:pathData="M50,56 C46,48 40,42 30,38"
-            android:strokeColor="#FF7FB528"
+            android:strokeColor="@color/brand_lime_deep"
             android:strokeWidth="2"
             android:strokeLineCap="round" />
         <path
             android:pathData="M50,56 C54,48 60,42 70,38"
-            android:strokeColor="#FF7FB528"
+            android:strokeColor="@color/brand_lime_deep"
             android:strokeWidth="2"
             android:strokeLineCap="round" />
     </group>

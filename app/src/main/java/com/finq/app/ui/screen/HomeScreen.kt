@@ -23,6 +23,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -41,19 +42,19 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.finq.app.R
-import com.finq.app.ui.theme.FinQBlue
-import com.finq.app.ui.theme.FinQBlueSoft
-import com.finq.app.ui.theme.FinQDivider
-import com.finq.app.ui.theme.FinQLime
-import com.finq.app.ui.theme.FinQLimeDeep
-import com.finq.app.ui.theme.FinQNavy
-import com.finq.app.ui.theme.FinQNavyDeep
-import com.finq.app.ui.theme.FinQNavyMid
-import com.finq.app.ui.theme.FinQSurfaceMuted
-import com.finq.app.ui.theme.FinQTextMuted
-import com.finq.app.ui.theme.FinQTextSubtle
-import com.finq.app.ui.theme.FinQYellow
+import com.finq.app.ui.theme.AccentSoft
+import com.finq.app.ui.theme.DividerColor
+import com.finq.app.ui.theme.CorrectFill
+import com.finq.app.ui.theme.AccentFill
+import com.finq.app.ui.theme.AccentText
+import com.finq.app.ui.theme.BrandNavy
+import com.finq.app.ui.theme.BrandNavyDeep
+import com.finq.app.ui.theme.BrandNavyMid
+import com.finq.app.ui.theme.SurfaceMuted
+import com.finq.app.ui.theme.TextMuted
+import com.finq.app.ui.theme.TextSubtle
 import com.finq.app.ui.theme.FinQTheme
+import com.finq.app.ui.theme.OnAccent
 import java.util.Calendar
 
 /**
@@ -93,14 +94,14 @@ fun HomeScreen(
                     text = "경제",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = FinQNavy,
+                    color = BrandNavy,
                     letterSpacing = (-0.5).sp,
                 )
                 Text(
                     text = "잔디",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = FinQLimeDeep,
+                    color = AccentText,
                     letterSpacing = (-0.5).sp,
                 )
             }
@@ -114,14 +115,14 @@ fun HomeScreen(
                 modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
-                    .background(FinQBlue),
+                    .background(AccentFill),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(
-                    text = "Q",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.White,
+                Icon(
+                    painter = painterResource(R.drawable.ic_sprout),
+                    contentDescription = null,
+                    tint = OnAccent,
+                    modifier = Modifier.size(22.dp),
                 )
             }
             Spacer(Modifier.size(12.dp))
@@ -135,7 +136,7 @@ fun HomeScreen(
                 Text(
                     text = "오늘의 퀴즈가 도착했어요",
                     style = MaterialTheme.typography.bodySmall,
-                    color = FinQTextMuted,
+                    color = TextMuted,
                 )
             }
         }
@@ -189,7 +190,7 @@ private fun WeeklyStreakCard(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, FinQDivider),
+        border = androidx.compose.foundation.BorderStroke(1.dp, DividerColor),
     ) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
             Row(
@@ -208,12 +209,12 @@ private fun WeeklyStreakCard(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     StatPill(
-                        iconRes = R.drawable.ic_flame,
+                        iconRes = R.drawable.ic_sprout,
                         text = if (streak > 0) "${streak}일 연속" else "0일 연속",
                     )
                     StatPill(
-                        iconRes = R.drawable.ic_bookmark_star_filled,
-                        text = if (maxStreak > 0) "${maxStreak}일" else "0일",
+                        iconRes = R.drawable.ic_star_rounded,
+                        text = if (maxStreak > 0) "최고 ${maxStreak}일" else "최고 0일",
                     )
                 }
             }
@@ -235,18 +236,13 @@ private fun WeeklyStreakCard(
                                 .clip(CircleShape)
                                 .then(
                                     if (isToday && !isFilled)
-                                        Modifier.border(2.dp, FinQNavy, CircleShape)
+                                        Modifier.border(2.dp, BrandNavy, CircleShape)
                                     else
                                         Modifier
                                 )
                                 .background(
-                                    // 잔디 그리드: 참여한 날은 라임(농도), 나머지는 연한 회색
-                                    when {
-                                        isFilled && intensity >= 2 -> FinQLimeDeep
-                                        isFilled -> FinQLime
-                                        isFuture -> FinQSurfaceMuted
-                                        else -> FinQSurfaceMuted
-                                    }
+                                    // 잔디 그리드: 참여한 날은 모두 같은 라임(단일 톤), 나머지는 연한 회색
+                                    if (isFilled) AccentFill else SurfaceMuted
                                 ),
                         )
                         Spacer(Modifier.height(6.dp))
@@ -254,9 +250,9 @@ private fun WeeklyStreakCard(
                             text = label,
                             style = MaterialTheme.typography.labelSmall,
                             color = when {
-                                isFilled || isToday -> FinQBlue
-                                isFuture -> FinQTextSubtle
-                                else -> FinQTextMuted
+                                isFilled || isToday -> AccentText
+                                isFuture -> TextSubtle
+                                else -> TextMuted
                             },
                             fontWeight = if (isFilled || isToday) FontWeight.Bold else FontWeight.Normal,
                         )
@@ -271,27 +267,35 @@ private fun WeeklyStreakCard(
         Text(
             text = "오늘 풀면 1일 연속 시작!",
             style = MaterialTheme.typography.labelMedium,
-            color = FinQBlue,
+            color = AccentText,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(start = 4.dp),
         )
     }
 }
 
+/** 연속/최고 기록 칩 — 연한 라임 배경 + 진한 초록 아이콘 + 네이비 글씨. */
 @Composable
 private fun StatPill(iconRes: Int, text: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Image(
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(AccentSoft)
+            .padding(horizontal = 10.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
             painter = painterResource(iconRes),
             contentDescription = null,
-            modifier = Modifier.size(14.dp),
+            tint = CorrectFill,
+            modifier = Modifier.size(16.dp),
         )
-        Spacer(Modifier.size(4.dp))
+        Spacer(Modifier.size(5.dp))
         Text(
             text = text,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = FinQTextMuted,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            color = BrandNavy,
         )
     }
 }
@@ -308,7 +312,7 @@ private fun HeroCard(quizCount: Int, onStartQuiz: () -> Unit) {
             .clip(RoundedCornerShape(20.dp))
             .background(
                 brush = Brush.linearGradient(
-                    colors = listOf(FinQNavyMid, FinQNavy, FinQNavyDeep),
+                    colors = listOf(BrandNavyMid, BrandNavy, BrandNavyDeep),
                 )
             )
             .padding(24.dp),
@@ -344,18 +348,17 @@ private fun HeroCard(quizCount: Int, onStartQuiz: () -> Unit) {
                 color = Color.White.copy(alpha = 0.6f),
             )
             Spacer(Modifier.height(20.dp))
-            OutlinedButton(
+            Button(
                 onClick = onStartQuiz,
                 enabled = quizCount > 0,
                 shape = RoundedCornerShape(50),
-                border = androidx.compose.foundation.BorderStroke(
-                    1.5.dp,
-                    Color.White.copy(alpha = 0.7f),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AccentFill,
+                    contentColor = OnAccent,
+                    disabledContainerColor = AccentFill.copy(alpha = 0.35f),
+                    disabledContentColor = OnAccent.copy(alpha = 0.5f),
                 ),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = Color.White,
-                    disabledContentColor = Color.White.copy(alpha = 0.5f),
-                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
                 modifier = Modifier.heightIn(min = 42.dp),
             ) {
                 Text(
@@ -383,7 +386,7 @@ private fun HeroCardLoading() {
             .clip(RoundedCornerShape(20.dp))
             .background(
                 brush = Brush.linearGradient(
-                    colors = listOf(FinQNavyMid, FinQNavy, FinQNavyDeep),
+                    colors = listOf(BrandNavyMid, BrandNavy, BrandNavyDeep),
                 )
             ),
         contentAlignment = Alignment.Center,

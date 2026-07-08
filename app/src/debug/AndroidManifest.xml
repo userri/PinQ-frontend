@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 디버그 전용: 색상 검증용 쇼케이스 화면 (릴리즈 빌드에는 병합되지 않음) -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <activity
+            android:name="com.finq.app.debug.ShowcaseActivity"
+            android:exported="true"
+            android:theme="@style/Theme.FinQ" />
+    </application>
+</manifest>
