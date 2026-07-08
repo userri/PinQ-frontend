@@ -12,9 +12,9 @@
                 android:startX="54" android:startY="0"
                 android:endX="54" android:endY="108"
                 android:type="linear">
-                <item android:offset="0" android:color="@color/brand_navy_mid" />
-                <item android:offset="0.55" android:color="@color/brand_navy" />
-                <item android:offset="1" android:color="@color/brand_navy_deep" />
+                <item android:offset="0" android:color="@color/bg_elevated" />
+                <item android:offset="0.55" android:color="@color/bg_surface" />
+                <item android:offset="1" android:color="@color/bg_base" />
             </gradient>
         </aapt:attr>
     </path>

@@ -12,9 +12,9 @@
                 android:startX="50" android:startY="0"
                 android:endX="50" android:endY="100"
                 android:type="linear">
-                <item android:offset="0" android:color="@color/brand_navy_mid" />
-                <item android:offset="0.55" android:color="@color/brand_navy" />
-                <item android:offset="1" android:color="@color/brand_navy_deep" />
+                <item android:offset="0" android:color="@color/bg_elevated" />
+                <item android:offset="0.55" android:color="@color/bg_surface" />
+                <item android:offset="1" android:color="@color/bg_base" />
             </gradient>
         </aapt:attr>
     </path>
@@ -34,26 +34,26 @@
     <!-- 줄기 (짙은 라임) -->
     <path
         android:pathData="M50,80 L50,50"
-        android:strokeColor="@color/brand_lime_deep"
+        android:strokeColor="@color/lime_deep"
         android:strokeWidth="7"
         android:strokeLineCap="round" />
     <!-- 왼쪽 잎 (라임) -->
     <path
-        android:fillColor="@color/brand_lime"
+        android:fillColor="@color/lime"
         android:pathData="M50,55 C40,57 27,52 22,35 C35,31 48,40 50,55 Z" />
     <!-- 오른쪽 잎 (라임) -->
     <path
-        android:fillColor="@color/brand_lime"
+        android:fillColor="@color/lime"
         android:pathData="M50,55 C60,57 73,52 78,35 C65,31 52,40 50,55 Z" />
     <!-- 잎맥 -->
     <path
         android:pathData="M50,55 C46,47 40,42 31,38"
-        android:strokeColor="@color/brand_lime_deep"
+        android:strokeColor="@color/lime_deep"
         android:strokeWidth="1.8"
         android:strokeLineCap="round" />
     <path
         android:pathData="M50,55 C54,47 60,42 69,38"
-        android:strokeColor="@color/brand_lime_deep"
+        android:strokeColor="@color/lime_deep"
         android:strokeWidth="1.8"
         android:strokeLineCap="round" />
 </vector>

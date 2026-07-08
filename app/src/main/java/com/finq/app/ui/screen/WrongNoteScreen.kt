@@ -37,8 +37,8 @@ import com.finq.app.data.model.QuizOption
 import com.finq.app.data.repository.AnswerResult
 import com.finq.app.R
 import com.finq.app.ui.library.AttemptItemCard
-import com.finq.app.ui.theme.AccentFill
-import com.finq.app.ui.theme.BrandNavy
+import com.finq.app.ui.theme.Lime
+import com.finq.app.ui.theme.OnLime
 
 /**
  * 세션 결과 화면에서 진입하는 "이번 회차 오답노트" 화면.
@@ -168,8 +168,8 @@ fun WrongNoteScreen(
                         .heightIn(min = 48.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = AccentFill,
-                        contentColor = BrandNavy,
+                        containerColor = Lime,
+                        contentColor = OnLime,
                     ),
                 ) {
                     Text(

@@ -48,13 +48,14 @@ import com.finq.app.data.model.Category
 import com.finq.app.data.model.Quiz
 import com.finq.app.data.model.RelatedArticle
 import com.finq.app.data.repository.AnswerResult
-import com.finq.app.ui.theme.AccentFill
-import com.finq.app.ui.theme.DividerColor
-import com.finq.app.ui.theme.BrandNavy
-import com.finq.app.ui.theme.SurfaceMuted
-import com.finq.app.ui.theme.TextMuted
-import com.finq.app.ui.theme.TextStrong
 import com.finq.app.ui.theme.FinQTheme
+import com.finq.app.ui.theme.BgElevated
+import com.finq.app.ui.theme.BgSurface
+import com.finq.app.ui.theme.Lime
+import com.finq.app.ui.theme.OnLime
+import com.finq.app.ui.theme.Outline
+import com.finq.app.ui.theme.TextMuted
+import com.finq.app.ui.theme.TextPrimary
 
 /**
  * 퀴즈 세션 완료 후 결과 리포트.
@@ -101,7 +102,7 @@ fun ResultReportScreen(
             text = "오늘의 결과",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.ExtraBold,
-            color = TextStrong,
+            color = TextPrimary,
         )
 
         Spacer(Modifier.height(16.dp))
@@ -110,9 +111,9 @@ fun ResultReportScreen(
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = BgSurface),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-            border = BorderStroke(1.dp, DividerColor),
+            border = BorderStroke(1.dp, Outline),
         ) {
             Column(
                 modifier = Modifier
@@ -126,7 +127,7 @@ fun ResultReportScreen(
                     text = gradeMessage(correctCount, totalCount),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
-                    color = TextStrong,
+                    color = TextPrimary,
                 )
             }
         }
@@ -139,15 +140,15 @@ fun ResultReportScreen(
                 text = "문제별 결과",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = TextStrong,
+                color = TextPrimary,
             )
             Spacer(Modifier.height(12.dp))
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = BgSurface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                border = BorderStroke(1.dp, DividerColor),
+                border = BorderStroke(1.dp, Outline),
             ) {
                 Column {
                     resultQuizzes.forEachIndexed { index, quiz ->
@@ -164,7 +165,7 @@ fun ResultReportScreen(
                                     .fillMaxWidth()
                                     .padding(horizontal = 14.dp)
                                     .height(1.dp)
-                                    .background(DividerColor)
+                                    .background(Outline)
                             )
                         }
                     }
@@ -183,8 +184,8 @@ fun ResultReportScreen(
                     .heightIn(min = 54.dp),
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = AccentFill,
-                    contentColor = BrandNavy,
+                    containerColor = Lime,
+                    contentColor = OnLime,
                 ),
             ) {
                 Text(
@@ -204,8 +205,8 @@ fun ResultReportScreen(
                     .weight(1f)
                     .heightIn(min = 48.dp),
                 shape = RoundedCornerShape(14.dp),
-                border = BorderStroke(1.dp, DividerColor),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = TextStrong),
+                border = BorderStroke(1.dp, Outline),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary),
             ) {
                 Text(
                     text = "홈으로",
@@ -219,8 +220,8 @@ fun ResultReportScreen(
                     .weight(1f)
                     .heightIn(min = 48.dp),
                 shape = RoundedCornerShape(14.dp),
-                border = BorderStroke(1.dp, DividerColor),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = TextStrong),
+                border = BorderStroke(1.dp, Outline),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary),
             ) {
                 Text(
                     text = "다시 풀기",
@@ -252,8 +253,8 @@ private fun DonutChart(
         )
     }
 
-    val trackColor = SurfaceMuted
-    val arcColor = AccentFill
+    val trackColor = BgElevated
+    val arcColor = Lime
 
     Box(
         modifier = modifier.size(160.dp),
@@ -295,7 +296,7 @@ private fun DonutChart(
                 text = "$correctCount/$totalCount",
                 fontSize = 36.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = TextStrong,
+                color = TextPrimary,
             )
             Spacer(Modifier.height(2.dp))
             Text(
@@ -335,7 +336,7 @@ private fun QuizResultRow(
         Text(
             text = question,
             style = MaterialTheme.typography.bodyMedium,
-            color = TextStrong,
+            color = TextPrimary,
             modifier = Modifier.weight(1f),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

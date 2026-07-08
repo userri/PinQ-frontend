@@ -1,5 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.FinQ" parent="android:Theme.Material.Light.NoActionBar" />
+    <!--
+      단일 다크 네이비 테마. 라이트 모드는 제공하지 않는다.
+      이 테마는 Compose 가 첫 프레임을 그리기 전(런치/스플래시 구간)의 창 배경을 결정한다.
+      Light 테마를 쓰면 앱 시작 시 흰 화면이 번쩍이므로 반드시 다크로 둘 것.
+    -->
+    <style name="Theme.FinQ" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/bg_base</item>
+        <item name="android:colorBackground">@color/bg_base</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <!-- 다크 배경이므로 시스템 바 아이콘은 밝게(기본값) 둔다 -->
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
 </resources>

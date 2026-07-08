@@ -1,7 +1,9 @@
 package com.finq.app
 
+import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,7 +14,12 @@ import com.finq.app.ui.theme.FinQTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        // 단일 다크 테마 — 시스템 바 투명 + 아이콘은 밝게 고정.
+        // SystemBarStyle.dark 는 "다크 배경용"이라는 뜻이라 바 아이콘이 밝게 그려진다.
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
+        )
         setContent {
             FinQTheme {
                 // 단일 Scaffold 구조 — FinQNavHost 내부의 Scaffold 가

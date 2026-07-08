@@ -59,17 +59,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import androidx.compose.material3.ButtonDefaults
-import com.finq.app.ui.theme.AccentText
-import com.finq.app.ui.theme.BrandNavy
-import com.finq.app.ui.theme.IncorrectFill
 import com.finq.app.ui.theme.FinQTheme
-import com.finq.app.ui.theme.AccentFill
-import com.finq.app.ui.theme.OnAccent
-import com.finq.app.ui.theme.AccentSoft
-import com.finq.app.ui.theme.StreakEmpty
-import com.finq.app.ui.theme.streakColor
-import com.finq.app.ui.theme.StreakMax
 import java.util.Calendar
+import com.finq.app.ui.theme.BgElevated
+import com.finq.app.ui.theme.Error
+import com.finq.app.ui.theme.Lime
+import com.finq.app.ui.theme.LimeFaint
+import com.finq.app.ui.theme.OnLime
+import com.finq.app.ui.theme.TextPrimary
+import com.finq.app.ui.theme.streakColor
 
 /**
  * 마이페이지 — Stateless View.
@@ -346,7 +344,7 @@ fun MyPageContent(
                     text = notificationTime,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = AccentText,
+                    color = TextPrimary,
                 )
             }
         }
@@ -381,14 +379,14 @@ fun MyPageContent(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = IncorrectFill,
+                contentColor = Error,
             ),
         ) {
             if (isWithdrawing) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(18.dp),
                     strokeWidth = 2.dp,
-                    color = IncorrectFill,
+                    color = Error,
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
@@ -474,7 +472,7 @@ fun MyPageContent(
                 ) {
                     Text(
                         text = "탈퇴하기",
-                        color = IncorrectFill,
+                        color = Error,
                         fontWeight = FontWeight.Bold,
                     )
                 }
@@ -551,7 +549,7 @@ fun MyPageContent(
                     if (isUpdatingNickname) {
                         CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                     } else {
-                        Text(text = "변경", fontWeight = FontWeight.Bold, color = AccentText)
+                        Text(text = "변경", fontWeight = FontWeight.Bold, color = Lime)
                     }
                 }
             },
@@ -628,14 +626,14 @@ private fun ProfileCard(
                 modifier = Modifier
                     .size(52.dp)
                     .clip(CircleShape)
-                    .background(AccentFill),
+                    .background(Lime),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = initial,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.ExtraBold,
-                    color = OnAccent,
+                    color = OnLime,
                 )
             }
             Spacer(Modifier.width(14.dp))
@@ -655,7 +653,7 @@ private fun ProfileCard(
                 Text(
                     text = "변경",
                     style = MaterialTheme.typography.labelMedium,
-                    color = AccentText,
+                    color = Lime,
                 )
             }
         }
@@ -686,7 +684,7 @@ private fun StatCard(
                 text = value,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.ExtraBold,
-                color = AccentText,
+                color = TextPrimary,
             )
             Spacer(Modifier.height(2.dp))
             Text(
@@ -824,13 +822,13 @@ private fun ActivityHeatmapCard(activityGrid: List<Int>) {
                                         cell.isToday && cell.intensity == 0 ->
                                             Modifier.border(
                                                 width = 2.dp,
-                                                color = BrandNavy,
+                                                color = Lime,
                                                 shape = RoundedCornerShape(4.dp),
                                             )
                                         cell.isToday && cell.intensity > 0 ->
                                             Modifier.border(
                                                 width = 2.dp,
-                                                color = BrandNavy,
+                                                color = Lime,
                                                 shape = RoundedCornerShape(4.dp),
                                             )
                                         else -> Modifier
@@ -863,10 +861,10 @@ private fun ActivityHeatmapCard(activityGrid: List<Int>) {
                         modifier = Modifier
                             .size(12.dp)
                             .clip(RoundedCornerShape(3.dp))
-                            .background(StreakEmpty)
+                            .background(BgElevated)
                             .border(
                                 width = 2.dp,
-                                color = BrandNavy,
+                                color = Lime,
                                 shape = RoundedCornerShape(3.dp),
                             ),
                     )
@@ -950,7 +948,7 @@ private fun NotificationTimePickerDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(10.dp))
-                            .background(if (selected) AccentSoft else Color.Transparent)
+                            .background(if (selected) LimeFaint else Color.Transparent)
                             .clickable { onSelect(slot) }
                             .padding(horizontal = 16.dp, vertical = 12.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -960,14 +958,14 @@ private fun NotificationTimePickerDialog(
                             text = slot,
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                            color = if (selected) AccentText else MaterialTheme.colorScheme.onSurface,
+                            color = if (selected) Lime else MaterialTheme.colorScheme.onSurface,
                         )
                         if (selected) {
                             Text(
                                 text = "✓",
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Bold,
-                                color = AccentText,
+                                color = Lime,
                             )
                         }
                     }

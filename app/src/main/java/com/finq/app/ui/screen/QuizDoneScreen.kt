@@ -19,8 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.finq.app.ui.theme.BrandNavy
 import com.finq.app.ui.theme.FinQTheme
+import com.finq.app.ui.theme.Lime
 
 /**
  * 폴백 완료 화면. (실제 노출은 ResultReportScreen 으로 이뤄짐)
@@ -49,7 +49,7 @@ fun QuizDoneScreen(
         Text(
             text = "$correctCount / $totalCount 정답",
             style = MaterialTheme.typography.titleLarge,
-            color = BrandNavy,
+            color = Lime,
             fontWeight = FontWeight.SemiBold,
         )
         Spacer(Modifier.height(32.dp))

@@ -6,13 +6,13 @@
     android:tint="?attr/colorControlNormal">
     <path
         android:pathData="M4,5 a2,2 0 0,1 2,-2 H18 V20 H6 a2,2 0 0,1 -2,-2 Z"
-        android:strokeColor="@color/text_subtle"
+        android:strokeColor="@color/text_muted"
         android:strokeWidth="1.6"
         android:strokeLineCap="round"
         android:strokeLineJoin="round" />
     <path
         android:pathData="M8,7 H14 M8,11 H14"
-        android:strokeColor="@color/text_subtle"
+        android:strokeColor="@color/text_muted"
         android:strokeWidth="1.6"
         android:strokeLineCap="round" />
 </vector>

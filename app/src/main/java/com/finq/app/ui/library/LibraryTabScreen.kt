@@ -20,9 +20,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import com.finq.app.R
-import com.finq.app.ui.theme.BrandNavy
-import com.finq.app.ui.theme.AccentFill
 import kotlinx.coroutines.launch
+import com.finq.app.ui.theme.Lime
 
 /**
  * 보관함 탭 — 오답노트 / 북마크 / 전체이력을 하나의 화면으로 묶는다.
@@ -51,11 +50,11 @@ fun LibraryTabScreen(
         TabRow(
             selectedTabIndex = selectedTab,
             containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = BrandNavy,
+            contentColor = Lime,
             indicator = { tabPositions ->
                 TabRowDefaults.SecondaryIndicator(
                     modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                    color = AccentFill,
+                    color = Lime,
                 )
             },
         ) {
@@ -72,7 +71,7 @@ fun LibraryTabScreen(
                             text = title,
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal,
-                            color = if (selectedTab == index) BrandNavy
+                            color = if (selectedTab == index) Lime
                             else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     },

@@ -33,14 +33,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.finq.app.R
-import com.finq.app.ui.theme.AccentText
-import com.finq.app.ui.theme.BrandNavy
 import com.finq.app.ui.theme.GoogleBorder
 import com.finq.app.ui.theme.GoogleLabel
 import com.finq.app.ui.theme.GoogleWhite
 import com.finq.app.ui.theme.KakaoLabel
 import com.finq.app.ui.theme.KakaoYellow
+import com.finq.app.ui.theme.Lime
 import com.finq.app.ui.theme.TextMuted
+import com.finq.app.ui.theme.TextPrimary
 
 @Composable
 fun LoginScreen(
@@ -88,14 +88,14 @@ fun LoginScreen(
                     text = "경제",
                     fontSize = 36.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = BrandNavy,
+                    color = TextPrimary,
                     letterSpacing = (-0.5).sp,
                 )
                 Text(
                     text = "잔디",
                     fontSize = 36.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = AccentText,
+                    color = Lime,
                     letterSpacing = (-0.5).sp,
                 )
             }
@@ -188,7 +188,7 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(28.dp))
                 CircularProgressIndicator(
                     modifier = Modifier.size(28.dp),
-                    color = BrandNavy,
+                    color = TextPrimary,
                     strokeWidth = 2.5.dp,
                 )
             }

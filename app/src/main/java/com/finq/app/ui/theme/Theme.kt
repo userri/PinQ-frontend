@@ -1,41 +1,44 @@
 package com.finq.app.ui.theme
 
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 
-private val LightColorScheme = lightColorScheme(
-    // 주요 버튼·토글 ON·활성 인디케이터 = 쨍한 라임, 그 위 텍스트 = 네이비
-    primary = AccentFill,
-    onPrimary = OnAccent,
-    primaryContainer = AccentSoft,
-    onPrimaryContainer = BrandNavy,
+// 단일 다크 네이비 테마 — 라이트 모드는 제공하지 않는다(isSystemInDarkTheme 분기 없음).
+private val DarkColorScheme = darkColorScheme(
+    // 주요 버튼·토글 ON·활성 인디케이터 = 라임, 그 위 텍스트/아이콘 = 네이비
+    primary = Lime,
+    onPrimary = OnLime,
+    primaryContainer = LimeFaint,
+    onPrimaryContainer = TextPrimary,
 
-    // 헤더·본문 강조 = 네이비
-    secondary = BrandNavy,
-    onSecondary = OnDark,
-    secondaryContainer = AccentSoft,
-    onSecondaryContainer = BrandNavy,
+    // 보조 = 본문 톤(다크 배경 위 읽히는 밝은 청회색)
+    secondary = TextSecondary,
+    onSecondary = OnLime,
+    secondaryContainer = BgSubtle,
+    onSecondaryContainer = TextPrimary,
 
-    tertiary = AccentFill,
-    onTertiary = OnAccent,
-    tertiaryContainer = AccentSoft,
-    onTertiaryContainer = BrandNavy,
+    tertiary = Lime,
+    onTertiary = OnLime,
+    tertiaryContainer = LimeFaint,
+    onTertiaryContainer = TextPrimary,
 
-    background = ScreenBackground,
-    onBackground = TextStrong,
-    surface = SurfaceWhite,
-    onSurface = TextStrong,
-    surfaceVariant = SurfaceMuted,
-    onSurfaceVariant = TextMuted,
+    background = BgBase,
+    onBackground = TextPrimary,
+    surface = BgSurface,
+    onSurface = TextPrimary,
+    surfaceVariant = BgElevated,
+    onSurfaceVariant = TextSecondary,
 
-    error = IncorrectFill,
-    onError = OnDark,
-    errorContainer = IncorrectSoft,
-    onErrorContainer = IncorrectFill,
+    error = Error,
+    onError = OnLime,
+    errorContainer = ErrorFaint,
+    onErrorContainer = Error,
 
-    outline = OutlineColor,
-    outlineVariant = DividerColor,
+    outline = Outline,
+    outlineVariant = Outline,
+
+    scrim = BgBase,
 )
 
 @Composable
@@ -43,7 +46,7 @@ fun FinQTheme(
     content: @Composable () -> Unit,
 ) {
     MaterialTheme(
-        colorScheme = LightColorScheme,
+        colorScheme = DarkColorScheme,
         typography = Typography,
         content = content,
     )

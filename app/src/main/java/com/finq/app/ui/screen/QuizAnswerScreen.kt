@@ -48,19 +48,21 @@ import com.finq.app.data.model.RelatedArticle
 import com.finq.app.data.repository.AnswerResult
 import com.finq.app.data.repository.LibraryRepository
 import com.finq.app.ui.components.AdBanner
-import com.finq.app.ui.theme.CorrectFill
-import com.finq.app.ui.theme.BrandNavy
-import com.finq.app.ui.theme.BrandNavyDeep
-import com.finq.app.ui.theme.IncorrectFill
-import com.finq.app.ui.theme.IncorrectSoft
-import com.finq.app.ui.theme.TextStrong
-import com.finq.app.ui.theme.AccentSoft
 import com.finq.app.ui.theme.FinQTheme
-import com.finq.app.ui.theme.TextSubtle
-import com.finq.app.ui.theme.OutlineStrong
-import com.finq.app.ui.theme.TextMuted
-import com.finq.app.ui.theme.TextBody
 import kotlinx.coroutines.launch
+import com.finq.app.ui.theme.BgBase
+import com.finq.app.ui.theme.BgElevated
+import com.finq.app.ui.theme.BgSubtle
+import com.finq.app.ui.theme.BgSurface
+import com.finq.app.ui.theme.Error
+import com.finq.app.ui.theme.ErrorFaint
+import com.finq.app.ui.theme.Lime
+import com.finq.app.ui.theme.LimeFaint
+import com.finq.app.ui.theme.OnLime
+import com.finq.app.ui.theme.Outline
+import com.finq.app.ui.theme.TextMuted
+import com.finq.app.ui.theme.TextPrimary
+import com.finq.app.ui.theme.TextSecondary
 
 /**
  * 퀴즈 정답/해설 화면 — Stateless View.
@@ -93,7 +95,7 @@ fun QuizAnswerScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(BrandNavyDeep)
+            .background(BgBase)
             .padding(horizontal = 20.dp, vertical = 12.dp),
     ) {
         // ── 상단 진행도 도트 (퀴즈 화면과 동일) ──────────────────
@@ -115,7 +117,7 @@ fun QuizAnswerScreen(
                     painter = painterResource(R.drawable.ic_chevron_left),
                     contentDescription = "뒤로",
                     modifier = Modifier.size(22.dp),
-                    colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(Color.White),
+                    colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(TextPrimary),
                 )
             }
             Spacer(Modifier.weight(1f))
@@ -123,7 +125,7 @@ fun QuizAnswerScreen(
                 text = "Q${quizIndex + 1} · ${quiz.category.displayName}",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
+                color = TextPrimary,
             )
             Spacer(Modifier.weight(1f))
             if (libraryRepository != null) {
@@ -172,7 +174,7 @@ fun QuizAnswerScreen(
                 text = "Q. ${quiz.question}",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
+                color = TextPrimary,
             )
             Spacer(Modifier.height(14.dp))
 
@@ -221,8 +223,8 @@ fun QuizAnswerScreen(
         Button(
             onClick = onNext,
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color.White,
-                contentColor = BrandNavy,
+                containerColor = Lime,
+                contentColor = OnLime,
             ),
             modifier = Modifier
                 .fillMaxWidth()
@@ -257,8 +259,8 @@ private fun ProgressDotsHeader(quizIndex: Int, totalCount: Int) {
                     .height(4.dp)
                     .clip(RoundedCornerShape(2.dp))
                     .background(
-                        if (done) Color.White
-                        else Color.White.copy(alpha = 0.25f)
+                        if (done) Lime
+                        else Outline
                     )
             )
         }
@@ -271,7 +273,7 @@ private fun ProgressDotsHeader(quizIndex: Int, totalCount: Int) {
 
 @Composable
 private fun ResultChip(isCorrect: Boolean) {
-    val accent = if (isCorrect) CorrectFill else IncorrectFill
+    val accent = if (isCorrect) Lime else Error
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(50))
@@ -283,7 +285,7 @@ private fun ResultChip(isCorrect: Boolean) {
             modifier = Modifier
                 .size(26.dp)
                 .clip(CircleShape)
-                .background(Color.White),
+                .background(BgSurface),
             contentAlignment = Alignment.Center,
         ) {
             Text(
@@ -298,7 +300,7 @@ private fun ResultChip(isCorrect: Boolean) {
             text = if (isCorrect) "정답이에요!" else "아쉬워요, 다음에 맞혀봐요",
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
-            color = Color.White,
+            color = OnLime,
         )
     }
 }
@@ -313,18 +315,20 @@ private fun AnswerOptionRow(
     isCorrect: Boolean,
     isUserSelected: Boolean,
 ) {
-    val (border, accent) = when {
-        isCorrect -> CorrectFill to CorrectFill
-        isUserSelected -> IncorrectFill to IncorrectFill
-        else -> Color.Transparent to TextSubtle
+    // 보기 카드 4상태 — 기본: BgSurface+Outline
+    //   정답 공개: LimeFaint 배경 + Lime 테두리 / 오답 공개: ErrorFaint 배경 + Error 테두리
+    val (background, border, accent) = when {
+        isCorrect -> Triple(LimeFaint, Lime, Lime)
+        isUserSelected -> Triple(ErrorFaint, Error, Error)
+        else -> Triple(BgSurface, Outline, TextMuted)
     }
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(Color.White)
+            .background(background)
             .border(
-                width = if (isCorrect || isUserSelected) 2.dp else 0.dp,
+                width = if (isCorrect || isUserSelected) 2.dp else 1.dp,
                 color = border,
                 shape = RoundedCornerShape(14.dp),
             )
@@ -337,7 +341,7 @@ private fun AnswerOptionRow(
                 .clip(CircleShape)
                 .background(
                     if (isCorrect || isUserSelected) accent
-                    else OutlineStrong
+                    else BgElevated
                 ),
             contentAlignment = Alignment.Center,
         ) {
@@ -345,14 +349,14 @@ private fun AnswerOptionRow(
                 text = "${option.optionNumber}",
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
-                color = if (isCorrect || isUserSelected) Color.White else TextMuted,
+                color = if (isCorrect || isUserSelected) OnLime else TextMuted,
             )
         }
         Spacer(Modifier.size(12.dp))
         Text(
             text = option.text,
             style = MaterialTheme.typography.bodyLarge,
-            color = TextStrong,
+            color = TextPrimary,
             fontWeight = if (isCorrect || isUserSelected) FontWeight.SemiBold else FontWeight.Normal,
             modifier = Modifier.weight(1f),
         )
@@ -361,14 +365,14 @@ private fun AnswerOptionRow(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
-                    .background(CorrectFill)
+                    .background(Lime)
                     .padding(horizontal = 10.dp, vertical = 4.dp),
             ) {
                 Text(
                     text = "정답",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = OnLime,
                 )
             }
         } else if (isUserSelected) {
@@ -376,14 +380,14 @@ private fun AnswerOptionRow(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
-                    .background(IncorrectFill)
+                    .background(Error)
                     .padding(horizontal = 10.dp, vertical = 4.dp),
             ) {
                 Text(
                     text = "내 선택",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = OnLime,
                 )
             }
         }
@@ -399,28 +403,28 @@ private fun ExplanationCard(explanation: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = BgSurface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
-                    .background(BrandNavy)
+                    .background(BgSurface)
                     .padding(horizontal = 10.dp, vertical = 4.dp),
             ) {
                 Text(
                     text = "해설",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = TextPrimary,
                 )
             }
             Spacer(Modifier.height(10.dp))
             Text(
                 text = explanation,
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextStrong,
+                color = TextPrimary,
             )
         }
     }
@@ -436,7 +440,7 @@ private fun KeywordCard(keyword: String) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(AccentSoft)
+            .background(LimeFaint)
             .padding(horizontal = 14.dp, vertical = 14.dp),
     ) {
         Row {
@@ -451,13 +455,13 @@ private fun KeywordCard(keyword: String) {
                     text = "알아두면 좋아요",
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
-                    color = BrandNavy,
+                    color = TextPrimary,
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = keyword,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = TextBody,
+                    color = TextSecondary,
                 )
             }
         }
@@ -474,15 +478,15 @@ private fun RelatedArticleCard(article: RelatedArticle, onClick: () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
         onClick = onClick,
-        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.08f)),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.18f)),
+        colors = CardDefaults.cardColors(containerColor = BgSubtle),
+        border = BorderStroke(1.dp, Outline),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = "관련 기사",
                 style = MaterialTheme.typography.labelMedium,
-                color = Color.White.copy(alpha = 0.7f),
+                color = TextSecondary,
                 fontWeight = FontWeight.Bold,
             )
             Spacer(Modifier.height(8.dp))
@@ -490,14 +494,14 @@ private fun RelatedArticleCard(article: RelatedArticle, onClick: () -> Unit) {
                 text = article.title,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = Color.White,
+                color = TextPrimary,
                 maxLines = 2,
             )
             Spacer(Modifier.height(6.dp))
             Text(
                 text = article.source,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.6f),
+                color = TextMuted,
             )
         }
     }

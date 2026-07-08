@@ -37,12 +37,16 @@ import com.finq.app.R
 import com.finq.app.data.DummyQuizData
 import com.finq.app.data.model.Quiz
 import com.finq.app.data.model.QuizOption
-import com.finq.app.ui.theme.BrandNavy
-import com.finq.app.ui.theme.BrandNavyDeep
-import com.finq.app.ui.theme.TextStrong
 import com.finq.app.ui.theme.FinQTheme
-import com.finq.app.ui.theme.OutlineStrong
+import com.finq.app.ui.theme.BgBase
+import com.finq.app.ui.theme.BgElevated
+import com.finq.app.ui.theme.BgSubtle
+import com.finq.app.ui.theme.BgSurface
+import com.finq.app.ui.theme.Lime
+import com.finq.app.ui.theme.OnLime
+import com.finq.app.ui.theme.Outline
 import com.finq.app.ui.theme.TextMuted
+import com.finq.app.ui.theme.TextPrimary
 
 /**
  * 퀴즈 풀이 화면 — 풀블리드 네이비 배경 + 흰 카드.
@@ -62,7 +66,7 @@ fun QuizScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(BrandNavyDeep)
+            .background(BgBase)
             .padding(horizontal = 20.dp, vertical = 12.dp),
     ) {
         // ── 진행도 + 닫기 + 즐겨찾기 ────────────────────────────
@@ -89,7 +93,7 @@ fun QuizScreen(
                 text = "Q${quizIndex + 1} · ${quiz.category.displayName}",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
+                color = TextPrimary,
             )
             Spacer(Modifier.weight(1f))
             // 닫기 아이콘과 좌우 시각 균형을 맞추기 위한 보이지 않는 placeholder.
@@ -108,10 +112,10 @@ fun QuizScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color.White.copy(alpha = 0.10f))
+                    .background(BgElevated)
                     .border(
                         1.dp,
-                        Color.White.copy(alpha = 0.18f),
+                        Outline,
                         RoundedCornerShape(16.dp),
                     )
                     .padding(horizontal = 20.dp, vertical = 22.dp),
@@ -120,7 +124,7 @@ fun QuizScreen(
                     text = quiz.question,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = TextPrimary,
                 )
             }
             Spacer(Modifier.height(20.dp))
@@ -147,10 +151,10 @@ fun QuizScreen(
             onClick = onSubmit,
             enabled = selectedOptionId != null && !isSubmitting,
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color.White,
-                contentColor = BrandNavy,
-                disabledContainerColor = Color.White.copy(alpha = 0.4f),
-                disabledContentColor = BrandNavy.copy(alpha = 0.6f),
+                containerColor = Lime,
+                contentColor = OnLime,
+                disabledContainerColor = Lime.copy(alpha = 0.35f),
+                disabledContentColor = OnLime.copy(alpha = 0.5f),
             ),
             modifier = Modifier
                 .fillMaxWidth()
@@ -161,7 +165,7 @@ fun QuizScreen(
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
                     strokeWidth = 2.dp,
-                    color = BrandNavy,
+                    color = OnLime,
                 )
             } else {
                 Text(
@@ -189,8 +193,8 @@ private fun ProgressDotsHeader(quizIndex: Int, totalCount: Int) {
                     .height(4.dp)
                     .clip(RoundedCornerShape(2.dp))
                     .background(
-                        if (done) Color.White
-                        else Color.White.copy(alpha = 0.25f)
+                        if (done) Lime
+                        else Outline
                     )
             )
         }
@@ -208,10 +212,11 @@ private fun OptionCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(Color.White)
+            // 보기 카드 — 기본: BgSurface+Outline / 선택: BgSubtle+Lime 2dp
+            .background(if (selected) BgSubtle else BgSurface)
             .border(
                 width = if (selected) 2.dp else 1.dp,
-                color = if (selected) BrandNavy else Color.Transparent,
+                color = if (selected) Lime else Outline,
                 shape = RoundedCornerShape(14.dp),
             )
             .clickable(enabled = enabled, onClick = onClick)
@@ -223,8 +228,8 @@ private fun OptionCard(
                 .size(28.dp)
                 .clip(CircleShape)
                 .background(
-                    if (selected) BrandNavy
-                    else OutlineStrong
+                    if (selected) Lime
+                    else BgElevated
                 ),
             contentAlignment = Alignment.Center,
         ) {
@@ -232,14 +237,14 @@ private fun OptionCard(
                 text = "${option.optionNumber}",
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
-                color = if (selected) Color.White else TextMuted,
+                color = if (selected) OnLime else TextMuted,
             )
         }
         Spacer(Modifier.size(12.dp))
         Text(
             text = option.text,
             style = MaterialTheme.typography.bodyLarge,
-            color = TextStrong,
+            color = TextPrimary,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
             modifier = Modifier.weight(1f),
         )

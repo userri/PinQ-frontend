@@ -65,13 +65,15 @@ import com.finq.app.ui.screen.QuizAnswerScreen
 import com.finq.app.ui.screen.QuizScreen
 import com.finq.app.ui.screen.ResultReportScreen
 import com.finq.app.ui.screen.WrongNoteScreen
-import com.finq.app.ui.theme.BrandNavy
-import com.finq.app.ui.theme.AccentFill
 import com.finq.app.data.local.SessionManager
 import com.finq.app.data.repository.AuthRepository
 import com.finq.app.ui.login.LoginEvent
 import com.finq.app.ui.login.LoginViewModel
 import com.finq.app.ui.screen.LoginScreen
+import com.finq.app.ui.theme.BgBase
+import com.finq.app.ui.theme.Lime
+import com.finq.app.ui.theme.LimeFaint
+import com.finq.app.ui.theme.TextMuted
 
 /**
  * FinQ 네비게이션 그래프.
@@ -202,7 +204,7 @@ fun FinQNavHost(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         // 세션 화면에서는 상태바·하단 인셋까지 네이비로 풀블리드.
         containerColor = if (isDarkSession)
-            com.finq.app.ui.theme.BrandNavyDeep
+            com.finq.app.ui.theme.BgBase
         else
             MaterialTheme.colorScheme.background,
         bottomBar = {
@@ -497,8 +499,8 @@ private fun FinQBottomBar(
                         painter = androidx.compose.ui.res.painterResource(item.iconRes),
                         contentDescription = item.label,
                         colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(
-                            if (selected) BrandNavy
-                            else MaterialTheme.colorScheme.onSurfaceVariant
+                            if (selected) Lime
+                            else TextMuted
                         ),
                         modifier = Modifier.size(22.dp),
                     )
@@ -511,9 +513,9 @@ private fun FinQBottomBar(
                     )
                 },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedTextColor = BrandNavy,
-                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    indicatorColor = AccentFill,
+                    selectedTextColor = Lime,
+                    unselectedTextColor = TextMuted,
+                    indicatorColor = LimeFaint,
                 ),
             )
         }

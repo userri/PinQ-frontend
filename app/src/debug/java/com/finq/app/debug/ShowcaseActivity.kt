@@ -12,8 +12,13 @@ import com.finq.app.data.model.AttemptItem
 import com.finq.app.data.model.Category
 import com.finq.app.data.model.QuizOption
 import com.finq.app.ui.library.AttemptItemCard
+import com.finq.app.data.model.Quiz
+import com.finq.app.data.model.RelatedArticle
+import com.finq.app.data.repository.AnswerResult
 import com.finq.app.ui.screen.HomeScreen
 import com.finq.app.ui.screen.MyPageContent
+import com.finq.app.ui.screen.QuizAnswerScreen
+import com.finq.app.ui.screen.QuizScreen
 import com.finq.app.ui.theme.FinQTheme
 
 /**
@@ -21,7 +26,7 @@ import com.finq.app.ui.theme.FinQTheme
  *
  *   adb shell am start -n com.finq.app/com.finq.app.debug.ShowcaseActivity --es screen home
  *
- * screen: home | mypage | wrongnote
+ * screen: home | quiz | answer | mypage | wrongnote
  * 릴리즈 빌드에는 포함되지 않는다(app/src/debug 소스셋).
  */
 class ShowcaseActivity : ComponentActivity() {
@@ -62,6 +67,40 @@ class ShowcaseActivity : ComponentActivity() {
                         AttemptItemCard(item = sampleAttempt(correct = false), onToggleBookmark = {})
                     }
 
+                    // 보기 카드 4상태 중 기본/선택 확인
+                    "quiz" -> QuizScreen(
+                        quizIndex = 1,
+                        totalCount = 3,
+                        quiz = sampleQuiz,
+                        selectedOptionId = 2L,   // 선택 상태 = BgSubtle + Lime 테두리
+                        onSelectOption = {},
+                        onSubmit = {},
+                    )
+
+                    // 보기 카드 4상태 중 정답 공개/오답 공개 확인
+                    "answer" -> QuizAnswerScreen(
+                        quiz = sampleQuiz,
+                        answer = AnswerResult(
+                            quizId = sampleQuiz.id,
+                            selectedOptionId = 2L,   // 오답 공개 = ErrorFaint + Error
+                            isCorrect = false,
+                            correctOptionId = 1L,    // 정답 공개 = LimeFaint + Lime
+                            explanation = "기준금리가 오르면 시중 금리가 따라 올라 예금 금리도 상승합니다.",
+                            keyword = "기준금리",
+                            relatedArticle = RelatedArticle(
+                                title = "한은, 기준금리 0.25%p 인상",
+                                url = "https://example.com",
+                                source = "경제일보",
+                            ),
+                        ),
+                        isLast = false,
+                        quizIndex = 1,
+                        totalCount = 3,
+                        onNext = {},
+                        onBack = {},
+                        onArticleClick = {},
+                    )
+
                     else -> HomeScreen(
                         quizCount = 3,
                         streak = 7,
@@ -77,6 +116,18 @@ class ShowcaseActivity : ComponentActivity() {
             }
         }
     }
+
+    private val sampleQuiz = Quiz(
+        id = 1L,
+        category = Category.INTEREST_RATE,
+        question = "기준금리를 인상하면 일반적으로 나타나는 현상은?",
+        options = listOf(
+            QuizOption(1, 1, "예금 금리가 오른다"),
+            QuizOption(2, 2, "대출이 늘어난다"),
+            QuizOption(3, 3, "물가가 급등한다"),
+            QuizOption(4, 4, "환율이 급락한다"),
+        ),
+    )
 
     private fun sampleAttempt(correct: Boolean) = AttemptItem(
         quizId = if (correct) 1L else 2L,
