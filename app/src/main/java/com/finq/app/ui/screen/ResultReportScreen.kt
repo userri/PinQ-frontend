@@ -50,6 +50,7 @@ import com.finq.app.data.model.RelatedArticle
 import com.finq.app.data.repository.AnswerResult
 import com.finq.app.ui.theme.FinQBlue
 import com.finq.app.ui.theme.FinQDivider
+import com.finq.app.ui.theme.FinQLime
 import com.finq.app.ui.theme.FinQNavy
 import com.finq.app.ui.theme.FinQSurfaceMuted
 import com.finq.app.ui.theme.FinQTextMuted
@@ -183,8 +184,8 @@ fun ResultReportScreen(
                     .heightIn(min = 54.dp),
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = FinQNavy,
-                    contentColor = Color.White,
+                    containerColor = FinQLime,
+                    contentColor = FinQNavy,
                 ),
             ) {
                 Text(

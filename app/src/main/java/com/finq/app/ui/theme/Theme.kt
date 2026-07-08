@@ -5,20 +5,22 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
 private val LightColorScheme = lightColorScheme(
-    primary = FinQNavy,
-    onPrimary = White,
-    primaryContainer = FinQBlueSoft,
+    // 주요 버튼·포인트 = 라임, 그 위 텍스트 = 네이비 (대비 확보)
+    primary = FinQLime,
+    onPrimary = FinQNavy,
+    primaryContainer = FinQLimeSoft,
     onPrimaryContainer = FinQNavy,
 
-    secondary = FinQBlue,
+    // 헤더·본문 강조 = 네이비
+    secondary = FinQNavy,
     onSecondary = White,
-    secondaryContainer = FinQBlueSoft,
+    secondaryContainer = FinQLimeSoft,
     onSecondaryContainer = FinQNavy,
 
-    tertiary = FinQYellow,
-    onTertiary = FinQTextStrong,
-    tertiaryContainer = FinQYellowSoft,
-    onTertiaryContainer = FinQTextStrong,
+    tertiary = FinQLime,
+    onTertiary = FinQNavy,
+    tertiaryContainer = FinQLimeSoft,
+    onTertiaryContainer = FinQNavy,
 
     background = FinQBackground,
     onBackground = FinQTextStrong,

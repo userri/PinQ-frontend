@@ -33,6 +33,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.finq.app.R
+import com.finq.app.ui.theme.FinQLimeDeep
 import com.finq.app.ui.theme.FinQNavy
 import com.finq.app.ui.theme.FinQTextMuted
 
@@ -72,10 +73,10 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            // ── FinQ 로고 ────────────────────────────────────────
+            // ── 경제잔디 로고 ─────────────────────────────────────
             Image(
                 painter = painterResource(R.drawable.ic_finq_logo),
-                contentDescription = "FinQ",
+                contentDescription = "경제잔디",
                 modifier = Modifier
                     .size(96.dp)
                     .clip(RoundedCornerShape(22.dp)),
@@ -83,14 +84,23 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // ── 워드마크 (FinQ) ──────────────────────────────────
-            Text(
-                text = "FinQ",
-                fontSize = 36.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = FinQNavy,
-                letterSpacing = (-0.5).sp,
-            )
+            // ── 워드마크: 경제(네이비) + 잔디(라임 강조) ──────────
+            Row {
+                Text(
+                    text = "경제",
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = FinQNavy,
+                    letterSpacing = (-0.5).sp,
+                )
+                Text(
+                    text = "잔디",
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = FinQLimeDeep,
+                    letterSpacing = (-0.5).sp,
+                )
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 

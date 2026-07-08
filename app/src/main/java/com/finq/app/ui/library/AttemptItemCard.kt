@@ -40,6 +40,7 @@ import com.finq.app.R
 import com.finq.app.data.model.AttemptItem
 import com.finq.app.ui.theme.FinQBlue
 import com.finq.app.ui.theme.FinQBlueSoft
+import com.finq.app.ui.theme.FinQNavy
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -241,7 +242,7 @@ fun AttemptItemCard(
                                 text = "관련 기사",
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary,
+                                color = FinQNavy,
                             )
                             Spacer(Modifier.height(4.dp))
                             Text(

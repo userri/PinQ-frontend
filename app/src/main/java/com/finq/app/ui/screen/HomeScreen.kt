@@ -39,10 +39,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.finq.app.R
 import com.finq.app.ui.theme.FinQBlue
 import com.finq.app.ui.theme.FinQBlueSoft
 import com.finq.app.ui.theme.FinQDivider
+import com.finq.app.ui.theme.FinQLime
+import com.finq.app.ui.theme.FinQLimeDeep
 import com.finq.app.ui.theme.FinQNavy
 import com.finq.app.ui.theme.FinQNavyDeep
 import com.finq.app.ui.theme.FinQNavyMid
@@ -84,11 +87,23 @@ fun HomeScreen(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Image(
-                painter = painterResource(R.drawable.ic_finq_wordmark),
-                contentDescription = "FinQ",
-                modifier = Modifier.height(28.dp),
-            )
+            // ── 워드마크: 경제(네이비) + 잔디(라임 강조) ──────────────
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "경제",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = FinQNavy,
+                    letterSpacing = (-0.5).sp,
+                )
+                Text(
+                    text = "잔디",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = FinQLimeDeep,
+                    letterSpacing = (-0.5).sp,
+                )
+            }
         }
 
         Spacer(Modifier.height(20.dp))
@@ -220,13 +235,15 @@ private fun WeeklyStreakCard(
                                 .clip(CircleShape)
                                 .then(
                                     if (isToday && !isFilled)
-                                        Modifier.border(2.dp, FinQBlue, CircleShape)
+                                        Modifier.border(2.dp, FinQNavy, CircleShape)
                                     else
                                         Modifier
                                 )
                                 .background(
+                                    // 잔디 그리드: 참여한 날은 라임(농도), 나머지는 연한 회색
                                     when {
-                                        isFilled -> FinQBlue
+                                        isFilled && intensity >= 2 -> FinQLimeDeep
+                                        isFilled -> FinQLime
                                         isFuture -> FinQSurfaceMuted
                                         else -> FinQSurfaceMuted
                                     }

@@ -37,6 +37,7 @@ import com.finq.app.data.model.QuizOption
 import com.finq.app.data.repository.AnswerResult
 import com.finq.app.R
 import com.finq.app.ui.library.AttemptItemCard
+import com.finq.app.ui.theme.FinQLime
 import com.finq.app.ui.theme.FinQNavy
 
 /**
@@ -167,8 +168,8 @@ fun WrongNoteScreen(
                         .heightIn(min = 48.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = FinQNavy,
-                        contentColor = Color.White,
+                        containerColor = FinQLime,
+                        contentColor = FinQNavy,
                     ),
                 ) {
                     Text(

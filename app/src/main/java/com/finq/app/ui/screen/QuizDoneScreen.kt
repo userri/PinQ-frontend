@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.finq.app.ui.theme.FinQNavy
 import com.finq.app.ui.theme.FinQTheme
 
 /**
@@ -48,7 +49,7 @@ fun QuizDoneScreen(
         Text(
             text = "$correctCount / $totalCount 정답",
             style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.primary,
+            color = FinQNavy,
             fontWeight = FontWeight.SemiBold,
         )
         Spacer(Modifier.height(32.dp))
