@@ -20,3 +20,6 @@ AGENTS.md
 *.jks
 *.keystore
 keystore.properties
+
+# Firebase (앱별 시크릿 — 로컬 유지, 커밋 금지)
+app/google-services.json
