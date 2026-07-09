@@ -6,11 +6,8 @@ import com.finq.app.data.model.Quiz
  * 퀴즈 데이터에 대한 추상 계층.
  *
  * ViewModel 은 이 인터페이스에만 의존한다.
- * 구현체:
- *  - Phase 1: [DummyQuizRepository] — 로컬 더미 데이터
- *  - Phase 2: ApiQuizRepository — Retrofit 으로 백엔드 호출 (예정)
- *
- * suspend 로 선언해 두면 추후 네트워크 호출로 교체할 때 시그니처가 그대로 유지된다.
+ * 구현체: [ApiQuizRepository] — Retrofit 으로 백엔드를 호출한다.
+ * (로컬 더미 구현은 제거됨 — 모든 화면은 실 API 에 연결된다.)
  */
 interface QuizRepository {
 
