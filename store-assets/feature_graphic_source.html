@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1024px; height: 500px; overflow: hidden; }
+  body {
+    font-family: "Apple SD Gothic Neo", -apple-system, sans-serif;
+    /* 대각선 네이비 그라데이션: 좌상단 어둡게 → 우하단 살짝 밝게 */
+    background: linear-gradient(135deg, #0B1E33 0%, #0E2540 55%, #123258 100%);
+    position: relative;
+  }
+  /* 우상단 은은한 라임 글로우 스폿 */
+  .glow-spot {
+    position: absolute; right: -80px; top: -120px;
+    width: 520px; height: 520px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(174,242,60,0.10) 0%, rgba(174,242,60,0) 60%);
+    pointer-events: none;
+  }
+  /* ── 좌측 텍스트 (안전영역: 좌측 60%) ── */
+  .left { position: absolute; left: 56px; top: 60px; width: 560px; }
+  .lockup { display: flex; align-items: center; gap: 13px; margin-bottom: 34px; }
+  .badge {
+    width: 52px; height: 52px; border-radius: 15px;
+    background: linear-gradient(160deg, #16385C 0%, #0E2540 60%, #081A2E 100%);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 0 1px rgba(174,242,60,0.10) inset;
+  }
+  .wordmark { font-size: 30px; font-weight: 800; letter-spacing: -0.5px; }
+  .wordmark .navy-word { color: #F4F7FB; }
+  .wordmark .lime-word { color: #AEF23C; }
+
+  .headline {
+    font-size: 45px; font-weight: 800; line-height: 1.34;
+    color: #F4F7FB; letter-spacing: -1px;
+  }
+  .headline .accent { color: #AEF23C; }
+  .sub {
+    margin-top: 26px; font-size: 20px; font-weight: 500;
+    color: #9DBBDF; letter-spacing: -0.3px;
+  }
+
+  /* ── 우측 잔디밭 ── */
+  .grid {
+    position: absolute; right: 60px; top: 96px;
+    display: grid; grid-template-columns: repeat(7, 44px); gap: 13px;
+  }
+  .cell { width: 44px; height: 44px; border-radius: 11px; }
+  .g0 { background: #16385C; }
+  .g1 { background: #124A2E; }
+  .g2 { background: #1E7A42; }
+  .g3 { background: #3ECF63; }
+  .g4 { background: #AEF23C; box-shadow: 0 0 16px 2px rgba(174,242,60,0.55); }
+</style>
+</head>
+<body>
+  <div class="glow-spot"></div>
+
+  <div class="left">
+    <div class="lockup">
+      <div class="badge">
+        <!-- 앱 아이콘과 동일한 새싹 (라임 잎 + 짙은 라임 줄기/잎맥) -->
+        <svg width="30" height="30" viewBox="0 0 100 100">
+          <path d="M50,84 L50,50" stroke="#1E7A42" stroke-width="8" stroke-linecap="round"/>
+          <path fill="#AEF23C" d="M50,56 C39,58 25,52 20,34 C34,30 48,40 50,56 Z"/>
+          <path fill="#AEF23C" d="M50,56 C61,58 75,52 80,34 C66,30 52,40 50,56 Z"/>
+          <path d="M50,56 C46,48 40,42 30,38" stroke="#1E7A42" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+          <path d="M50,56 C54,48 60,42 70,38" stroke="#1E7A42" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+        </svg>
+      </div>
+      <div class="wordmark"><span class="navy-word">경제</span><span class="lime-word">잔디</span></div>
+    </div>
+
+    <div class="headline">
+      매일 경제 뉴스 <span class="accent">한 문제</span>,<br>
+      잔디처럼 쌓이는 경제 감각
+    </div>
+
+    <div class="sub">하루 3분 · 금리 · 환율 · 증시 · 부동산</div>
+  </div>
+
+  <!-- 7열 × 5행 잔디밭 (앱과 동일한 5단계 램프, 만점 라임은 발광) -->
+  <div class="grid" id="grid"></div>
+
+  <script>
+    // 유기적으로 보이도록 손으로 고른 강도 패턴. 만점(4) 라임을 흩뿌려 시선 유도.
+    const levels = [
+      2,0,3,1,2,4,3,
+      0,3,1,2,4,1,2,
+      3,1,4,2,0,3,1,
+      1,2,0,3,2,4,3,
+      2,4,3,1,3,0,2,
+    ];
+    const grid = document.getElementById('grid');
+    for (const lv of levels) {
+      const d = document.createElement('div');
+      d.className = 'cell g' + lv;
+      grid.appendChild(d);
+    }
+  </script>
+</body>
+</html>
