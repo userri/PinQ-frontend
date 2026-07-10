@@ -87,6 +87,12 @@ fun QuizAnswerScreen(
     onArticleClick: (RelatedArticle) -> Unit,
     libraryRepository: LibraryRepository? = null,
     initialBookmarked: Boolean = false,
+    /**
+     * 세션 공유 북마크 상태 — 풀이 화면에서 켠 북마크가 여기서도 켜져 보이도록
+     * ViewModel 상태를 직접 받는다. null 이면 기존 내부 상태(initialBookmarked) 방식.
+     */
+    bookmarked: Boolean? = null,
+    onToggleBookmark: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     /** 헤더 카테고리 라벨 override. 복습처럼 서버가 라벨을 직접 주는 경우에 쓴다. */
     categoryLabel: String? = null,
@@ -97,7 +103,9 @@ fun QuizAnswerScreen(
     /** 하단 CTA 라벨 override (예: "다음 복습"). */
     nextLabel: String? = null,
 ) {
-    var bookmarked by remember(quiz.id) { mutableStateOf(initialBookmarked) }
+    // 외부(세션 ViewModel) 상태가 오면 그걸 쓰고, 아니면 화면 내부 상태로 동작한다.
+    var localBookmarked by remember(quiz.id) { mutableStateOf(initialBookmarked) }
+    val shownBookmarked = bookmarked ?: localBookmarked
     val scope = rememberCoroutineScope()
 
     Column(
@@ -136,28 +144,33 @@ fun QuizAnswerScreen(
                 color = TextPrimary,
             )
             Spacer(Modifier.weight(1f))
-            if (libraryRepository != null) {
+            if (onToggleBookmark != null || libraryRepository != null) {
                 Box(
                     modifier = Modifier
                         .size(32.dp)
                         .clickable {
-                            val next = !bookmarked
-                            bookmarked = next
-                            scope.launch {
-                                runCatching {
-                                    if (next) libraryRepository.addBookmark(quiz.id)
-                                    else libraryRepository.removeBookmark(quiz.id)
-                                }.onFailure { bookmarked = !next }
+                            if (onToggleBookmark != null) {
+                                onToggleBookmark()
+                            } else if (libraryRepository != null) {
+                                // 레거시 경로 — 화면 내부에서 낙관적 토글 + 실패 롤백.
+                                val next = !localBookmarked
+                                localBookmarked = next
+                                scope.launch {
+                                    runCatching {
+                                        if (next) libraryRepository.addBookmark(quiz.id)
+                                        else libraryRepository.removeBookmark(quiz.id)
+                                    }.onFailure { localBookmarked = !next }
+                                }
                             }
                         },
                     contentAlignment = Alignment.Center,
                 ) {
                     Image(
                         painter = painterResource(
-                            if (bookmarked) R.drawable.ic_bookmark_star_filled
+                            if (shownBookmarked) R.drawable.ic_bookmark_star_filled
                             else R.drawable.ic_bookmark_star,
                         ),
-                        contentDescription = "북마크",
+                        contentDescription = if (shownBookmarked) "북마크 해제" else "북마크",
                         modifier = Modifier.size(22.dp),
                     )
                 }

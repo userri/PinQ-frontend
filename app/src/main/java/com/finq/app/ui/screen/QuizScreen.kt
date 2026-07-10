@@ -67,6 +67,9 @@ fun QuizScreen(
     categoryLabel: String? = null,
     /** 헤더 아래 안내 한 줄 (예: "복습은 기록에 영향 없어요"). null 이면 표시하지 않는다. */
     headerNote: String? = null,
+    /** 북마크 토글 상태. [onToggleBookmark] 가 null 이면 아이콘을 그리지 않는다(복습 화면 등). */
+    bookmarked: Boolean = false,
+    onToggleBookmark: (() -> Unit)? = null,
 ) {
     Column(
         modifier = modifier
@@ -101,8 +104,27 @@ fun QuizScreen(
                 color = TextPrimary,
             )
             Spacer(Modifier.weight(1f))
-            // 닫기 아이콘과 좌우 시각 균형을 맞추기 위한 보이지 않는 placeholder.
-            Box(modifier = Modifier.size(32.dp))
+            if (onToggleBookmark != null) {
+                // 북마크 토글 — 채워짐(Lime)/빈 별(TextMuted)은 드로어블이 테마 토큰으로 정의.
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clickable(onClick = onToggleBookmark),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Image(
+                        painter = painterResource(
+                            if (bookmarked) R.drawable.ic_bookmark_star_filled
+                            else R.drawable.ic_bookmark_star,
+                        ),
+                        contentDescription = if (bookmarked) "북마크 해제" else "북마크",
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
+            } else {
+                // 닫기 아이콘과 좌우 시각 균형을 맞추기 위한 보이지 않는 placeholder.
+                Box(modifier = Modifier.size(32.dp))
+            }
         }
 
         if (headerNote != null) {

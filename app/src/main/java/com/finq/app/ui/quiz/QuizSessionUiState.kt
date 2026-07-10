@@ -39,6 +39,12 @@ data class QuizSessionUiState(
      * 이번 세션의 quizzes[i] 와 answerHistory[i] 가 같은 문제에 대응된다.
      */
     val answerHistory: List<AnswerResult> = emptyList(),
+
+    /**
+     * 북마크된 퀴즈 id 집합 — /today 의 bookmarked 로 시드되고 토글로 갱신된다.
+     * 풀이 화면과 정답 화면이 같은 값을 보므로 상태가 자연스럽게 동기화된다.
+     */
+    val bookmarkedIds: Set<Long> = emptySet(),
 ) {
     val currentQuiz: Quiz? get() = quizzes.getOrNull(currentIndex)
     val totalCount: Int get() = allQuizzes.ifEmpty { quizzes }.size
@@ -50,4 +56,5 @@ data class QuizSessionUiState(
         }
     val isLastQuiz: Boolean get() = quizzes.isNotEmpty() && currentIndex >= quizzes.size - 1
     val canSubmit: Boolean get() = selectedOptionId != null && currentQuiz != null
+    val isCurrentBookmarked: Boolean get() = currentQuiz?.id in bookmarkedIds
 }

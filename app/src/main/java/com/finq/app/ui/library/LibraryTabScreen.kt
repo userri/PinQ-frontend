@@ -35,6 +35,8 @@ fun LibraryTabScreen(
     bookmarkViewModel: LibraryViewModel,
     historyViewModel: LibraryViewModel,
     snackbarHostState: SnackbarHostState? = null,
+    /** 미풀이 북마크 탭 → 풀이 화면 진입. */
+    onStartQuiz: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val tabs = listOf("오답노트", "북마크", "전체이력")
@@ -94,6 +96,7 @@ fun LibraryTabScreen(
                 1 -> BookmarkTabRoute(
                     viewModel = bookmarkViewModel,
                     snackbarHostState = snackbarHostState,
+                    onStartQuiz = onStartQuiz,
                     modifier = Modifier.fillMaxSize(),
                 )
                 2 -> AttemptHistoryTabContent(

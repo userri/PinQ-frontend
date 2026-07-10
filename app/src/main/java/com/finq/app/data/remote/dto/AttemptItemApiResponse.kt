@@ -13,10 +13,12 @@ data class AttemptItemApiResponse(
     val question: String,
     val choices: List<ChoiceSummaryApi>,
     val selectedChoiceId: Long?,
-    val correctChoiceId: Long,
-    val correct: Boolean,
-    val explanation: String,
-    val keyword: String?,
+    // 미풀이 북마크는 치팅 방지를 위해 정답 정보가 null 로 마스킹돼 온다.
+    // (selectedChoiceId == null 또는 solvedAt == null 로 미풀이를 판별한다.)
+    val correctChoiceId: Long? = null,
+    val correct: Boolean = false,
+    val explanation: String? = null,
+    val keyword: String? = null,
     val article: ArticleApiResponse?,
     val bookmarked: Boolean,
     val solvedAt: String?,

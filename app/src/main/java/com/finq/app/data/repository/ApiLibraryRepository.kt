@@ -43,7 +43,7 @@ class ApiLibraryRepository(
         selectedChoiceId = selectedChoiceId,
         correctChoiceId = correctChoiceId,
         correct = correct,
-        explanation = explanation,
+        explanation = explanation.orEmpty(),
         keyword = keyword,
         article = article?.toDomain(),
         bookmarked = bookmarked,

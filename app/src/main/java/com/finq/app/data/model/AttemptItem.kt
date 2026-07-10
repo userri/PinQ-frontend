@@ -16,7 +16,8 @@ data class AttemptItem(
     val question: String,
     val choices: List<QuizOption>,
     val selectedChoiceId: Long?,
-    val correctChoiceId: Long,
+    /** 미풀이 북마크는 서버가 정답 정보를 null 로 마스킹한다(치팅 방지). */
+    val correctChoiceId: Long?,
     val correct: Boolean,
     val explanation: String,
     val keyword: String?,
@@ -30,9 +31,15 @@ data class AttemptItem(
             ?.let { id -> choices.firstOrNull { it.id == id }?.text }
             ?: "기록 없음"
 
-    /** 화면 표시용 — 정답 선택지의 텍스트. */
+    /** 아직 풀지 않은 문제인가 — 미풀이 북마크 판별 (서버 마스킹 기준과 동일). */
+    val unsolved: Boolean
+        get() = selectedChoiceId == null || solvedAtIso == null
+
+    /** 화면 표시용 — 정답 선택지의 텍스트. 미풀이(마스킹)면 "-". */
     val correctAnswerText: String
-        get() = choices.firstOrNull { it.id == correctChoiceId }?.text ?: "-"
+        get() = correctChoiceId
+            ?.let { id -> choices.firstOrNull { it.id == id }?.text }
+            ?: "-"
 
     /** 표시용 카테고리 라벨 (예: "금리"). 알 수 없는 enum 이면 그대로 영문. */
     val categoryDisplay: String get() = category.displayName

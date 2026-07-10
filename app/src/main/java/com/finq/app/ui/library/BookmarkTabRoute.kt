@@ -20,6 +20,8 @@ import com.finq.app.R
 fun BookmarkTabRoute(
     viewModel: LibraryViewModel,
     snackbarHostState: SnackbarHostState? = null,
+    /** 미풀이 북마크 탭 → 풀이 화면(오늘 세션) 진입. */
+    onStartQuiz: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsState()
@@ -44,6 +46,7 @@ fun BookmarkTabRoute(
         emptyIconRes = R.drawable.ic_bookmark_star_filled,
         onRetry = viewModel::loadBookmarks,
         onToggleBookmark = { item -> viewModel.toggleBookmark(item.quizId, item.bookmarked) },
+        onStartQuiz = onStartQuiz?.let { cb -> { _ -> cb() } },
         modifier = modifier,
     )
 }

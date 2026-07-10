@@ -19,6 +19,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -327,6 +328,8 @@ fun FinQNavHost(
                     bookmarkViewModel  = libraryVm,
                     historyViewModel   = libraryVm,
                     snackbarHostState  = snackbarHostState,
+                    // 미풀이 북마크(오늘 세트) → 오늘 풀이 세션으로 진입.
+                    onStartQuiz = { navController.resumeOrStartSession() },
                 )
             }
 
@@ -412,18 +415,19 @@ fun FinQNavHost(
                 route = FinQRoutes.SESSION_GRAPH,
             ) {
                 composable(FinQRoutes.QUIZ) { entry ->
-                    val vm = entry.sessionViewModel(navController, repository)
+                    val vm = entry.sessionViewModel(navController, repository, libraryRepository)
                     // 뒤로가기: 세션을 종료하고 홈으로 돌아간다.
                     // 재진입 시 서버의 solved 상태 기준으로 미풀이 문제부터 시작한다.
                     BackHandler { navController.pauseSessionToHome() }
                     QuizRoute(
                         viewModel = vm,
+                        snackbarHostState = snackbarHostState,
                         onAfterSubmit = { navController.navigate(FinQRoutes.ANSWER) },
                         onClose = { navController.pauseSessionToHome() },
                     )
                 }
                 composable(FinQRoutes.ANSWER) { entry ->
-                    val vm = entry.sessionViewModel(navController, repository)
+                    val vm = entry.sessionViewModel(navController, repository, libraryRepository)
                     val localContext = LocalContext.current
                     // 정답 화면에서도 동일하게 세션 유지하며 홈으로.
                     BackHandler { navController.pauseSessionToHome() }
@@ -459,7 +463,7 @@ fun FinQNavHost(
                     )
                 }
                 composable(FinQRoutes.DONE) { entry ->
-                    val vm = entry.sessionViewModel(navController, repository)
+                    val vm = entry.sessionViewModel(navController, repository, libraryRepository)
                     DoneRoute(
                         viewModel = vm,
                         onGoHome = {
@@ -482,7 +486,7 @@ fun FinQNavHost(
                     )
                 }
                 composable(FinQRoutes.WRONG_NOTE) { entry ->
-                    val vm = entry.sessionViewModel(navController, repository)
+                    val vm = entry.sessionViewModel(navController, repository, libraryRepository)
                     WrongNoteRoute(
                         viewModel = vm,
                         libraryRepository = libraryRepository,
@@ -691,11 +695,14 @@ private fun FinQBottomBar(
 private fun NavBackStackEntry.sessionViewModel(
     navController: NavHostController,
     repository: QuizRepository,
+    libraryRepository: LibraryRepository,
 ): QuizSessionViewModel {
     val parentEntry = remember(this) {
         navController.getBackStackEntry(FinQRoutes.SESSION_GRAPH)
     }
-    val factory = remember(repository) { QuizSessionViewModel.factory(repository) }
+    val factory = remember(repository, libraryRepository) {
+        QuizSessionViewModel.factory(repository, libraryRepository)
+    }
     return viewModel(viewModelStoreOwner = parentEntry, factory = factory)
 }
 
@@ -712,6 +719,7 @@ private fun libraryViewModel(repository: LibraryRepository): LibraryViewModel {
 @Composable
 private fun QuizRoute(
     viewModel: QuizSessionViewModel,
+    snackbarHostState: SnackbarHostState,
     onAfterSubmit: () -> Unit,
     onClose: () -> Unit,
 ) {
@@ -720,6 +728,13 @@ private fun QuizRoute(
     LaunchedEffect(state.lastAnswer, state.isSubmitting) {
         if (!state.isSubmitting && state.lastAnswer != null) {
             onAfterSubmit()
+        }
+    }
+
+    // 북마크 토글 실패 → 짧은 스낵바 (낙관적 업데이트는 VM 에서 이미 롤백됨).
+    LaunchedEffect(Unit) {
+        viewModel.bookmarkErrors.collect { msg ->
+            snackbarHostState.showSnackbar(msg, duration = SnackbarDuration.Short)
         }
     }
 
@@ -736,6 +751,8 @@ private fun QuizRoute(
             onSelectOption = viewModel::selectOption,
             onSubmit = { viewModel.submitAnswer() },
             onClose = onClose,
+            bookmarked = state.isCurrentBookmarked,
+            onToggleBookmark = viewModel::toggleBookmark,
         )
     }
 }
@@ -764,6 +781,9 @@ private fun AnswerRoute(
             onBack = onBack,
             onArticleClick = onArticleClick,
             libraryRepository = libraryRepository,
+            // 풀이 화면과 같은 세션 상태 — 풀이 중 켠 북마크가 여기서도 켜져 있다.
+            bookmarked = state.isCurrentBookmarked,
+            onToggleBookmark = viewModel::toggleBookmark,
         )
     }
 }

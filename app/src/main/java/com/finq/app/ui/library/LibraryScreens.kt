@@ -58,6 +58,8 @@ fun LibraryListScreen(
     emptyIconRes: Int,
     onRetry: () -> Unit,
     onToggleBookmark: (AttemptItem) -> Unit,
+    /** 미풀이 북마크 탭 → 풀이 화면 진입. null 이면 비활성. */
+    onStartQuiz: ((AttemptItem) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
@@ -113,9 +115,10 @@ fun LibraryListScreen(
             ) {
                 items(filtered, key = { it.quizId }) { item ->
                     AttemptItemCard(
-                        item = item,
-                        onToggleBookmark = { onToggleBookmark(item) },
-                    )
+                item = item,
+                onToggleBookmark = { onToggleBookmark(item) },
+                onStartQuiz = onStartQuiz?.let { cb -> { cb(item) } },
+            )
                 }
             }
         }

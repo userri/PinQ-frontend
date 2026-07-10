@@ -14,6 +14,8 @@ data class QuizApiResponse(
     val choices: List<ChoiceApiResponse>,
     val solved: Boolean = false,
     val correct: Boolean? = null,
+    /** 북마크 토글 초기 상태. 구버전 서버 응답엔 없을 수 있어 기본 false. */
+    val bookmarked: Boolean = false,
 )
 
 data class ChoiceApiResponse(

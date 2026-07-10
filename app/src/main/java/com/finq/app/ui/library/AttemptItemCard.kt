@@ -57,6 +57,8 @@ import com.finq.app.ui.theme.TextSecondary
 fun AttemptItemCard(
     item: AttemptItem,
     onToggleBookmark: () -> Unit,
+    /** 미풀이 북마크를 탭했을 때 풀이 화면으로 보내는 콜백. null 이면 탭해도 아무 일 없음. */
+    onStartQuiz: (() -> Unit)? = null,
 ) {
     var expanded by remember(item.quizId) { mutableStateOf(false) }
     val context = LocalContext.current
@@ -75,7 +77,11 @@ fun AttemptItemCard(
         Column(
             modifier = Modifier
                 .padding(16.dp)
-                .clickable { expanded = !expanded },
+                .clickable {
+                    // 미풀이 문제는 펼칠 내용(정답/해설)이 서버에서 마스킹돼 없다 → 풀이로 보낸다.
+                    if (item.unsolved) onStartQuiz?.invoke()
+                    else expanded = !expanded
+                },
         ) {
             // 상단 행: 카테고리 뱃지 + 날짜  ····  ⭐ 북마크
             Row(
@@ -99,7 +105,20 @@ fun AttemptItemCard(
                             fontWeight = FontWeight.SemiBold,
                         )
                     }
-                    if (!item.correct) {
+                    if (item.unsolved) {
+                        Surface(
+                            shape = RoundedCornerShape(50),
+                            color = BgSubtle,
+                        ) {
+                            Text(
+                                text = "아직 안 푼 문제",
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextSecondary,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        }
+                    } else if (!item.correct) {
                         Surface(
                             shape = RoundedCornerShape(50),
                             color = MaterialTheme.colorScheme.errorContainer,
@@ -152,7 +171,7 @@ fun AttemptItemCard(
             if (!expanded) {
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = "자세히 보기",
+                    text = if (item.unsolved) "풀러 가기" else "자세히 보기",
                     style = MaterialTheme.typography.labelSmall,
                     color = Lime,
                     fontWeight = FontWeight.SemiBold,
