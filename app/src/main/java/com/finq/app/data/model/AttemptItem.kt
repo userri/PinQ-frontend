@@ -31,9 +31,17 @@ data class AttemptItem(
             ?.let { id -> choices.firstOrNull { it.id == id }?.text }
             ?: "기록 없음"
 
-    /** 아직 풀지 않은 문제인가 — 미풀이 북마크 판별 (서버 마스킹 기준과 동일). */
+    /**
+     * 아직 풀지 않은 문제인가 — 미풀이 북마크(치팅 방지 마스킹) 판별.
+     *
+     * 서버가 미풀이 항목의 정답 정보(correctChoiceId·explanation·keyword)를 null 로 마스킹하므로
+     * [correctChoiceId] 유무가 가장 확실한 신호다. selectedChoiceId/solvedAt 는
+     *  - 세션 직후 오답노트(WrongNoteScreen)가 solvedAt 을 null 로 두거나
+     *  - 레거시 데이터가 selectedChoiceId 를 null 로 두는
+     * 경우가 있어 단독으로는 오판을 낸다.
+     */
     val unsolved: Boolean
-        get() = selectedChoiceId == null || solvedAtIso == null
+        get() = correctChoiceId == null
 
     /** 화면 표시용 — 정답 선택지의 텍스트. 미풀이(마스킹)면 "-". */
     val correctAnswerText: String

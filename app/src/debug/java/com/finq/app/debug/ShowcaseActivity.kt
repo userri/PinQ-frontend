@@ -145,6 +145,20 @@ class ShowcaseActivity : ComponentActivity() {
                     ) {
                         AttemptItemCard(item = sampleAttempt(correct = true), onToggleBookmark = {})
                         AttemptItemCard(item = sampleAttempt(correct = false), onToggleBookmark = {})
+                        // 세션 직후 오답노트와 동일한 형태(solvedAtIso=null, 정답정보 있음).
+                        // 예전엔 이게 "아직 안 푼 문제"로 오판돼 카드가 안 펼쳐졌다 → 이제 정상.
+                        AttemptItemCard(
+                            item = sampleAttempt(correct = false).copy(solvedAtIso = null),
+                            onToggleBookmark = {},
+                        )
+                        // 진짜 미풀이(마스킹): correctChoiceId=null → "아직 안 푼 문제" 표시돼야 함
+                        AttemptItemCard(
+                            item = sampleAttempt(correct = false).copy(
+                                selectedChoiceId = null, correctChoiceId = null,
+                                explanation = "", keyword = null, solvedAtIso = null,
+                            ),
+                            onToggleBookmark = {},
+                        )
                     }
 
                     // 보기 카드 4상태 중 기본/선택 확인
