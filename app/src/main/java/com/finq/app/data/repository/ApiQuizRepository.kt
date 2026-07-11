@@ -40,7 +40,7 @@ class ApiQuizRepository(
 
     private fun QuizApiResponse.toDomain(): Quiz = Quiz(
         id = id,
-        category = parseCategory(category),
+        category = Category.fromServer(category),
         question = question,
         options = choices.map { it.toDomain() },
         solved = solved,
@@ -79,10 +79,4 @@ class ApiQuizRepository(
         publishedAt = publishedAt,
     )
 
-    private fun parseCategory(raw: String): Category = runCatching {
-        Category.valueOf(raw)
-    }.getOrElse {
-        // 서버가 알 수 없는 카테고리를 내려보낼 경우 안전한 폴백.
-        Category.STOCK
-    }
 }

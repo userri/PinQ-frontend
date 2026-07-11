@@ -37,7 +37,7 @@ class ApiLibraryRepository(
 
     private fun AttemptItemApiResponse.toDomain(): AttemptItem = AttemptItem(
         quizId = quizId,
-        category = parseCategory(category),
+        category = Category.fromServer(category),
         question = question,
         choices = choices.map { it.toDomain() },
         selectedChoiceId = selectedChoiceId,
@@ -66,9 +66,4 @@ class ApiLibraryRepository(
         publishedAt = publishedAt,
     )
 
-    private fun parseCategory(raw: String): Category = runCatching {
-        Category.valueOf(raw)
-    }.getOrElse {
-        Category.STOCK
-    }
 }

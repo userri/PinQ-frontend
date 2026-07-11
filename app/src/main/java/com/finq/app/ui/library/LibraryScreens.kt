@@ -130,13 +130,10 @@ private fun CategoryFilterRow(
     selected: Category?,
     onSelect: (Category?) -> Unit,
 ) {
-    val filters: List<Pair<String, Category?>> = listOf(
-        "전체" to null,
-        Category.INTEREST_RATE.displayName to Category.INTEREST_RATE,
-        Category.EXCHANGE_RATE.displayName to Category.EXCHANGE_RATE,
-        Category.STOCK.displayName to Category.STOCK,
-        Category.REAL_ESTATE.displayName to Category.REAL_ESTATE,
-    )
+    // enum 에서 동적 생성 — 카테고리가 추가돼도(예: INFLATION) 여기 수정 없이 자동 반영된다.
+    val filters: List<Pair<String, Category?>> =
+        listOf<Pair<String, Category?>>("전체" to null) +
+            Category.selectable.map { it.displayName to it }
 
     LazyRow(
         modifier = Modifier

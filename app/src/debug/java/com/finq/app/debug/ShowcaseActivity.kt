@@ -140,6 +140,25 @@ class ShowcaseActivity : ComponentActivity() {
                         notificationTime = "06:00",
                     )
 
+                    // 카테고리 필터 칩 — enum 동적 생성 확인 (물가 포함 5개 + 전체)
+                    "filters" -> com.finq.app.ui.library.LibraryListScreen(
+                        title = "오답노트",
+                        subtitle = "6문제",
+                        items = listOf(
+                            sampleAttempt(correct = false),
+                            sampleAttempt(correct = true).copy(
+                                category = Category.fromServer("INFLATION"),
+                                question = "소비자물가지수(CPI)가 상승하면 실질 구매력은?",
+                            ),
+                        ),
+                        isLoading = false,
+                        error = null,
+                        emptyMessage = "",
+                        emptyIconRes = com.finq.app.R.drawable.ic_bookmark_star,
+                        onRetry = {},
+                        onToggleBookmark = {},
+                    )
+
                     "wrongnote" -> Column(
                         Modifier.fillMaxSize().verticalScroll(rememberScrollState())
                     ) {
@@ -149,6 +168,22 @@ class ShowcaseActivity : ComponentActivity() {
                         // 예전엔 이게 "아직 안 푼 문제"로 오판돼 카드가 안 펼쳐졌다 → 이제 정상.
                         AttemptItemCard(
                             item = sampleAttempt(correct = false).copy(solvedAtIso = null),
+                            onToggleBookmark = {},
+                        )
+                        // 신규 카테고리 INFLATION("물가") 표시 확인
+                        AttemptItemCard(
+                            item = sampleAttempt(correct = true).copy(
+                                category = com.finq.app.data.model.Category.fromServer("INFLATION"),
+                                question = "소비자물가지수(CPI)가 상승하면 실질 구매력은 어떻게 되는가?",
+                            ),
+                            onToggleBookmark = {},
+                        )
+                        // 클라이언트가 모르는 카테고리 → UNKNOWN("기타") 폴백, 크래시 없어야 함
+                        AttemptItemCard(
+                            item = sampleAttempt(correct = true).copy(
+                                category = com.finq.app.data.model.Category.fromServer("CRYPTO_FUTURE"),
+                                question = "미지 카테고리 방어 파싱 확인용 문제",
+                            ),
                             onToggleBookmark = {},
                         )
                         // 진짜 미풀이(마스킹): correctChoiceId=null → "아직 안 푼 문제" 표시돼야 함
@@ -242,6 +277,7 @@ class ShowcaseActivity : ComponentActivity() {
             ConceptStat("EXCHANGE_RATE", "환율", 12, 4, 0.33f),
             ConceptStat("STOCK", "증시", 18, 13, 0.72f),
             ConceptStat("REAL_ESTATE", "부동산", 9, 6, 0.67f),
+            ConceptStat("INFLATION", "물가", 5, 4, 0.80f),
         )
         ConceptStats(categories = cats, weakest = cats[1])
     }
