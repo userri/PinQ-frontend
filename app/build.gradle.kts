@@ -30,7 +30,9 @@ val googleClientId = localProps.getProperty("google.web.client.id", "")
 // 미설정 시 adb reverse 방식 기본값 사용
 val debugBaseUrl = localProps.getProperty("base.url", "http://localhost:8080/")
 // 운영 BASE_URL — 반드시 https. 재정의: local.properties 의 base.url.release
-val releaseBaseUrl = localProps.getProperty("base.url.release", "https://finq.duckdns.org/")
+// 2026-07: finq.duckdns.org → yuri-hub.com 이전 (DuckDNS 네임서버 불안정으로 인한 간헐적 타임아웃 회피).
+// 같은 서버, Let's Encrypt 인증서 적용됨. 구 도메인도 당분간 병행 서빙되므로 구버전 클라이언트는 계속 동작한다.
+val releaseBaseUrl = localProps.getProperty("base.url.release", "https://yuri-hub.com/")
 
 // 업로드 키스토어 (local.properties 에 설정 — 절대 git 에 커밋 금지):
 //   keystore.path=pinq-upload.jks           (repo 루트 기준 상대경로 또는 절대경로)
@@ -55,8 +57,8 @@ android {
         applicationId = "com.finq.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 6
-        versionName = "1.1.4"
+        versionCode = 8
+        versionName = "1.1.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
