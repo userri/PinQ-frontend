@@ -71,7 +71,7 @@ import com.finq.app.ui.screen.QuizAnswerScreen
 import com.finq.app.ui.screen.QuizScreen
 import com.finq.app.ui.screen.ResultReportScreen
 import com.finq.app.ui.screen.ReviewDoneScreen
-import com.finq.app.ui.screen.WrongNoteScreen
+import com.finq.app.ui.screen.SolvedQuizReviewScreen
 import com.finq.app.data.local.SessionManager
 import com.finq.app.data.repository.AuthRepository
 import com.finq.app.ui.login.LoginEvent
@@ -93,13 +93,19 @@ import com.finq.app.ui.theme.TextMuted
  *   session (nested graph)  — 하단 네비게이션 숨김
  *     ├── session/quiz
  *     ├── session/answer
- *     ├── session/done
- *     └── session/wrongnote
+ *     └── session/done
  *
  * [세션 중간 이탈 처리]
  *   quiz/answer 화면에서 뒤로가기 시 세션 그래프를 제거하고 홈으로 돌아간다.
- *   홈에서 다시 "풀기"를 누르면 서버의 solved 상태를 새로 받아 아직 안 푼 문제부터 시작한다.
- *   진행도는 전체 오늘 문제 기준으로 표시해, 남은 문제만 풀어도 Q3/4 같은 맥락이 유지된다.
+ *   홈에서 다시 "풀기"를 누르면 서버의 solved 상태를 새로 받아 진행 상태를 복원한다 —
+ *   아직 안 푼 문제부터 이어서 보여주고, 이미 푼 문제는 채점 UI 대신 결과 보기 모드
+ *   (SolvedQuizReviewScreen) 로 렌더한다. 진행도는 오늘 전체 문제 기준으로 표시해,
+ *   남은 문제만 풀어도 Q3/4 같은 맥락이 유지된다.
+ *
+ * [재도전 경로 일원화]
+ *   이미 채점된 문제를 다시 채점하는 진입점은 없다("다시 풀기" 버튼 제거됨).
+ *   공식 재도전은 오답노트 → 복습(REVIEW_GRAPH, api/reviews 하위 endpoint) 경로뿐이며,
+ *   복습 결과는 오늘의 정답률/스트릭에 영향을 주지 않는다.
  */
 /** 복습 "다음 물 주기" 날짜 표기. */
 private val reviewDueDateFormat: java.time.format.DateTimeFormatter =
@@ -117,7 +123,6 @@ object FinQRoutes {
     const val QUIZ = "session/quiz"
     const val ANSWER = "session/answer"
     const val DONE = "session/done"
-    const val WRONG_NOTE = "session/wrongnote"
 
     // ── 오답 복습 ("잔디에 물 주기") ──────────────────────────────
     const val REVIEW_GRAPH = "review"
@@ -162,6 +167,18 @@ private val bottomNavItems = listOf(
  */
 private fun NavHostController.pauseSessionToHome() {
     navigate(FinQRoutes.HOME) {
+        popUpTo(FinQRoutes.SESSION_GRAPH) { inclusive = true }
+        launchSingleTop = true
+    }
+}
+
+/**
+ * 세션을 종료하고 오답노트(내 공부 탭, 기본 첫 페이지)로 이동한다.
+ * "자세한 해설은 오답노트에서" 안내나 결과 화면의 "오답노트 보기" 가 이 경로로 간다 —
+ * 서버 기반이라 항상 최신 상세(선택지·정답·해설)를 보여주며, 재도전(복습)도 여기서 이어진다.
+ */
+private fun NavHostController.pauseSessionToLibrary() {
+    navigate(FinQRoutes.LIBRARY_TAB) {
         popUpTo(FinQRoutes.SESSION_GRAPH) { inclusive = true }
         launchSingleTop = true
     }
@@ -417,13 +434,21 @@ fun FinQNavHost(
                 composable(FinQRoutes.QUIZ) { entry ->
                     val vm = entry.sessionViewModel(navController, repository, libraryRepository)
                     // 뒤로가기: 세션을 종료하고 홈으로 돌아간다.
-                    // 재진입 시 서버의 solved 상태 기준으로 미풀이 문제부터 시작한다.
+                    // 재진입 시 서버의 solved 상태 기준으로 진행 상태를 복원한다.
                     BackHandler { navController.pauseSessionToHome() }
                     QuizRoute(
                         viewModel = vm,
                         snackbarHostState = snackbarHostState,
                         onAfterSubmit = { navController.navigate(FinQRoutes.ANSWER) },
                         onClose = { navController.pauseSessionToHome() },
+                        onFinishSession = {
+                            // 결과 보기 모드로 마지막 문제까지 훑은 경우(재진입 안전망) —
+                            // 라이브 제출 없이 곧장 결과 화면으로.
+                            navController.navigate(FinQRoutes.DONE) {
+                                popUpTo(FinQRoutes.QUIZ) { inclusive = true }
+                            }
+                        },
+                        onViewWrongNote = { navController.pauseSessionToLibrary() },
                     )
                 }
                 composable(FinQRoutes.ANSWER) { entry ->
@@ -474,29 +499,9 @@ fun FinQNavHost(
                                 popUpTo(FinQRoutes.SESSION_GRAPH) { inclusive = true }
                             }
                         },
-                        onRestart = {
-                            vm.restart()
-                            navController.navigate(FinQRoutes.QUIZ) {
-                                popUpTo(FinQRoutes.DONE) { inclusive = true }
-                            }
-                        },
-                        onWrongNote = {
-                            navController.navigate(FinQRoutes.WRONG_NOTE)
-                        },
-                    )
-                }
-                composable(FinQRoutes.WRONG_NOTE) { entry ->
-                    val vm = entry.sessionViewModel(navController, repository, libraryRepository)
-                    WrongNoteRoute(
-                        viewModel = vm,
-                        libraryRepository = libraryRepository,
-                        onBack = { navController.popBackStack() },
-                        onGoHome = {
-                            navController.navigate(FinQRoutes.HOME) {
-                                popUpTo(FinQRoutes.SESSION_GRAPH) { inclusive = true }
-                                launchSingleTop = true
-                            }
-                        },
+                        // 공식 재도전은 오답노트(→ 복습) 경로뿐 — "다시 풀기"로 이미 채점된
+                        // 문제를 또 제출하는 진입점은 두지 않는다.
+                        onWrongNote = { navController.pauseSessionToLibrary() },
                     )
                 }
             }
@@ -722,6 +727,8 @@ private fun QuizRoute(
     snackbarHostState: SnackbarHostState,
     onAfterSubmit: () -> Unit,
     onClose: () -> Unit,
+    onFinishSession: () -> Unit,
+    onViewWrongNote: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsState()
 
@@ -742,6 +749,17 @@ private fun QuizRoute(
         state.isLoading -> LoadingBox()
         state.error != null -> ErrorBox(state.error!!) { viewModel.loadQuizzes() }
         state.currentQuiz == null -> ErrorBox("표시할 퀴즈가 없습니다.") { viewModel.loadQuizzes() }
+        // 이미 채점된 문제 — 재진입 시 서버의 solved/correct 기준으로 결과 보기 모드만
+        // 렌더한다. 여기엔 제출 경로가 없으므로 재채점될 일이 없다.
+        state.currentQuiz!!.solved -> SolvedQuizReviewScreen(
+            quizIndex = state.progressIndex,
+            totalCount = state.totalCount,
+            quiz = state.currentQuiz!!,
+            isLast = state.isLastQuiz,
+            onNext = { if (state.isLastQuiz) onFinishSession() else viewModel.moveToNext() },
+            onClose = onClose,
+            onViewWrongNote = onViewWrongNote,
+        )
         else -> QuizScreen(
             quizIndex = state.progressIndex,
             totalCount = state.totalCount,
@@ -792,36 +810,14 @@ private fun AnswerRoute(
 private fun DoneRoute(
     viewModel: QuizSessionViewModel,
     onGoHome: () -> Unit,
-    onRestart: () -> Unit,
     onWrongNote: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsState()
     ResultReportScreen(
-        quizzes = state.allQuizzes.ifEmpty { state.quizzes },
+        quizzes = state.quizzes,
         answerHistory = state.answerHistory,
         onGoHome = onGoHome,
-        onRestart = onRestart,
         onWrongNote = onWrongNote,
-    )
-}
-
-@Composable
-private fun WrongNoteRoute(
-    viewModel: QuizSessionViewModel,
-    libraryRepository: LibraryRepository,
-    onBack: () -> Unit,
-    onGoHome: () -> Unit,
-) {
-    val state by viewModel.uiState.collectAsState()
-    val libraryVm = libraryViewModel(libraryRepository)
-    WrongNoteScreen(
-        quizzes = state.allQuizzes.ifEmpty { state.quizzes },
-        answerHistory = state.answerHistory,
-        onBack = onBack,
-        onGoHome = onGoHome,
-        onToggleBookmark = { quizId, currentlyBookmarked ->
-            libraryVm.toggleBookmark(quizId, currentlyBookmarked)
-        },
     )
 }
 

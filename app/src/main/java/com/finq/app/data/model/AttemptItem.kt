@@ -36,7 +36,7 @@ data class AttemptItem(
      *
      * 서버가 미풀이 항목의 정답 정보(correctChoiceId·explanation·keyword)를 null 로 마스킹하므로
      * [correctChoiceId] 유무가 가장 확실한 신호다. selectedChoiceId/solvedAt 는
-     *  - 세션 직후 오답노트(WrongNoteScreen)가 solvedAt 을 null 로 두거나
+     *  - 이미 푼 문제인데도 solvedAt 을 null 로 두는 소스가 있거나
      *  - 레거시 데이터가 selectedChoiceId 를 null 로 두는
      * 경우가 있어 단독으로는 오판을 낸다.
      */

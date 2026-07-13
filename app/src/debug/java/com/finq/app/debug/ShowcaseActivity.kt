@@ -38,7 +38,7 @@ import java.time.LocalDate
  *
  *   adb shell am start -n com.finq.app/com.finq.app.debug.ShowcaseActivity --es screen home
  *
- * screen: home | quiz | answer | mypage | wrongnote | grass | review | concept
+ * screen: home | quiz | answer | solved_correct | solved_wrong | mypage | wrongnote | grass | review | concept
  * 릴리즈 빌드에는 포함되지 않는다(app/src/debug 소스셋).
  */
 class ShowcaseActivity : ComponentActivity() {
@@ -195,6 +195,27 @@ class ShowcaseActivity : ComponentActivity() {
                             onToggleBookmark = {},
                         )
                     }
+
+                    // 재진입 시 결과 보기 모드 — 정답이었던 경우
+                    "solved_correct" -> com.finq.app.ui.screen.SolvedQuizReviewScreen(
+                        quizIndex = 1,
+                        totalCount = 4,
+                        quiz = sampleQuiz.copy(solved = true, correct = true),
+                        isLast = false,
+                        onNext = {},
+                        onClose = {},
+                    )
+
+                    // 재진입 시 결과 보기 모드 — 오답이었던 경우 (오답노트 링크 노출)
+                    "solved_wrong" -> com.finq.app.ui.screen.SolvedQuizReviewScreen(
+                        quizIndex = 2,
+                        totalCount = 4,
+                        quiz = sampleQuiz.copy(solved = true, correct = false),
+                        isLast = true,
+                        onNext = {},
+                        onClose = {},
+                        onViewWrongNote = {},
+                    )
 
                     // 보기 카드 4상태 중 기본/선택 확인
                     "quiz" -> QuizScreen(

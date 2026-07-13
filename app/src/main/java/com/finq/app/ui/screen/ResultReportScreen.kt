@@ -65,14 +65,16 @@ import com.finq.app.ui.theme.TextPrimary
  *  - 정답률 카드 (도넛 + 점수 + 격려 문구)
  *  - 문제별 결과 (check / x 마크)
  *  - 오답노트 보기 (네이비, 오답 1개 이상일 때만)
- *  - 홈으로 / 다시 풀기 (아웃라인 둘로 분할 표시)
+ *  - 홈으로
+ *
+ * "다시 풀기"는 없다 — 이미 채점된 문제를 다시 채점하는 진입점을 만들지 않기 위해서다.
+ * 공식 재도전은 오답노트 → 복습 경로로만 가능하다.
  */
 @Composable
 fun ResultReportScreen(
     quizzes: List<Quiz>,
     answerHistory: List<AnswerResult>,
     onGoHome: () -> Unit,
-    onRestart: () -> Unit,
     onWrongNote: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -197,38 +199,21 @@ fun ResultReportScreen(
             Spacer(Modifier.height(10.dp))
         }
 
-        // ── 홈으로 / 다시 풀기 (가로 50:50) ─────────────────────
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            OutlinedButton(
-                onClick = onGoHome,
-                modifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = 48.dp),
-                shape = RoundedCornerShape(14.dp),
-                border = BorderStroke(1.dp, Outline),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary),
-            ) {
-                Text(
-                    text = "홈으로",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
-            OutlinedButton(
-                onClick = onRestart,
-                modifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = 48.dp),
-                shape = RoundedCornerShape(14.dp),
-                border = BorderStroke(1.dp, Outline),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary),
-            ) {
-                Text(
-                    text = "다시 풀기",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
+        // ── 홈으로 ────────────────────────────────────────────────
+        OutlinedButton(
+            onClick = onGoHome,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp),
+            shape = RoundedCornerShape(14.dp),
+            border = BorderStroke(1.dp, Outline),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary),
+        ) {
+            Text(
+                text = "홈으로",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
         }
         Spacer(Modifier.height(8.dp))
     }
@@ -415,7 +400,6 @@ private fun ResultReportPreview() {
             quizzes = previewQuizzes,
             answerHistory = previewAnswers,
             onGoHome = {},
-            onRestart = {},
             onWrongNote = {},
         )
     }
