@@ -191,6 +191,7 @@ class ShowcaseActivity : ComponentActivity() {
                         error = null,
                         onRetry = {},
                         onBack = {},
+                        onOpenQuiz = {},
                     )
 
                     // 복습 미졸업 (graduated=false) — 다음 물 주기 안내

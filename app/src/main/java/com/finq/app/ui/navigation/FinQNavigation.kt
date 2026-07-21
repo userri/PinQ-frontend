@@ -448,6 +448,7 @@ fun FinQNavHost(
                     error = state.error,
                     onRetry = gardenVm::load,
                     onBack = { navController.popBackStack() },
+                    onOpenQuiz = {},
                 )
             }
 
