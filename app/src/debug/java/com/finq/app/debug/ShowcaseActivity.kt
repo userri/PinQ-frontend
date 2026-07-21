@@ -26,6 +26,9 @@ import com.finq.app.data.repository.GardenItem
 import com.finq.app.data.repository.ReviewGarden
 import com.finq.app.data.repository.ReviewStage
 import com.finq.app.ui.components.ConceptStatsCard
+import com.finq.app.ui.components.garden.GardenCanvas
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.Text
 import com.finq.app.ui.components.GrassCalendarCard
 import com.finq.app.ui.components.WaterGrassCard
 import com.finq.app.ui.screen.GardenScreen
@@ -43,7 +46,7 @@ import java.time.LocalDate
  *
  *   adb shell am start -n com.finq.app/com.finq.app.debug.ShowcaseActivity --es screen home
  *
- * screen: home | home_pending | home_zero | quiz | answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | filters | wrongnote | grass | review | review_graduated | review_next | garden | concept
+ * screen: home | home_pending | home_zero | quiz | answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | filters | wrongnote | grass | review | review_graduated | review_next | garden | garden_canvas | concept
  * 릴리즈 빌드에는 포함되지 않는다(app/src/debug 소스셋).
  */
 class ShowcaseActivity : ComponentActivity() {
@@ -108,6 +111,56 @@ class ShowcaseActivity : ComponentActivity() {
                     )
 
                     // 정원 — 자라는 중 + 완성 나무 + 카운터 불일치(배포 이전 졸업분) 케이스
+                    // 정원 캔버스(잔디+나무 Canvas) — 빈/성장/만원 3케이스
+                    "garden_canvas" -> Column(
+                        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)
+                    ) {
+                        Text("정원 · 빈")
+                        GardenCanvas(
+                            garden = ReviewGarden.EMPTY,
+                            compact = true,
+                            modifier = Modifier.fillMaxWidth().height(160.dp),
+                        )
+                        Spacer(Modifier.height(16.dp))
+
+                        Text("정원 · 성장")
+                        GardenCanvas(
+                            garden = ReviewGarden(
+                                growing = listOf(
+                                    gardenSample(1, ReviewStage.SPROUT),
+                                    gardenSample(2, ReviewStage.GRASS),
+                                    gardenSample(3, ReviewStage.ALMOST_TREE),
+                                    gardenSample(4, ReviewStage.SPROUT),
+                                    gardenSample(5, ReviewStage.GRASS),
+                                ),
+                                graduated = listOf(
+                                    gardenSample(101, ReviewStage.ALMOST_TREE).copy(graduatedAtIso = "2026-07-19T12:00:00"),
+                                    gardenSample(102, ReviewStage.ALMOST_TREE).copy(graduatedAtIso = "2026-07-20T12:00:00"),
+                                ),
+                                graduatedTrees = 4,
+                            ),
+                            compact = true,
+                            modifier = Modifier.fillMaxWidth().height(160.dp),
+                        )
+                        Spacer(Modifier.height(16.dp))
+
+                        Text("정원 · 만원(+N)")
+                        GardenCanvas(
+                            garden = ReviewGarden(
+                                growing = List(15) { i ->
+                                    gardenSample(
+                                        200L + i,
+                                        ReviewStage.values()[i % ReviewStage.values().size],
+                                    )
+                                },
+                                graduated = emptyList(),
+                                graduatedTrees = 20,
+                            ),
+                            compact = true,
+                            modifier = Modifier.fillMaxWidth().height(160.dp),
+                        )
+                    }
+
                     "garden" -> GardenScreen(
                         garden = ReviewGarden(
                             growing = listOf(
@@ -406,6 +459,12 @@ class ShowcaseActivity : ComponentActivity() {
         )
         ConceptStats(categories = cats, weakest = cats[1])
     }
+
+    /** 정원 캔버스 케이스용 샘플 항목 — quizId·단계만 다르게. */
+    private fun gardenSample(id: Long, stage: ReviewStage) = GardenItem(
+        quizId = id, categoryLabel = "경제", question = "q$id", keyword = null,
+        stage = stage, dueDate = null, waterCount = 2, absorbedCount = 1, graduatedAtIso = null,
+    )
 
     private val sampleQuiz = Quiz(
         id = 1L,
