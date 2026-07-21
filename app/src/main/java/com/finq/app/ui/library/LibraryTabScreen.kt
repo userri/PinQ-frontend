@@ -37,6 +37,8 @@ fun LibraryTabScreen(
     snackbarHostState: SnackbarHostState? = null,
     /** 미풀이 북마크 탭 → 풀이 화면 진입. */
     onStartQuiz: (() -> Unit)? = null,
+    /** 정원 나무 딥링크 — 오답노트에서 해당 문제로 스크롤·펼침. */
+    focusQuizId: Long? = null,
     modifier: Modifier = Modifier,
 ) {
     val tabs = listOf("오답노트", "북마크", "전체이력")
@@ -91,6 +93,7 @@ fun LibraryTabScreen(
                 0 -> WrongNoteTabRoute(
                     viewModel = wrongNoteViewModel,
                     snackbarHostState = snackbarHostState,
+                    focusQuizId = focusQuizId,
                     modifier = Modifier.fillMaxSize(),
                 )
                 1 -> BookmarkTabRoute(

@@ -39,6 +39,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -119,6 +121,9 @@ object FinQRoutes {
     const val WRONG_NOTE_TAB = "wrongnote_tab"
     const val BOOKMARK_TAB = "bookmark_tab"
     const val LIBRARY_TAB = "library_tab"
+
+    /** 보관함 탭 optional 인자 — 정원 나무 탭 딥링크용. */
+    const val LIBRARY_TAB_PATTERN = "library_tab?focusQuizId={focusQuizId}"
     const val MY_PAGE = "mypage"
     const val ATTEMPT_HISTORY = "attempt_history"
 
@@ -138,7 +143,8 @@ object FinQRoutes {
 
 private val bottomNavRoutes = setOf(
     FinQRoutes.HOME,
-    FinQRoutes.LIBRARY_TAB,
+    // currentRoute 는 등록된 라우트 패턴 문자열로 도착하므로 패턴을 담는다.
+    FinQRoutes.LIBRARY_TAB_PATTERN,
     FinQRoutes.MY_PAGE,
 )
 
@@ -344,7 +350,15 @@ fun FinQNavHost(
             }
 
             // ── 보관함 탭 ─────────────────────────────────────────────
-            composable(FinQRoutes.LIBRARY_TAB) {
+            composable(
+                route = FinQRoutes.LIBRARY_TAB_PATTERN,
+                arguments = listOf(navArgument("focusQuizId") {
+                    type = NavType.LongType
+                    defaultValue = -1L
+                }),
+            ) { entry ->
+                val focusQuizId = entry.arguments?.getLong("focusQuizId")
+                    ?.takeIf { it > 0 }
                 val libraryVm = libraryViewModel(libraryRepository)
                 LibraryTabScreen(
                     wrongNoteViewModel = libraryVm,
@@ -353,13 +367,14 @@ fun FinQNavHost(
                     snackbarHostState  = snackbarHostState,
                     // 미풀이 북마크(오늘 세트) → 오늘 풀이 세션으로 진입.
                     onStartQuiz = { navController.resumeOrStartSession() },
+                    focusQuizId = focusQuizId,
                 )
             }
 
             // ── 마이페이지 ────────────────────────────────────────────
             composable(FinQRoutes.MY_PAGE) { entry ->
                 val myPageVm: MyPageViewModel = viewModel(
-                    factory = MyPageViewModel.factory(statsRepository, notificationRepository),
+                    factory = MyPageViewModel.factory(statsRepository, notificationRepository, reviewRepository),
                 )
                 val state by myPageVm.uiState.collectAsState()
 
@@ -401,6 +416,7 @@ fun FinQNavHost(
                     grassFailed = state.grassFailed,
                     onRetryGrass = myPageVm::loadGrass,
                     onOpenGarden = { navController.navigate(FinQRoutes.GARDEN) },
+                    garden = state.garden,
                     conceptStats = state.conceptStats,
                     appVersion = BuildConfig.VERSION_NAME,
                     isLoading = state.isLoading,
@@ -447,6 +463,11 @@ fun FinQNavHost(
                     error = state.error,
                     onRetry = gardenVm::load,
                     onBack = { navController.popBackStack() },
+                    onOpenQuiz = { quizId ->
+                        navController.navigate("library_tab?focusQuizId=$quizId") {
+                            launchSingleTop = true
+                        }
+                    },
                 )
             }
 
@@ -703,7 +724,9 @@ private fun FinQBottomBar(
         // windowInsets 를 기본값으로 두어 기기 하단 시스템 바(제스처/3버튼)와 겹치지 않게 한다.
     ) {
         bottomNavItems.forEach { item ->
-            val selected = currentRoute == item.route
+            // 보관함은 optional 인자 라우트(library_tab?focusQuizId=…)로 도착할 수 있어
+            // 쿼리 부분을 떼고 base 라우트로 비교한다 — 딥링크 진입 시에도 탭 하이라이트 유지.
+            val selected = currentRoute?.substringBefore("?") == item.route
             NavigationBarItem(
                 selected = selected,
                 onClick = { onNavigate(item.route) },
