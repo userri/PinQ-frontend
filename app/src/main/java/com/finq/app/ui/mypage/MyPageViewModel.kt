@@ -7,6 +7,8 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.finq.app.data.repository.ConceptStats
 import com.finq.app.data.repository.GrassCalendar
 import com.finq.app.data.repository.NotificationRepository
+import com.finq.app.data.repository.ReviewGarden
+import com.finq.app.data.repository.ReviewRepository
 import com.finq.app.data.repository.UserStatsRepository
 import com.finq.app.push.FcmTokenManager
 import retrofit2.HttpException
@@ -38,6 +40,8 @@ data class MyPageUiState(
     val grass: GrassCalendar? = null,
     /** 잔디밭 첫 로드가 실패했는가 — 스켈레톤 대신 재시도 카드를 보여준다. */
     val grassFailed: Boolean = false,
+    /** 정원(자라는 새싹/나무). null 이면 로딩 전 — 캔버스 자리는 스켈레톤. 실패해도 조용히(부가 정보). */
+    val garden: ReviewGarden? = null,
     /** 카테고리별 정답률 + 취약 개념. 못 받으면 null — 섹션을 숨긴다. */
     val conceptStats: ConceptStats? = null,
     val isWithdrawing: Boolean = false,
@@ -54,6 +58,7 @@ data class MyPageUiState(
 class MyPageViewModel(
     private val statsRepository: UserStatsRepository,
     private val notificationRepository: NotificationRepository,
+    private val reviewRepository: ReviewRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MyPageUiState())
@@ -80,6 +85,16 @@ class MyPageViewModel(
         loadStats()
         loadGrass()
         loadConceptStats()
+        loadGarden()
+    }
+
+    /** 정원 — 부가 정보. 실패 시 이전 값 유지(조용한 실패), 첫 실패는 캔버스 없이 잔디만 그린다. */
+    fun loadGarden() {
+        viewModelScope.launch {
+            runCatching { reviewRepository.getGarden() }
+                .onSuccess { garden -> _uiState.update { it.copy(garden = garden) } }
+                .onFailure { }
+        }
     }
 
     /**
@@ -292,8 +307,9 @@ class MyPageViewModel(
         fun factory(
             repository: UserStatsRepository,
             notificationRepository: NotificationRepository,
+            reviewRepository: ReviewRepository,
         ) = viewModelFactory {
-            initializer { MyPageViewModel(repository, notificationRepository) }
+            initializer { MyPageViewModel(repository, notificationRepository, reviewRepository) }
         }
     }
 }

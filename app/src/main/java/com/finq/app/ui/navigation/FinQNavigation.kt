@@ -359,7 +359,7 @@ fun FinQNavHost(
             // ── 마이페이지 ────────────────────────────────────────────
             composable(FinQRoutes.MY_PAGE) { entry ->
                 val myPageVm: MyPageViewModel = viewModel(
-                    factory = MyPageViewModel.factory(statsRepository, notificationRepository),
+                    factory = MyPageViewModel.factory(statsRepository, notificationRepository, reviewRepository),
                 )
                 val state by myPageVm.uiState.collectAsState()
 
@@ -401,6 +401,7 @@ fun FinQNavHost(
                     grassFailed = state.grassFailed,
                     onRetryGrass = myPageVm::loadGrass,
                     onOpenGarden = { navController.navigate(FinQRoutes.GARDEN) },
+                    garden = state.garden,
                     conceptStats = state.conceptStats,
                     appVersion = BuildConfig.VERSION_NAME,
                     isLoading = state.isLoading,

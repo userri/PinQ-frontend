@@ -72,19 +72,6 @@ fun GrassCalendarCard(
     /** "🌳 키운 나무 N그루" 헤더 탭 → 정원 화면. null 이면 탭 불가(기존 동작). */
     onTreesClick: (() -> Unit)? = null,
 ) {
-    // 그리드는 항상 "주의 시작(월요일)"에 정렬돼야 열이 어긋나지 않는다.
-    val gridStart = remember(grass.from) { grass.from.startOfWeek() }
-    val weeks = remember(gridStart, grass.to) {
-        (ChronoUnit.DAYS.between(gridStart, grass.to) / DAYS_PER_WEEK).toInt() + 1
-    }
-
-    val scrollState = rememberScrollState()
-    // 최근이 오른쪽이므로 진입 시 끝으로 보낸다.
-    LaunchedEffect(weeks) { scrollState.scrollTo(scrollState.maxValue) }
-
-    // 셀 탭 시 그날 상세("N문제 풀이 · M문제 복습")를 그리드 아래에 띄운다.
-    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
-
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -117,57 +104,81 @@ fun GrassCalendarCard(
             }
             Spacer(Modifier.height(12.dp))
 
-            GrassSummaryRow(grass)
-            Spacer(Modifier.height(14.dp))
+            GrassCalendarBody(grass = grass)
+        }
+    }
+}
 
-            Row {
-                // 요일 라벨 열 — 월 라벨 높이만큼 내려서 그리드와 행을 맞춘다.
-                Column(modifier = Modifier.width(DAY_LABEL_WIDTH)) {
-                    Spacer(Modifier.height(MONTH_LABEL_HEIGHT))
-                    DAY_LABELS.forEach { label ->
-                        Box(
-                            modifier = Modifier.height(CELL).padding(bottom = 0.dp),
-                            contentAlignment = Alignment.CenterStart,
-                        ) {
-                            if (label.isNotEmpty()) {
-                                Text(
-                                    text = label,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = TextMuted,
-                                )
-                            }
+/**
+ * 잔디밭 카드 본문 — 요약칩 + 격자 + 범례 + 상세.
+ * 카드 프레임(Card/헤더) 없이 본문만 그리므로, 통합 정원 카드가 헤더를 따로 얹어 재사용한다.
+ */
+@Composable
+fun GrassCalendarBody(grass: GrassCalendar) {
+    // 그리드는 항상 "주의 시작(월요일)"에 정렬돼야 열이 어긋나지 않는다.
+    val gridStart = remember(grass.from) { grass.from.startOfWeek() }
+    val weeks = remember(gridStart, grass.to) {
+        (ChronoUnit.DAYS.between(gridStart, grass.to) / DAYS_PER_WEEK).toInt() + 1
+    }
+
+    val scrollState = rememberScrollState()
+    // 최근이 오른쪽이므로 진입 시 끝으로 보낸다.
+    LaunchedEffect(weeks) { scrollState.scrollTo(scrollState.maxValue) }
+
+    // 셀 탭 시 그날 상세("N문제 풀이 · M문제 복습")를 그리드 아래에 띄운다.
+    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
+
+    Column {
+        GrassSummaryRow(grass)
+        Spacer(Modifier.height(14.dp))
+
+        Row {
+            // 요일 라벨 열 — 월 라벨 높이만큼 내려서 그리드와 행을 맞춘다.
+            Column(modifier = Modifier.width(DAY_LABEL_WIDTH)) {
+                Spacer(Modifier.height(MONTH_LABEL_HEIGHT))
+                DAY_LABELS.forEach { label ->
+                    Box(
+                        modifier = Modifier.height(CELL).padding(bottom = 0.dp),
+                        contentAlignment = Alignment.CenterStart,
+                    ) {
+                        if (label.isNotEmpty()) {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextMuted,
+                            )
                         }
-                        Spacer(Modifier.height(GAP))
                     }
+                    Spacer(Modifier.height(GAP))
                 }
+            }
 
-                Column(modifier = Modifier.horizontalScroll(scrollState)) {
-                    MonthLabels(gridStart = gridStart, weeks = weeks)
-                    Row(horizontalArrangement = Arrangement.spacedBy(GAP)) {
-                        repeat(weeks) { week ->
-                            Column(verticalArrangement = Arrangement.spacedBy(GAP)) {
-                                repeat(DAYS_PER_WEEK) { dayOfWeek ->
-                                    val date = gridStart.plusDays((week.toLong() * DAYS_PER_WEEK) + dayOfWeek)
-                                    GrassCell(
-                                        date = date,
-                                        grass = grass,
-                                        isSelected = date == selectedDate,
-                                        onClick = { selectedDate = date },
-                                    )
-                                }
+            Column(modifier = Modifier.horizontalScroll(scrollState)) {
+                MonthLabels(gridStart = gridStart, weeks = weeks)
+                Row(horizontalArrangement = Arrangement.spacedBy(GAP)) {
+                    repeat(weeks) { week ->
+                        Column(verticalArrangement = Arrangement.spacedBy(GAP)) {
+                            repeat(DAYS_PER_WEEK) { dayOfWeek ->
+                                val date = gridStart.plusDays((week.toLong() * DAYS_PER_WEEK) + dayOfWeek)
+                                GrassCell(
+                                    date = date,
+                                    grass = grass,
+                                    isSelected = date == selectedDate,
+                                    onClick = { selectedDate = date },
+                                )
                             }
                         }
                     }
                 }
             }
-
-            Spacer(Modifier.height(12.dp))
-            GrassLegend()
-
-            // 선택한 날짜 상세 — 없으면 안내 문구.
-            Spacer(Modifier.height(10.dp))
-            GrassDayDetail(date = selectedDate, day = selectedDate?.let(grass::dayAt))
         }
+
+        Spacer(Modifier.height(12.dp))
+        GrassLegend()
+
+        // 선택한 날짜 상세 — 없으면 안내 문구.
+        Spacer(Modifier.height(10.dp))
+        GrassDayDetail(date = selectedDate, day = selectedDate?.let(grass::dayAt))
     }
 }
 
