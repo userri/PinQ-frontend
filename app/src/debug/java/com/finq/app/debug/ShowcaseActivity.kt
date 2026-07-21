@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import com.finq.app.data.model.AttemptItem
 import com.finq.app.data.model.Category
 import com.finq.app.data.model.QuizOption
+import com.finq.app.data.model.ReviewStatus
 import com.finq.app.ui.library.AttemptItemCard
 import com.finq.app.data.model.Quiz
 import com.finq.app.data.model.RelatedArticle
@@ -21,9 +22,13 @@ import com.finq.app.data.repository.AnswerResult
 import com.finq.app.data.repository.GrassCalendar
 import com.finq.app.data.repository.ConceptStat
 import com.finq.app.data.repository.ConceptStats
+import com.finq.app.data.repository.GardenItem
+import com.finq.app.data.repository.ReviewGarden
+import com.finq.app.data.repository.ReviewStage
 import com.finq.app.ui.components.ConceptStatsCard
 import com.finq.app.ui.components.GrassCalendarCard
 import com.finq.app.ui.components.WaterGrassCard
+import com.finq.app.ui.screen.GardenScreen
 import com.finq.app.ui.screen.ReviewDoneScreen
 import com.finq.app.ui.screen.HomeScreen
 import com.finq.app.ui.screen.MyPageContent
@@ -38,7 +43,7 @@ import java.time.LocalDate
  *
  *   adb shell am start -n com.finq.app/com.finq.app.debug.ShowcaseActivity --es screen home
  *
- * screen: home | home_pending | home_zero | quiz | answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | wrongnote | grass | review | concept
+ * screen: home | home_pending | home_zero | quiz | answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | filters | wrongnote | grass | review | review_graduated | review_next | garden | concept
  * 릴리즈 빌드에는 포함되지 않는다(app/src/debug 소스셋).
  */
 class ShowcaseActivity : ComponentActivity() {
@@ -98,7 +103,41 @@ class ShowcaseActivity : ComponentActivity() {
                         onNext = {}, onBack = {}, onArticleClick = {},
                         categoryLabel = "🪴 나무 직전 · 금리",
                         graduated = true,
+                        graduatedMessage = "물 7번 준 나무가 완성됐어요 — 당신의 5번째 나무",
                         nextLabel = "복습 완료",
+                    )
+
+                    // 정원 — 자라는 중 + 완성 나무 + 카운터 불일치(배포 이전 졸업분) 케이스
+                    "garden" -> GardenScreen(
+                        garden = ReviewGarden(
+                            growing = listOf(
+                                GardenItem(
+                                    quizId = 101, categoryLabel = "주식", question = "PER이 낮다는 것은 무엇을 의미할까요?",
+                                    keyword = "PER", stage = ReviewStage.SPROUT,
+                                    dueDate = LocalDate.now().plusDays(1),
+                                    waterCount = 1, absorbedCount = 0, graduatedAtIso = null,
+                                ),
+                                GardenItem(
+                                    quizId = 102, categoryLabel = "금리", question = "기준금리가 오르면 예금 금리는?",
+                                    keyword = "기준금리", stage = ReviewStage.ALMOST_TREE,
+                                    dueDate = LocalDate.now().plusDays(3),
+                                    waterCount = 4, absorbedCount = 2, graduatedAtIso = null,
+                                ),
+                            ),
+                            graduated = listOf(
+                                GardenItem(
+                                    quizId = 88, categoryLabel = "경제", question = "인플레이션의 정의는?",
+                                    keyword = "인플레이션", stage = ReviewStage.ALMOST_TREE,
+                                    dueDate = null, waterCount = 5, absorbedCount = 4,
+                                    graduatedAtIso = "2026-07-19T14:32:00",
+                                ),
+                            ),
+                            graduatedTrees = 12, // 목록(1)보다 큰 카운터 — 안내 문구 확인용
+                        ),
+                        isLoading = false,
+                        error = null,
+                        onRetry = {},
+                        onBack = {},
                     )
 
                     // 복습 미졸업 (graduated=false) — 다음 물 주기 안내
@@ -186,8 +225,20 @@ class ShowcaseActivity : ComponentActivity() {
                     "wrongnote" -> Column(
                         Modifier.fillMaxSize().verticalScroll(rememberScrollState())
                     ) {
-                        AttemptItemCard(item = sampleAttempt(correct = true), onToggleBookmark = {})
-                        AttemptItemCard(item = sampleAttempt(correct = false), onToggleBookmark = {})
+                        // 복습 나무 완성 뱃지 (graduated=true)
+                        AttemptItemCard(
+                            item = sampleAttempt(correct = true).copy(
+                                review = ReviewStatus(stage = 2, waterCount = 7, absorbedCount = 4, graduated = true, dueDateIso = null),
+                            ),
+                            onToggleBookmark = {},
+                        )
+                        // 복습 자라는 중 뱃지 (graduated=false)
+                        AttemptItemCard(
+                            item = sampleAttempt(correct = false).copy(
+                                review = ReviewStatus(stage = 1, waterCount = 2, absorbedCount = 1, graduated = false, dueDateIso = null),
+                            ),
+                            onToggleBookmark = {},
+                        )
                         // 세션 직후 오답노트와 동일한 형태(solvedAtIso=null, 정답정보 있음).
                         // 예전엔 이게 "아직 안 푼 문제"로 오판돼 카드가 안 펼쳐졌다 → 이제 정상.
                         AttemptItemCard(
