@@ -60,6 +60,8 @@ fun LibraryListScreen(
     onToggleBookmark: (AttemptItem) -> Unit,
     /** 미풀이 북마크 탭 → 풀이 화면 진입. null 이면 비활성. */
     onStartQuiz: ((AttemptItem) -> Unit)? = null,
+    /** 카테고리칩 아래 추가 필터 Row (오답노트의 복습 필터칩). null 이면 없음. */
+    extraFilterRow: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
@@ -101,6 +103,7 @@ fun LibraryListScreen(
             selected = selectedCategory,
             onSelect = { selectedCategory = it },
         )
+        extraFilterRow?.invoke()
 
         when {
             isLoading -> LoadingState()
