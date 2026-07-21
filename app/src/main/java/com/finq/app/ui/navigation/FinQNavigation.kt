@@ -521,6 +521,13 @@ fun FinQNavHost(
 
                     BackHandler { navController.exitReviewToHome() }
 
+                    LaunchedEffect(state.notice) {
+                        state.notice?.let {
+                            snackbarHostState.showSnackbar(it, duration = SnackbarDuration.Short)
+                            vm.clearNotice()
+                        }
+                    }
+
                     // 복습할 게 없거나 모두 끝나면 완료 화면으로.
                     LaunchedEffect(state.isFinished) {
                         if (state.isFinished) {
@@ -557,10 +564,11 @@ fun FinQNavHost(
                                 onClose = { navController.exitReviewToHome() },
                                 isSubmitting = state.isSubmitting,
                                 categoryLabel = "${item.stage.emoji} ${item.stage.label} · ${item.categoryLabel}",
-                                // 마지막 단계(나무 직전)면 졸업 힌트를 함께 보여준다.
-                                headerNote = if (item.stage.isFinalStage)
-                                    "한 번 더 맞히면 나무가 돼요 · 복습은 기록에 영향 없어요"
-                                else "복습은 기록에 영향 없어요",
+                                headerNote = buildString {
+                                    if (item.waterCount > 0) append("💧 물 ${item.waterCount}번 · 흡수 ${item.absorbedCount}번 · ")
+                                    if (item.stage.isFinalStage) append("한 번 더 맞히면 나무가 돼요 · ")
+                                    append("복습은 기록에 영향 없어요")
+                                },
                             )
                         }
                     }
@@ -569,6 +577,7 @@ fun FinQNavHost(
                 composable(FinQRoutes.REVIEW_ANSWER) { entry ->
                     val vm = entry.reviewViewModel(navController, reviewRepository)
                     val state by vm.uiState.collectAsState()
+                    val localContext = LocalContext.current
                     val item = state.currentItem
                     val answer = state.lastAnswer
 
@@ -587,11 +596,18 @@ fun FinQNavHost(
                             totalCount = state.totalCount,
                             onNext = vm::moveToNext,
                             onBack = { navController.exitReviewToHome() },
-                            onArticleClick = {},
+                            onArticleClick = { article ->
+                                val intent = Intent(Intent.ACTION_VIEW, article.url.toUri())
+                                try {
+                                    localContext.startActivity(intent)
+                                } catch (e: ActivityNotFoundException) {
+                                    Toast.makeText(localContext, "기사를 열 수 있는 앱이 없어요", Toast.LENGTH_SHORT).show()
+                                }
+                            },
                             categoryLabel = "${item.stage.emoji} ${item.stage.label} · ${item.categoryLabel}",
                             graduated = answer.graduated,
                             nextReviewText = answer.nextDueDate?.let {
-                                "다음 물 주기: ${it.format(reviewDueDateFormat)}"
+                                "다음 물 주기: ${it.format(reviewDueDateFormat)} · 💧 물 ${answer.waterCount}번 · 흡수 ${answer.absorbedCount}번"
                             },
                             nextLabel = if (state.isLastItem) "복습 완료" else "다음 복습",
                         )

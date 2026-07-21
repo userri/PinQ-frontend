@@ -34,6 +34,8 @@ data class ReviewSessionUiState(
     val isFinished: Boolean = false,
     /** 복습할 게 없을 때 안내할 다음 물 주기 날짜. */
     val nextDueDate: LocalDate? = null,
+    /** 일회성 안내(스낵바용). 예: 이미 졸업한 문제 404. */
+    val notice: String? = null,
 ) {
     val currentItem: ReviewItem? get() = items.getOrNull(currentIndex)
     val totalCount: Int get() = items.size
@@ -105,11 +107,26 @@ class ReviewSessionViewModel(
                     }
                 }
                 .onFailure { e ->
-                    _uiState.update {
-                        it.copy(isSubmitting = false, error = e.message ?: "채점에 실패했어요")
+                    if (e is retrofit2.HttpException && e.code() == 404) {
+                        // 이미 졸업한 문제(캐시된 화면에서 낡은 요청) — 목록을 재동기화한다.
+                        _uiState.update {
+                            it.copy(
+                                isSubmitting = false,
+                                notice = "이미 졸업한 문제예요 — 복습 목록을 새로 불러올게요",
+                            )
+                        }
+                        loadReviews()
+                    } else {
+                        _uiState.update {
+                            it.copy(isSubmitting = false, error = e.message ?: "채점에 실패했어요")
+                        }
                     }
                 }
         }
+    }
+
+    fun clearNotice() {
+        _uiState.update { it.copy(notice = null) }
     }
 
     /** 정답 화면에서 "다음" — 마지막 문제였으면 세션을 끝낸다. */

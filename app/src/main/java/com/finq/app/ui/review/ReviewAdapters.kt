@@ -23,7 +23,8 @@ fun ReviewItem.toQuiz(): Quiz = Quiz(
 
 /**
  * 복습 채점 결과를 기존 정답 화면이 먹는 [AnswerResult] 로 변환한다.
- * 복습에는 관련 기사가 없으므로 [RelatedArticle.EMPTY] — 정답 화면이 기사 섹션을 자동으로 숨긴다.
+ * 서버가 기사를 내려주면 그대로 노출하고, 없으면(구서버 포함) [RelatedArticle.EMPTY]
+ * — 정답 화면이 기사 섹션을 자동으로 숨긴다.
  */
 fun ReviewAnswer.toAnswerResult(selectedOptionId: Long): AnswerResult = AnswerResult(
     quizId = quizId,
@@ -32,5 +33,5 @@ fun ReviewAnswer.toAnswerResult(selectedOptionId: Long): AnswerResult = AnswerRe
     correctOptionId = correctOptionId,
     explanation = explanation,
     keyword = keyword,
-    relatedArticle = RelatedArticle.EMPTY,
+    relatedArticle = article ?: RelatedArticle.EMPTY,
 )
