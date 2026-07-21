@@ -464,7 +464,12 @@ fun FinQNavHost(
                     onRetry = gardenVm::load,
                     onBack = { navController.popBackStack() },
                     onOpenQuiz = { quizId ->
+                        // 하단 탭 진입 규약과 동일하게 HOME 위 스택을 정리해 최상위 탭으로 도착시킨다.
+                        // 이렇게 해야 이후 마이/홈 탭 전환의 saveState/restoreState 부기가 깨지지 않는다
+                        // (기존엔 library_tab 이 GARDEN·MYPAGE 위에 쌓여 마이 탭 이동이 no-op 이 됐다).
+                        // restoreState 는 생략 — 새 focusQuizId 로 새로 진입해야 스크롤·펼침이 동작한다.
                         navController.navigate("library_tab?focusQuizId=$quizId") {
+                            popUpTo(FinQRoutes.HOME) { saveState = true }
                             launchSingleTop = true
                         }
                     },

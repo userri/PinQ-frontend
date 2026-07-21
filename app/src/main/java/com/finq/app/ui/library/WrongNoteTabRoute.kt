@@ -69,7 +69,6 @@ fun WrongNoteTabRoute(
         error = state.wrongError,
         emptyMessage = when (reviewFilter) {
             ReviewFilter.ALL -> "오답이 없어요"
-            ReviewFilter.NOT_STARTED -> "복습을 기다리는 오답이 없어요"
             ReviewFilter.GROWING -> "자라는 중인 복습이 없어요"
             ReviewFilter.GRADUATED -> "아직 완성한 나무가 없어요"
         },
