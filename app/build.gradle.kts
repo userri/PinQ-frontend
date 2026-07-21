@@ -57,8 +57,8 @@ android {
         applicationId = "com.finq.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 8
-        versionName = "1.1.6"
+        versionCode = 10
+        versionName = "1.1.8"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

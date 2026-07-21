@@ -11,6 +11,12 @@ package com.finq.app.data.remote.dto
 data class UserStatsApiResponse(
     val nickname: String,
     val streak: Int,
+    /**
+     * 오늘 데일리 퀴즈를 1문제 이상 풀었는지 (복습 재풀이는 카운트 안 됨).
+     * streak 은 "오늘 또는 어제까지" 이어진 값이라(하루 유예) 이 플래그 없이는
+     * 오늘 풀었는지 알 수 없다. 구버전 서버 응답 대비 기본 false.
+     */
+    val solvedToday: Boolean = false,
     val maxStreak: Int,
     val totalSolved: Int,
     val correctRate: Float,

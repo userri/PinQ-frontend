@@ -67,6 +67,7 @@ class HomeViewModel(
                     nickname = stats?.nickname ?: "",
                     quizCount = quizzes.count { !it.solved },
                     streak = stats?.streak ?: 0,
+                    solvedToday = stats?.solvedToday ?: false,
                     maxStreak = stats?.maxStreak ?: 0,
                     weekLevels = grass?.let(::weekLevelsFrom) ?: List(7) { 0 },
                     reviewCount = reviews?.items?.size ?: 0,

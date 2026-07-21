@@ -64,6 +64,8 @@ import com.finq.app.ui.theme.streakColor
 fun HomeScreen(
     quizCount: Int,
     streak: Int,
+    /** 오늘 데일리 퀴즈를 풀었는가 — 서버 solvedToday. 잔디 level 로 유추하지 않는다. */
+    solvedToday: Boolean,
     maxStreak: Int,
     /** 이번 주(월~일) 잔디 level. grass days[].level 슬라이스. 미래 날짜는 -1. */
     weekLevels: List<Int>,
@@ -177,6 +179,7 @@ fun HomeScreen(
         }
         WeeklyStreakCard(
             streak = streak,
+            solvedToday = solvedToday,
             maxStreak = maxStreak,
             weekLevels = weekLevels,
             todayDow = todayDow,
@@ -191,12 +194,17 @@ fun HomeScreen(
 @Composable
 private fun WeeklyStreakCard(
     streak: Int,
+    /**
+     * 서버 stats.solvedToday. ⚠️ 잔디 level(weekLevels/activityGrid)로 유추 금지 —
+     * 그 값들은 정답 수 기반이라 "풀었지만 전부 틀린 날"을 놓칠 수 있고,
+     * 복습만 한 날도 level 1 이 심겨 오판한다.
+     */
+    solvedToday: Boolean,
     maxStreak: Int,
     /** 월~일 7일치 잔디 level (grass days[].level). 미래 날짜는 -1. */
     weekLevels: List<Int>,
     todayDow: Int,
 ) {
-    val solvedToday = weekLevels.getOrElse(todayDow) { 0 } > 0
     val dayLabels = listOf("월", "화", "수", "목", "금", "토", "일")
 
     Card(
@@ -218,20 +226,26 @@ private fun WeeklyStreakCard(
                     color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
                 )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    StatPill(
-                        iconRes = R.drawable.ic_sprout,
-                        text = if (streak > 0) "${streak}일 연속" else "0일 연속",
-                    )
-                    StatPill(
-                        iconRes = R.drawable.ic_star_rounded,
-                        text = if (maxStreak > 0) "최고 ${maxStreak}일" else "최고 0일",
-                    )
-                }
+                StatPill(
+                    iconRes = R.drawable.ic_star_rounded,
+                    text = if (maxStreak > 0) "최고 ${maxStreak}일" else "최고 0일",
+                )
             }
+
+            // ── 메인 스트릭 문구 — 서버 solvedToday 기준 3분기 ──────────
+            // streak 은 "어제까지" 값일 수 있으므로(하루 유예) 미풀이 상태에선 +1 로 보여준다.
+            Spacer(Modifier.height(10.dp))
+            Text(
+                text = when {
+                    solvedToday -> "🔥 ${streak}일 연속 학습 중!"
+                    streak > 0 -> "오늘 풀면 ${streak + 1}일 연속!"
+                    else -> "오늘 풀고 연속 학습을 시작해보세요"
+                },
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = if (solvedToday) Lime else TextPrimary,
+            )
+
             Spacer(Modifier.height(14.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -274,18 +288,15 @@ private fun WeeklyStreakCard(
                     }
                 }
             }
+
+            // ── 스트릭 규칙 안내 — "복습만 한 날 스트릭 1일" 혼동 방지 피드백 반영 ──
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = "연속 학습은 데일리 퀴즈 기준이에요. 복습만 한 날은 연한 잔디만 심어져요 🌱",
+                style = MaterialTheme.typography.labelSmall,
+                color = TextMuted,
+            )
         }
-    }
-    // 오늘 풀지 않은 경우 살짝 푸시 문구를 카드 아래에 둔다 (선택적 UX, 데이터 추가 없음).
-    if (!solvedToday && streak == 0) {
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = "오늘 풀면 1일 연속 시작!",
-            style = MaterialTheme.typography.labelMedium,
-            color = Lime,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(start = 4.dp),
-        )
     }
 }
 
@@ -489,6 +500,7 @@ private fun HomeScreenPreview() {
         HomeScreen(
             quizCount = 4,
             streak = 1,
+            solvedToday = false,
             maxStreak = 1,
             weekLevels = listOf(2, 0, 4, 1, 0, -1, -1),
             reviewCount = 3,

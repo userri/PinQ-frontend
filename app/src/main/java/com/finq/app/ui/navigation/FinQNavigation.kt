@@ -313,6 +313,7 @@ fun FinQNavHost(
                 HomeScreen(
                     quizCount = state.quizCount,
                     streak = state.streak,
+                    solvedToday = state.solvedToday,
                     maxStreak = state.maxStreak,
                     weekLevels = state.weekLevels,
                     isLoading = state.isLoading,

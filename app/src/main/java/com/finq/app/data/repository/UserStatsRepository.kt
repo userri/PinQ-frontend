@@ -4,7 +4,10 @@ import java.time.LocalDate
 
 data class UserStats(
     val nickname: String,
+    /** 연속 학습 일수 — 오늘 또는 "어제까지" 값(하루 유예). 오늘 풀었는지는 [solvedToday]로 판단. */
     val streak: Int,
+    /** 오늘 데일리 퀴즈를 풀었는가. 복습은 카운트되지 않는다. */
+    val solvedToday: Boolean,
     val maxStreak: Int,
     val totalSolved: Int,
     val correctRate: Float,

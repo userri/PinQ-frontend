@@ -38,7 +38,7 @@ import java.time.LocalDate
  *
  *   adb shell am start -n com.finq.app/com.finq.app.debug.ShowcaseActivity --es screen home
  *
- * screen: home | quiz | answer | solved_correct | solved_wrong | mypage | wrongnote | grass | review | concept
+ * screen: home | home_pending | home_zero | quiz | answer | solved_correct | solved_wrong | mypage | wrongnote | grass | review | concept
  * 릴리즈 빌드에는 포함되지 않는다(app/src/debug 소스셋).
  */
 class ShowcaseActivity : ComponentActivity() {
@@ -251,9 +251,38 @@ class ShowcaseActivity : ComponentActivity() {
                         onArticleClick = {},
                     )
 
+                    // 스트릭 문구 분기: 오늘 미풀이 + streak>0 → "오늘 풀면 N+1일 연속!"
+                    "home_pending" -> HomeScreen(
+                        quizCount = 3,
+                        streak = 7,
+                        solvedToday = false,
+                        maxStreak = 15,
+                        weekLevels = listOf(2, 0, 4, 1, 3, -1, -1),
+                        isLoading = false,
+                        error = null,
+                        onStartQuiz = {},
+                        onRetry = {},
+                        nickname = "유리",
+                    )
+
+                    // 스트릭 문구 분기: 미풀이 + streak==0 → 시작 유도 문구
+                    "home_zero" -> HomeScreen(
+                        quizCount = 3,
+                        streak = 0,
+                        solvedToday = false,
+                        maxStreak = 15,
+                        weekLevels = listOf(2, 0, 4, 1, 3, -1, -1),
+                        isLoading = false,
+                        error = null,
+                        onStartQuiz = {},
+                        onRetry = {},
+                        nickname = "유리",
+                    )
+
                     else -> HomeScreen(
                         quizCount = 3,
                         streak = 7,
+                        solvedToday = true,
                         maxStreak = 15,
                         weekLevels = listOf(2, 0, 4, 1, 3, -1, -1),
                         isLoading = false,

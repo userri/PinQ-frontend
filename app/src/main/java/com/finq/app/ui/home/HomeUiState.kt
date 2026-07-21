@@ -16,6 +16,8 @@ data class HomeUiState(
     val nickname: String = "",
     val quizCount: Int = 0,
     val streak: Int = 0,
+    /** 오늘 데일리 퀴즈를 풀었는가 — 스트릭 문구 분기용. activityGrid/weekLevels 로 유추 금지. */
+    val solvedToday: Boolean = false,
     val maxStreak: Int = 0,
     val weekLevels: List<Int> = emptyList(),
     /** 오늘 복습할 오답 수 ("오늘 물 줄 잔디 N개"). */
