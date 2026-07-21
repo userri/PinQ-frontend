@@ -23,6 +23,10 @@ data class ReviewApiResponse(
     val choices: List<ReviewChoiceApiResponse>,
     val stage: Int,
     val dueDate: String?,
+    /** 물 준 총 횟수 (복습 채점 총 시도 수). 구서버엔 없음 → 기본 0. */
+    val waterCount: Int = 0,
+    /** 그중 맞힌 횟수. waterCount ≥ absorbedCount. */
+    val absorbedCount: Int = 0,
 )
 
 data class ReviewChoiceApiResponse(
@@ -49,4 +53,12 @@ data class ReviewAnswerApiResponse(
     val keyword: String?,
     val graduated: Boolean,
     val nextDueDate: String?,
+    /** 채점 반영 후 단계. 구서버엔 없음 → 기본 0. */
+    val stage: Int = 0,
+    val waterCount: Int = 0,
+    val absorbedCount: Int = 0,
+    /** 졸업 시에만 숫자, 비졸업이면 null. */
+    val totalGraduatedTrees: Int? = null,
+    /** 일반 채점 화면과 동일 구조의 관련 기사. 구서버엔 없음 → null. */
+    val article: ArticleApiResponse? = null,
 )

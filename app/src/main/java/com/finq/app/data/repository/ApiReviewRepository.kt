@@ -1,6 +1,7 @@
 package com.finq.app.data.repository
 
 import com.finq.app.data.model.QuizOption
+import com.finq.app.data.model.RelatedArticle
 import com.finq.app.data.remote.ReviewApi
 import com.finq.app.data.remote.dto.ReviewAnswerApiRequest
 import com.finq.app.data.remote.dto.ReviewAnswerApiResponse
@@ -34,6 +35,8 @@ private fun ReviewApiResponse.toDomain(): ReviewItem = ReviewItem(
     },
     stage = ReviewStage.of(stage),
     dueDate = dueDate?.let(::parseDate),
+    waterCount = waterCount,
+    absorbedCount = absorbedCount,
 )
 
 private fun ReviewAnswerApiResponse.toDomain(): ReviewAnswer = ReviewAnswer(
@@ -44,6 +47,21 @@ private fun ReviewAnswerApiResponse.toDomain(): ReviewAnswer = ReviewAnswer(
     keyword = keyword,
     graduated = graduated,
     nextDueDate = nextDueDate?.let(::parseDate),
+    stage = stage,
+    waterCount = waterCount,
+    absorbedCount = absorbedCount,
+    totalGraduatedTrees = totalGraduatedTrees,
+    article = article?.let {
+        RelatedArticle(
+            title = it.title,
+            url = it.url,
+            source = it.source,
+            id = it.id,
+            category = it.category,
+            categoryDisplayName = it.categoryDisplayName,
+            publishedAt = it.publishedAt,
+        )
+    },
 )
 
 /** ISO-8601 `yyyy-MM-dd`. 파싱 실패 시 null — 안내 문구를 생략한다. */

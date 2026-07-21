@@ -1,6 +1,7 @@
 package com.finq.app.data.repository
 
 import com.finq.app.data.model.QuizOption
+import com.finq.app.data.model.RelatedArticle
 import java.time.LocalDate
 
 /**
@@ -32,6 +33,10 @@ data class ReviewItem(
     val options: List<QuizOption>,
     val stage: ReviewStage,
     val dueDate: LocalDate?,
+    /** 물 준 총 횟수. */
+    val waterCount: Int = 0,
+    /** 흡수(정답) 횟수. */
+    val absorbedCount: Int = 0,
 )
 
 /** [nextDueDate] 는 [items] 가 비었을 때 "다음 물 주기" 안내에 쓴다. */
@@ -53,6 +58,13 @@ data class ReviewAnswer(
     val keyword: String?,
     val graduated: Boolean,
     val nextDueDate: LocalDate?,
+    val stage: Int = 0,
+    val waterCount: Int = 0,
+    val absorbedCount: Int = 0,
+    /** 졸업 시에만 값. "당신의 N번째 나무" 연출용. */
+    val totalGraduatedTrees: Int? = null,
+    /** 채점 후 관련 기사. 구서버/기사 없음이면 null. */
+    val article: RelatedArticle? = null,
 )
 
 interface ReviewRepository {
