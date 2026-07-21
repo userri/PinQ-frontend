@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.res.painterResource
@@ -23,6 +24,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -62,6 +64,8 @@ fun LibraryListScreen(
     onStartQuiz: ((AttemptItem) -> Unit)? = null,
     /** 카테고리칩 아래 추가 필터 Row (오답노트의 복습 필터칩). null 이면 없음. */
     extraFilterRow: (@Composable () -> Unit)? = null,
+    /** 정원 나무 딥링크 — 진입 시 이 문제로 스크롤하고 카드를 펼친다. */
+    focusQuizId: Long? = null,
     modifier: Modifier = Modifier,
 ) {
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
@@ -69,6 +73,13 @@ fun LibraryListScreen(
     val filtered = remember(items, selectedCategory) {
         if (selectedCategory == null) items
         else items.filter { it.category == selectedCategory }
+    }
+
+    val listState = rememberLazyListState()
+    // 정원 딥링크 — 목록이 준비되면 해당 문제로 1회 스크롤. 목록에 없으면 조용히 무시.
+    LaunchedEffect(focusQuizId, items) {
+        val index = focusQuizId?.let { id -> filtered.indexOfFirst { it.quizId == id } } ?: -1
+        if (index >= 0) listState.animateScrollToItem(index)
     }
 
     Column(
@@ -110,6 +121,7 @@ fun LibraryListScreen(
             error != null -> ErrorState(message = error, onRetry = onRetry)
             filtered.isEmpty() -> EmptyState(iconRes = emptyIconRes, message = emptyMessage)
             else -> LazyColumn(
+                state = listState,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 16.dp),
@@ -118,10 +130,11 @@ fun LibraryListScreen(
             ) {
                 items(filtered, key = { it.quizId }) { item ->
                     AttemptItemCard(
-                item = item,
-                onToggleBookmark = { onToggleBookmark(item) },
-                onStartQuiz = onStartQuiz?.let { cb -> { cb(item) } },
-            )
+                        item = item,
+                        onToggleBookmark = { onToggleBookmark(item) },
+                        onStartQuiz = onStartQuiz?.let { cb -> { cb(item) } },
+                        initialExpanded = item.quizId == focusQuizId,
+                    )
                 }
             }
         }

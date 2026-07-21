@@ -39,6 +39,8 @@ import com.finq.app.ui.theme.OnLime
 fun WrongNoteTabRoute(
     viewModel: LibraryViewModel,
     snackbarHostState: SnackbarHostState? = null,
+    /** 정원 나무 딥링크 — 해당 문제로 스크롤·펼침. 필터는 기본값(전체)이라 졸업 항목도 보인다. */
+    focusQuizId: Long? = null,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsState()
@@ -74,6 +76,7 @@ fun WrongNoteTabRoute(
         emptyIconRes = R.drawable.ic_trophy,
         onRetry = viewModel::loadWrongNotes,
         onToggleBookmark = { item -> viewModel.toggleBookmark(item.quizId, item.bookmarked) },
+        focusQuizId = focusQuizId,
         extraFilterRow = {
             ReviewFilterRow(selected = reviewFilter, onSelect = { reviewFilter = it })
         },

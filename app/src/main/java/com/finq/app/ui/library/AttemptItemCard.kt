@@ -60,8 +60,10 @@ fun AttemptItemCard(
     onToggleBookmark: () -> Unit,
     /** 미풀이 북마크를 탭했을 때 풀이 화면으로 보내는 콜백. null 이면 탭해도 아무 일 없음. */
     onStartQuiz: (() -> Unit)? = null,
+    /** 정원 딥링크로 진입한 카드 — 처음부터 펼쳐 보여준다. */
+    initialExpanded: Boolean = false,
 ) {
-    var expanded by remember(item.quizId) { mutableStateOf(false) }
+    var expanded by remember(item.quizId) { mutableStateOf(initialExpanded) }
     val context = LocalContext.current
     val dateStr = remember(item.solvedAtIso) { formatSolvedDate(item.solvedAtIso) }
 
