@@ -65,6 +65,8 @@ import com.finq.app.ui.quiz.QuizSessionViewModel
 import com.finq.app.ui.review.ReviewSessionViewModel
 import com.finq.app.ui.review.toAnswerResult
 import com.finq.app.ui.review.toQuiz
+import com.finq.app.ui.garden.GardenViewModel
+import com.finq.app.ui.screen.GardenScreen
 import com.finq.app.ui.screen.HomeScreen
 import com.finq.app.ui.screen.MyPageScreen
 import com.finq.app.ui.screen.QuizAnswerScreen
@@ -119,6 +121,9 @@ object FinQRoutes {
     const val LIBRARY_TAB = "library_tab"
     const val MY_PAGE = "mypage"
     const val ATTEMPT_HISTORY = "attempt_history"
+
+    /** 복습 나무 정원 (마이페이지 잔디 카드에서 진입). */
+    const val GARDEN = "garden"
     const val SESSION_GRAPH = "session"
     const val QUIZ = "session/quiz"
     const val ANSWER = "session/answer"
@@ -395,6 +400,7 @@ fun FinQNavHost(
                     grass = state.grass,
                     grassFailed = state.grassFailed,
                     onRetryGrass = myPageVm::loadGrass,
+                    onOpenGarden = { navController.navigate(FinQRoutes.GARDEN) },
                     conceptStats = state.conceptStats,
                     appVersion = BuildConfig.VERSION_NAME,
                     isLoading = state.isLoading,
@@ -426,6 +432,21 @@ fun FinQNavHost(
                     viewModel = libraryVm,
                     onBack = { navController.popBackStack() },
                     snackbarHostState = snackbarHostState,
+                )
+            }
+
+            // ── 정원 (복습 나무 현황) ─────────────────────────────────
+            composable(FinQRoutes.GARDEN) {
+                val gardenVm: GardenViewModel = viewModel(
+                    factory = GardenViewModel.factory(reviewRepository),
+                )
+                val state by gardenVm.uiState.collectAsState()
+                GardenScreen(
+                    garden = state.garden,
+                    isLoading = state.isLoading,
+                    error = state.error,
+                    onRetry = gardenVm::load,
+                    onBack = { navController.popBackStack() },
                 )
             }
 

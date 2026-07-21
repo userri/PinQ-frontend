@@ -69,6 +69,8 @@ private val DAY_LABELS = listOf("월", "", "수", "", "금", "", "일")
 fun GrassCalendarCard(
     grass: GrassCalendar,
     modifier: Modifier = Modifier,
+    /** "🌳 키운 나무 N그루" 헤더 탭 → 정원 화면. null 이면 탭 불가(기존 동작). */
+    onTreesClick: (() -> Unit)? = null,
 ) {
     // 그리드는 항상 "주의 시작(월요일)"에 정렬돼야 열이 어긋나지 않는다.
     val gridStart = remember(grass.from) { grass.from.startOfWeek() }
@@ -104,10 +106,13 @@ fun GrassCalendarCard(
                 )
                 // 복습으로 졸업한 문제 = 키운 나무.
                 Text(
-                    text = "🌳 키운 나무 ${grass.graduatedTrees}그루",
+                    text = "🌳 키운 나무 ${grass.graduatedTrees}그루" + if (onTreesClick != null) " →" else "",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = TextSecondary,
+                    modifier = Modifier.then(
+                        if (onTreesClick != null) Modifier.clickable(onClick = onTreesClick) else Modifier
+                    ),
                 )
             }
             Spacer(Modifier.height(12.dp))

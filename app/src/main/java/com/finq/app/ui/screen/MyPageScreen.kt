@@ -100,6 +100,7 @@ fun MyPageScreen(
     /** 잔디밭 첫 로드 실패 — 재시도 카드를 그린다. */
     grassFailed: Boolean = false,
     onRetryGrass: () -> Unit = {},
+    onOpenGarden: () -> Unit = {},
     /** 개념별 정답률. null 이거나 카테고리가 비면 섹션을 숨긴다. */
     conceptStats: ConceptStats? = null,
     appVersion: String,
@@ -155,6 +156,7 @@ fun MyPageScreen(
                 grass = grass,
                 grassFailed = grassFailed,
                 onRetryGrass = onRetryGrass,
+                onOpenGarden = onOpenGarden,
                 conceptStats = conceptStats,
                 appVersion = appVersion,
                 isWithdrawing = isWithdrawing,
@@ -190,6 +192,7 @@ fun MyPageContent(
     grass: GrassCalendar? = null,
     grassFailed: Boolean = false,
     onRetryGrass: () -> Unit = {},
+    onOpenGarden: () -> Unit = {},
     /** 개념별 정답률. null 이거나 카테고리가 비면 섹션을 숨긴다. */
     conceptStats: ConceptStats? = null,
     appVersion: String,
@@ -292,7 +295,7 @@ fun MyPageContent(
         // fetch 완료 전에는 스켈레톤 — 옛 데이터(구 8주 그리드)를 첫 프레임에 그리지 않는다.
         // 재진입은 VM 이 SWR 로 이전 grass 를 유지하므로 여기선 이전 값이 그대로 보인다.
         when {
-            grass != null -> GrassCalendarCard(grass = grass)
+            grass != null -> GrassCalendarCard(grass = grass, onTreesClick = onOpenGarden)
             grassFailed -> GrassCalendarError(onRetry = onRetryGrass)
             else -> GrassCalendarSkeleton()
         }

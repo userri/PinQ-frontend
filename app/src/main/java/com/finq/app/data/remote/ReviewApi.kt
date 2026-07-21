@@ -1,5 +1,6 @@
 package com.finq.app.data.remote
 
+import com.finq.app.data.remote.dto.GardenApiResponse
 import com.finq.app.data.remote.dto.ReviewAnswerApiRequest
 import com.finq.app.data.remote.dto.ReviewAnswerApiResponse
 import com.finq.app.data.remote.dto.ReviewsTodayApiResponse
@@ -23,4 +24,7 @@ interface ReviewApi {
         @Path("quizId") quizId: Long,
         @Body request: ReviewAnswerApiRequest,
     ): ReviewAnswerApiResponse
+
+    @GET("api/reviews/garden")
+    suspend fun getGarden(): GardenApiResponse
 }

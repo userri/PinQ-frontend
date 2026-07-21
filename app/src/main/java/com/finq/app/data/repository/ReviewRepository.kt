@@ -67,7 +67,37 @@ data class ReviewAnswer(
     val article: RelatedArticle? = null,
 )
 
+/** 정원의 나무/새싹 한 그루. */
+data class GardenItem(
+    val quizId: Long,
+    /** 서버가 준 한글 라벨. */
+    val categoryLabel: String,
+    val question: String,
+    val keyword: String?,
+    val stage: ReviewStage,
+    val dueDate: LocalDate?,
+    val waterCount: Int,
+    val absorbedCount: Int,
+    /** 졸업 시각 ISO-8601. 자라는 중이면 null. */
+    val graduatedAtIso: String?,
+)
+
+/**
+ * 정원 전체. [graduatedTrees] 는 카운터가 진실 —
+ * 배포 이전 졸업분은 [graduated] 목록에 없어 목록 길이와 다를 수 있다.
+ */
+data class ReviewGarden(
+    val growing: List<GardenItem>,
+    val graduated: List<GardenItem>,
+    val graduatedTrees: Int,
+) {
+    companion object {
+        val EMPTY = ReviewGarden(growing = emptyList(), graduated = emptyList(), graduatedTrees = 0)
+    }
+}
+
 interface ReviewRepository {
     suspend fun getTodayReviews(): ReviewsToday
     suspend fun submitAnswer(quizId: Long, choiceId: Long): ReviewAnswer
+    suspend fun getGarden(): ReviewGarden
 }
