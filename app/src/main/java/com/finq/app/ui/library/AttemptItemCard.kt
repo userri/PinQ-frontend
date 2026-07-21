@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import com.finq.app.R
 import com.finq.app.data.model.AttemptItem
+import com.finq.app.data.repository.ReviewStage
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -128,6 +129,22 @@ fun AttemptItemCard(
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onErrorContainer,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        }
+                    }
+                    // 복습(물 주기) 상태 뱃지 — 중립 톤, 다 키운 나무만 Lime 포인트.
+                    item.review?.let { review ->
+                        Surface(
+                            shape = RoundedCornerShape(50),
+                            color = BgSubtle,
+                        ) {
+                            Text(
+                                text = if (review.graduated) "🌳 나무 완성"
+                                       else "${ReviewStage.of(review.stage).emoji} 물 ${review.waterCount}번",
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (review.graduated) Lime else TextSecondary,
                                 fontWeight = FontWeight.SemiBold,
                             )
                         }

@@ -22,10 +22,20 @@ data class AttemptItemApiResponse(
     val article: ArticleApiResponse?,
     val bookmarked: Boolean,
     val solvedAt: String?,
+    /** 복습(물 주기) 상태. 복습 큐에 오른 적 없는 문제면 null. 구서버도 null. */
+    val review: ReviewStatusApi? = null,
 )
 
 data class ChoiceSummaryApi(
     val id: Long,
     val orderNum: Int,
     val content: String,
+)
+
+data class ReviewStatusApi(
+    val stage: Int = 0,
+    val waterCount: Int = 0,
+    val absorbedCount: Int = 0,
+    val graduated: Boolean = false,
+    val dueDate: String? = null,
 )

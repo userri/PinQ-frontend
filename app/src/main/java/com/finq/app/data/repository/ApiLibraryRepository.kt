@@ -4,6 +4,7 @@ import com.finq.app.data.model.AttemptItem
 import com.finq.app.data.model.Category
 import com.finq.app.data.model.QuizOption
 import com.finq.app.data.model.RelatedArticle
+import com.finq.app.data.model.ReviewStatus
 import com.finq.app.data.remote.LibraryApi
 import com.finq.app.data.remote.dto.ArticleApiResponse
 import com.finq.app.data.remote.dto.AttemptItemApiResponse
@@ -48,6 +49,15 @@ class ApiLibraryRepository(
         article = article?.toDomain(),
         bookmarked = bookmarked,
         solvedAtIso = solvedAt,
+        review = review?.let {
+            ReviewStatus(
+                stage = it.stage,
+                waterCount = it.waterCount,
+                absorbedCount = it.absorbedCount,
+                graduated = it.graduated,
+                dueDateIso = it.dueDate,
+            )
+        },
     )
 
     private fun ChoiceSummaryApi.toDomain(): QuizOption = QuizOption(

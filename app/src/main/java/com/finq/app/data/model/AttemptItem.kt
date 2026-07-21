@@ -24,6 +24,8 @@ data class AttemptItem(
     val article: RelatedArticle?,
     val bookmarked: Boolean,
     val solvedAtIso: String?,
+    /** 복습(물 주기) 상태. null 이면 한 번도 복습 큐에 오른 적 없음. */
+    val review: ReviewStatus? = null,
 ) {
     /** 화면 표시용 — 내가 고른 선택지의 텍스트. 없으면 "기록 없음". */
     val myAnswerText: String
@@ -52,3 +54,15 @@ data class AttemptItem(
     /** 표시용 카테고리 라벨 (예: "금리"). 알 수 없는 enum 이면 그대로 영문. */
     val categoryDisplay: String get() = category.displayName
 }
+
+/**
+ * 오답노트/이력 항목의 복습 상태 요약.
+ * [graduated] 면 다 키운 나무(🌳) — 복습 큐에 다시 나오지 않는다.
+ */
+data class ReviewStatus(
+    val stage: Int,
+    val waterCount: Int,
+    val absorbedCount: Int,
+    val graduated: Boolean,
+    val dueDateIso: String?,
+)
