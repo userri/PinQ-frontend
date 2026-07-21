@@ -35,6 +35,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.finq.app.data.repository.GrassCalendar
 import com.finq.app.data.repository.GrassDay
+import com.finq.app.ui.theme.BgElevated
 import com.finq.app.ui.theme.BgSurface
 import com.finq.app.ui.theme.FinQTheme
 import com.finq.app.ui.theme.Lime
@@ -309,6 +310,79 @@ private fun GrassLegend() {
         }
         Spacer(Modifier.width(6.dp))
         Text(text = "많이", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+    }
+}
+
+/**
+ * 잔디밭 로딩 스켈레톤 — fetch 완료 전 첫 프레임에 옛 데이터를 그리지 않기 위한 자리표시자.
+ * 실제 카드와 같은 프레임(BgSurface + Outline)과 비슷한 높이로 레이아웃 점프를 줄인다.
+ */
+@Composable
+fun GrassCalendarSkeleton(modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = BgSurface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, Outline),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            SkeletonBlock(width = 64.dp, height = 18.dp)
+            Spacer(Modifier.height(14.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                repeat(4) { SkeletonBlock(modifier = Modifier.weight(1f), height = 52.dp) }
+            }
+            Spacer(Modifier.height(14.dp))
+            SkeletonBlock(modifier = Modifier.fillMaxWidth(), height = 128.dp)
+        }
+    }
+}
+
+@Composable
+private fun SkeletonBlock(
+    modifier: Modifier = Modifier,
+    width: androidx.compose.ui.unit.Dp? = null,
+    height: androidx.compose.ui.unit.Dp,
+) {
+    Box(
+        modifier = modifier
+            .then(if (width != null) Modifier.width(width) else Modifier)
+            .height(height)
+            .clip(RoundedCornerShape(10.dp))
+            .background(BgElevated),
+    )
+}
+
+/** 잔디밭 첫 로드 실패 — 스켈레톤 대신 재시도 카드. */
+@Composable
+fun GrassCalendarError(onRetry: () -> Unit, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = BgSurface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, Outline),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 28.dp, horizontal = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = "잔디밭을 불러오지 못했어요",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextSecondary,
+            )
+            Spacer(Modifier.height(10.dp))
+            Text(
+                text = "다시 시도",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = Lime,
+                modifier = Modifier.clickable(onClick = onRetry),
+            )
+        }
     }
 }
 

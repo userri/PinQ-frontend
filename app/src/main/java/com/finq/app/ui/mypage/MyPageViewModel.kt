@@ -20,16 +20,24 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class MyPageUiState(
+    /**
+     * 첫 데이터 로딩 중 — 전체 화면 스피너.
+     * 재진입 갱신은 stale-while-revalidate: [loadedOnce] 후에는 이 값을 다시 올리지 않고
+     * 이전 값을 보여준 채 백그라운드로 새로 받는다 (깜빡임 방지).
+     */
     val isLoading: Boolean = true,
+    /** 통계를 한 번이라도 성공적으로 받았는가 — SWR 판별용. */
+    val loadedOnce: Boolean = false,
     val error: String? = null,
     val nickname: String = "",
     val streak: Int = 0,
     val maxStreak: Int = 0,
     val totalSolved: Int = 0,
     val correctRate: Float = 0f,
-    val activityGrid: List<Int> = emptyList(),
-    /** 연간 잔디밭. 못 받으면 null — 화면이 8주 히트맵으로 폴백한다. */
+    /** 연간 잔디밭. null 이면 아직 로딩 전 — 화면은 스켈레톤을 그린다(옛 8주 폴백 제거됨). */
     val grass: GrassCalendar? = null,
+    /** 잔디밭 첫 로드가 실패했는가 — 스켈레톤 대신 재시도 카드를 보여준다. */
+    val grassFailed: Boolean = false,
     /** 카테고리별 정답률 + 취약 개념. 못 받으면 null — 섹션을 숨긴다. */
     val conceptStats: ConceptStats? = null,
     val isWithdrawing: Boolean = false,
@@ -60,10 +68,18 @@ class MyPageViewModel(
     val logoutEvents: SharedFlow<Unit> = _logoutEvents.asSharedFlow()
 
     init {
+        refresh()
+        loadNotificationSettings()
+    }
+
+    /**
+     * 화면 진입/재진입 시 호출 — stats·잔디·개념 통계를 함께 갱신한다.
+     * 데이터가 이미 있으면(loadedOnce) 스피너 없이 백그라운드 갱신(SWR).
+     */
+    fun refresh() {
         loadStats()
         loadGrass()
         loadConceptStats()
-        loadNotificationSettings()
     }
 
     /**
@@ -73,8 +89,15 @@ class MyPageViewModel(
     fun loadGrass() {
         viewModelScope.launch {
             runCatching { statsRepository.getGrass() }
-                .onSuccess { grass -> _uiState.update { it.copy(grass = grass) } }
-                .onFailure { _uiState.update { it.copy(grass = null) } }
+                .onSuccess { grass ->
+                    _uiState.update { it.copy(grass = grass, grassFailed = false) }
+                }
+                .onFailure {
+                    // SWR: 이전 값이 있으면 그대로 두고(조용한 실패), 첫 로드 실패만 재시도 카드.
+                    _uiState.update { s ->
+                        if (s.grass == null) s.copy(grassFailed = true) else s
+                    }
+                }
         }
     }
 
@@ -83,30 +106,37 @@ class MyPageViewModel(
         viewModelScope.launch {
             runCatching { statsRepository.getConceptStats() }
                 .onSuccess { stats -> _uiState.update { it.copy(conceptStats = stats) } }
-                .onFailure { _uiState.update { it.copy(conceptStats = null) } }
+                // SWR: 실패해도 이전 값을 지우지 않는다 — 섹션이 사라졌다 나타나는 깜빡임 방지.
+                .onFailure { }
         }
     }
 
     fun loadStats() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            // SWR: 첫 로드만 전체 스피너. 이후 재진입 갱신은 이전 값을 보여준 채 조용히.
+            _uiState.update { it.copy(isLoading = !it.loadedOnce, error = null) }
             runCatching { statsRepository.getStats() }
                 .onSuccess { stats ->
                     _uiState.update {
                         it.copy(
                             isLoading = false,
+                            loadedOnce = true,
                             nickname = stats.nickname,
                             streak = stats.streak,
                             maxStreak = stats.maxStreak,
                             totalSolved = stats.totalSolved,
                             correctRate = stats.correctRate,
-                            activityGrid = stats.activityGrid,
                         )
                     }
                 }
                 .onFailure { e ->
                     _uiState.update {
-                        it.copy(isLoading = false, error = e.message ?: "통계를 불러오지 못했어요")
+                        it.copy(
+                            isLoading = false,
+                            // SWR: 데이터가 이미 있으면 에러 화면으로 덮지 않고 이전 값 유지.
+                            error = if (it.loadedOnce) it.error
+                            else e.message ?: "통계를 불러오지 못했어요",
+                        )
                     }
                 }
         }

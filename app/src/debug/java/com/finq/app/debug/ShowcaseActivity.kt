@@ -38,7 +38,7 @@ import java.time.LocalDate
  *
  *   adb shell am start -n com.finq.app/com.finq.app.debug.ShowcaseActivity --es screen home
  *
- * screen: home | home_pending | home_zero | quiz | answer | solved_correct | solved_wrong | mypage | wrongnote | grass | review | concept
+ * screen: home | home_pending | home_zero | quiz | answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | wrongnote | grass | review | concept
  * 릴리즈 빌드에는 포함되지 않는다(app/src/debug 소스셋).
  */
 class ShowcaseActivity : ComponentActivity() {
@@ -126,6 +126,31 @@ class ShowcaseActivity : ComponentActivity() {
                         ConceptStatsCard(sampleConcepts.copy(weakest = null))
                     }
 
+                    // 잔디밭 로딩 스켈레톤 (grass=null) — stale flash 수정 확인용
+                    "mypage_loading" -> MyPageContent(
+                        grass = null,
+                        conceptStats = null,
+                        nickname = "유리",
+                        streak = 7,
+                        maxStreak = 15,
+                        totalSolved = 28,
+                        correctRate = 0.75f,
+                        appVersion = "1.1.3",
+                    )
+
+                    // 잔디밭 첫 로드 실패 → 재시도 카드
+                    "mypage_grass_error" -> MyPageContent(
+                        grass = null,
+                        grassFailed = true,
+                        conceptStats = null,
+                        nickname = "유리",
+                        streak = 7,
+                        maxStreak = 15,
+                        totalSolved = 28,
+                        correctRate = 0.75f,
+                        appVersion = "1.1.3",
+                    )
+
                     "mypage" -> MyPageContent(
                         grass = sampleGrass,
                         conceptStats = sampleConcepts,
@@ -134,7 +159,6 @@ class ShowcaseActivity : ComponentActivity() {
                         maxStreak = 15,
                         totalSolved = 28,
                         correctRate = 0.75f,
-                        activityGrid = activityGrid,
                         appVersion = "1.1.3",
                         notificationsEnabled = true,   // 알림 토글 ON = 라임
                         notificationTime = "06:00",

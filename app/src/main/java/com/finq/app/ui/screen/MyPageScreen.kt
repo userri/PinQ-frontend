@@ -65,6 +65,8 @@ import com.finq.app.data.repository.ConceptStats
 import com.finq.app.data.repository.GrassCalendar
 import com.finq.app.ui.components.ConceptStatsCard
 import com.finq.app.ui.components.GrassCalendarCard
+import com.finq.app.ui.components.GrassCalendarError
+import com.finq.app.ui.components.GrassCalendarSkeleton
 import com.finq.app.ui.theme.BgElevated
 import com.finq.app.ui.theme.BgSubtle
 import com.finq.app.ui.theme.Error
@@ -79,9 +81,6 @@ import com.finq.app.ui.theme.streakColor
  * @param streak          연속 학습 일수
  * @param totalSolved     누적 풀이 수
  * @param correctRate     정답률 0.0~1.0
- * @param activityGrid    최근 56일(8주×7일) 활동 강도.
- *                        index 0=55일 전, index 55=오늘.
- *                        0=활동 없음, 1=시도했으나 정답 0개, 2=1개 정답, 3=2개 정답, 4=3개 이상 정답.
  * @param appVersion      BuildConfig.VERSION_NAME
  * @param isLoading         통계 로딩 중 여부
  * @param error             통계 로드 실패 메시지 (null이면 정상)
@@ -96,9 +95,11 @@ fun MyPageScreen(
     maxStreak: Int,
     totalSolved: Int,
     correctRate: Float,
-    activityGrid: List<Int>,
-    /** 연간 잔디밭. null 이면 아직 못 받은 것 — 8주 히트맵으로 폴백한다. */
+    /** 연간 잔디밭. null 이면 아직 로딩 전 — 스켈레톤을 그린다. */
     grass: GrassCalendar? = null,
+    /** 잔디밭 첫 로드 실패 — 재시도 카드를 그린다. */
+    grassFailed: Boolean = false,
+    onRetryGrass: () -> Unit = {},
     /** 개념별 정답률. null 이거나 카테고리가 비면 섹션을 숨긴다. */
     conceptStats: ConceptStats? = null,
     appVersion: String,
@@ -151,8 +152,9 @@ fun MyPageScreen(
                 maxStreak = maxStreak,
                 totalSolved = totalSolved,
                 correctRate = correctRate,
-                activityGrid = activityGrid,
                 grass = grass,
+                grassFailed = grassFailed,
+                onRetryGrass = onRetryGrass,
                 conceptStats = conceptStats,
                 appVersion = appVersion,
                 isWithdrawing = isWithdrawing,
@@ -184,9 +186,10 @@ fun MyPageContent(
     maxStreak: Int,
     totalSolved: Int,
     correctRate: Float,
-    activityGrid: List<Int>,
-    /** 연간 잔디밭. null 이면 아직 못 받은 것 — 8주 히트맵으로 폴백한다. */
+    /** 연간 잔디밭. null 이면 아직 로딩 전 — 스켈레톤을 그린다. */
     grass: GrassCalendar? = null,
+    grassFailed: Boolean = false,
+    onRetryGrass: () -> Unit = {},
     /** 개념별 정답률. null 이거나 카테고리가 비면 섹션을 숨긴다. */
     conceptStats: ConceptStats? = null,
     appVersion: String,
@@ -286,11 +289,12 @@ fun MyPageContent(
         Spacer(Modifier.height(20.dp))
 
         // ── 잔디밭 (연간) ─────────────────────────────────────────
-        // grass 를 못 받았으면(로딩/실패) 기존 8주 히트맵으로 폴백해 화면이 비지 않게 한다.
-        if (grass != null) {
-            GrassCalendarCard(grass = grass)
-        } else {
-            ActivityHeatmapCard(activityGrid = activityGrid)
+        // fetch 완료 전에는 스켈레톤 — 옛 데이터(구 8주 그리드)를 첫 프레임에 그리지 않는다.
+        // 재진입은 VM 이 SWR 로 이전 grass 를 유지하므로 여기선 이전 값이 그대로 보인다.
+        when {
+            grass != null -> GrassCalendarCard(grass = grass)
+            grassFailed -> GrassCalendarError(onRetry = onRetryGrass)
+            else -> GrassCalendarSkeleton()
         }
 
         // ── 개념별 정답률 / 취약 개념 ─────────────────────────────
@@ -722,221 +726,6 @@ private fun StatCard(
     }
 }
 
-// 강도 → 색 변환은 주간(홈) 그리드와 공유한다: ui/theme/StreakColors.kt 의 streakColor()
-
-/**
- * 풀이 활동 카드 — 8주×7일 GitHub 스타일 히트맵.
- *
- * activityGrid: index 0 = 55일 전, index 55 = 오늘 (날짜순 나열).
- * 값: 0=활동 없음, 1=시도했으나 정답 0개, 2=1개 정답, 3=2개 정답, 4=3개 이상 정답.
- *
- * 레이아웃 규칙:
- *  - 마지막 열(week=7) · 오늘 요일 행이 항상 "오늘" 셀.
- *  - daysAgo  = (weeks-1 - week)*7 + (todayDow - day)
- *  - gridIdx  = (totalCells - 1) - daysAgo
- *  - daysAgo < 0  → 미래(이번 주 오늘 이후 요일)
- *  - gridIdx < 0  → 범위 밖(56일 보다 더 과거) → 빈 셀
- */
-@Composable
-private fun ActivityHeatmapCard(activityGrid: List<Int>) {
-    val weeks = 8
-    val days = 7
-    val totalCells = weeks * days   // 56
-    val gap = 4.dp
-    val labelWidth = 20.dp
-    val dayLabels = listOf("월", "화", "수", "목", "금", "토", "일")
-
-    // 오늘이 몇 번째 요일 (0=월 ~ 6=일)
-    val todayDow = remember {
-        (Calendar.getInstance().get(Calendar.DAY_OF_WEEK) + 5) % 7
-    }
-
-    data class CellState(
-        val intensity: Int,
-        val isToday: Boolean,
-        val isFuture: Boolean,
-        val inRange: Boolean,
-    )
-
-    val cells = remember(activityGrid, todayDow) {
-        Array(weeks) { week ->
-            Array(days) { day ->
-                val daysAgo = (weeks - 1 - week) * 7 + (todayDow - day)
-                val gridIdx = (totalCells - 1) - daysAgo
-                val isFuture = daysAgo < 0
-                val inRange = gridIdx in activityGrid.indices
-                CellState(
-                    intensity = if (inRange) activityGrid[gridIdx] else 0,
-                    isToday = daysAgo == 0,
-                    isFuture = isFuture,
-                    inRange = inRange,
-                )
-            }
-        }
-    }
-
-    // 범례용 강도 단계
-    val legendIntensities = listOf(0, 1, 2, 3, 4)
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = "풀이 활동",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = "지난 8주",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            Spacer(Modifier.height(14.dp))
-
-            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                val cellGapTotal = (weeks - 1) * gap
-                val gridWidth = maxWidth - labelWidth - gap - cellGapTotal
-                val cellSize = gridWidth / weeks
-
-                Row(verticalAlignment = Alignment.Top) {
-                    // 요일 라벨 열
-                    Column(
-                        modifier = Modifier.width(labelWidth),
-                        verticalArrangement = Arrangement.spacedBy(gap),
-                    ) {
-                        dayLabels.forEach { label ->
-                            Box(
-                                modifier = Modifier.size(cellSize),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Text(
-                                    text = label,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(Modifier.width(gap))
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
-                        for (week in 0 until weeks) {
-                            Column(verticalArrangement = Arrangement.spacedBy(gap)) {
-                                for (day in 0 until days) {
-                                    val cell = cells[week][day]
-
-                                    val bgColor = when {
-                                        cell.isFuture && !cell.isToday -> Color.Transparent
-                                        else -> streakColor(cell.intensity)
-                                    }
-
-                                    // 오늘 셀: 진한 테두리 강조
-                                    val borderMod = when {
-                                        cell.isToday && cell.intensity == 0 ->
-                                            Modifier.border(
-                                                width = 2.dp,
-                                                color = Lime,
-                                                shape = RoundedCornerShape(4.dp),
-                                            )
-                                        cell.isToday && cell.intensity > 0 ->
-                                            Modifier.border(
-                                                width = 2.dp,
-                                                color = Lime,
-                                                shape = RoundedCornerShape(4.dp),
-                                            )
-                                        else -> Modifier
-                                    }
-
-                                    Box(
-                                        modifier = Modifier
-                                            .size(cellSize)
-                                            .clip(RoundedCornerShape(4.dp))
-                                            .background(bgColor)
-                                            .then(borderMod),
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                // 오늘 표시 안내
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(12.dp)
-                            .clip(RoundedCornerShape(3.dp))
-                            .background(BgElevated)
-                            .border(
-                                width = 2.dp,
-                                color = Lime,
-                                shape = RoundedCornerShape(3.dp),
-                            ),
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = "오늘",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-
-                // 활동 강도 범례 (5단계)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "적게",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    legendIntensities.forEach { intensity ->
-                        Box(
-                            modifier = Modifier
-                                .padding(horizontal = 2.dp)
-                                .size(12.dp)
-                                .clip(RoundedCornerShape(3.dp))
-                                .background(streakColor(intensity)),
-                        )
-                    }
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = "많이",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = "ⓘ 문제는 1회만 풀 수 있어요.\n오늘 시도에서 맞힌 문제 수에 따라 색이 진해져요.",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
 
 /**
  * 알림 시각 선택 다이얼로그 — 백엔드가 30분 단위(HH:00/HH:30)만 허용하므로
@@ -1032,16 +821,6 @@ private fun InfoRow(label: String, value: String) {
 @Preview(showBackground = true, widthDp = 360, heightDp = 800)
 @Composable
 private fun MyPageScreenPreview() {
-    // 강도 0~4 섞어서 테스트
-    val activityGrid = List(56) { i ->
-        when {
-            i % 7 == 0 -> 4
-            i % 5 == 0 -> 3
-            i % 3 == 0 -> 2
-            i % 2 == 0 -> 1
-            else       -> 0
-        }
-    }
     FinQTheme {
         MyPageContent(
             nickname = "유리",
@@ -1049,7 +828,6 @@ private fun MyPageScreenPreview() {
             maxStreak = 14,
             totalSolved = 28,
             correctRate = 0.75f,
-            activityGrid = activityGrid,
             appVersion = "1.0",
         )
     }
@@ -1065,7 +843,6 @@ private fun MyPageEmptyPreview() {
             maxStreak = 0,
             totalSolved = 0,
             correctRate = 0f,
-            activityGrid = emptyList(),
             appVersion = "1.0",
         )
     }

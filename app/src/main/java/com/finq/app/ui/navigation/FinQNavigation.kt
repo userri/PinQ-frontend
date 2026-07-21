@@ -361,7 +361,8 @@ fun FinQNavHost(
                 // RESUMED 때마다 재로드 — restoreState 로 ViewModel 이 재사용될 때도 최신 스트릭을 반영한다.
                 LaunchedEffect(entry.lifecycle) {
                     entry.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                        myPageVm.loadStats()
+                        // SWR: 데이터가 있으면 이전 값 표시 + 백그라운드 갱신 (스피너·깜빡임 없음)
+                        myPageVm.refresh()
                     }
                 }
 
@@ -391,8 +392,9 @@ fun FinQNavHost(
                     maxStreak = state.maxStreak,
                     totalSolved = state.totalSolved,
                     correctRate = state.correctRate,
-                    activityGrid = state.activityGrid,
                     grass = state.grass,
+                    grassFailed = state.grassFailed,
+                    onRetryGrass = myPageVm::loadGrass,
                     conceptStats = state.conceptStats,
                     appVersion = BuildConfig.VERSION_NAME,
                     isLoading = state.isLoading,
