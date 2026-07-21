@@ -98,6 +98,8 @@ fun QuizAnswerScreen(
     categoryLabel: String? = null,
     /** 복습에서 이 문제를 완전히 익혔을 때 축하 배너를 띄운다. */
     graduated: Boolean = false,
+    /** 졸업 배너 문구 override. null 이면 기본 "이 문제를 완전히 익혔어요! 나무가 됐어요". */
+    graduatedMessage: String? = null,
     /** 졸업하지 않은 복습에서 "다음 물 주기: M월 D일" 안내. graduated 면 무시. */
     nextReviewText: String? = null,
     /** 하단 CTA 라벨 override (예: "다음 복습"). */
@@ -192,7 +194,7 @@ fun QuizAnswerScreen(
             // ── 복습 보상: 졸업(나무) 또는 다음 물 주기 안내 ──────────
             if (graduated) {
                 Spacer(Modifier.height(12.dp))
-                GraduatedBanner()
+                GraduatedBanner(message = graduatedMessage)
             } else if (nextReviewText != null) {
                 Spacer(Modifier.height(12.dp))
                 Text(
@@ -308,7 +310,7 @@ private fun ProgressDotsHeader(quizIndex: Int, totalCount: Int) {
 
 /** 복습 졸업 — 이 문제를 완전히 익혔을 때. */
 @Composable
-private fun GraduatedBanner() {
+private fun GraduatedBanner(message: String? = null) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -320,7 +322,7 @@ private fun GraduatedBanner() {
         Text(text = "🌳", style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.size(10.dp))
         Text(
-            text = "이 문제를 완전히 익혔어요! 나무가 됐어요",
+            text = message ?: "이 문제를 완전히 익혔어요! 나무가 됐어요",
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = TextPrimary,

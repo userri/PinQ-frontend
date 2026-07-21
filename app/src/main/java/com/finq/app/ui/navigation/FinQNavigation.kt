@@ -606,6 +606,9 @@ fun FinQNavHost(
                             },
                             categoryLabel = "${item.stage.emoji} ${item.stage.label} · ${item.categoryLabel}",
                             graduated = answer.graduated,
+                            graduatedMessage = if (answer.graduated && answer.totalGraduatedTrees != null)
+                                "물 ${answer.waterCount}번 준 나무가 완성됐어요 — 당신의 ${answer.totalGraduatedTrees}번째 나무"
+                            else null,
                             nextReviewText = answer.nextDueDate?.let {
                                 "다음 물 주기: ${it.format(reviewDueDateFormat)} · 💧 물 ${answer.waterCount}번 · 흡수 ${answer.absorbedCount}번"
                             },
