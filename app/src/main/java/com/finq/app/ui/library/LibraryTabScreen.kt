@@ -144,6 +144,7 @@ private fun AttemptHistoryTabContent(
         onRetry = viewModel::loadAttempts,
         onToggleBookmark = { item -> viewModel.toggleBookmark(item.quizId, item.bookmarked) },
         onLoadDetail = viewModel::fetchDetail,
+        showTitle = false,
         modifier = modifier,
     )
 }

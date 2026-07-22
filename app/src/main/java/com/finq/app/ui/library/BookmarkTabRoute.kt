@@ -48,6 +48,7 @@ fun BookmarkTabRoute(
         onToggleBookmark = { item -> viewModel.toggleBookmark(item.quizId, item.bookmarked) },
         onStartQuiz = onStartQuiz?.let { cb -> { _ -> cb() } },
         onLoadDetail = viewModel::fetchDetail,
+        showTitle = false,
         modifier = modifier,
     )
 }

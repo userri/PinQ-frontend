@@ -4,11 +4,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
@@ -77,6 +75,7 @@ fun WrongNoteTabRoute(
         onToggleBookmark = { item -> viewModel.toggleBookmark(item.quizId, item.bookmarked) },
         focusQuizId = focusQuizId,
         onLoadDetail = viewModel::fetchDetail,
+        showTitle = false,
         extraFilterRow = {
             ReviewFilterRow(selected = reviewFilter, onSelect = { reviewFilter = it })
         },
@@ -84,25 +83,21 @@ fun WrongNoteTabRoute(
     )
 }
 
-/** 복습 상태 칩 Row — CategoryFilterRow 와 같은 시각 언어(라임 선택칩). */
+/**
+ * 복습 상태 칩 — 카운트 줄 우측에 인라인으로 붙는다.
+ * 배경·너비는 부모(카운트 Row)가 제공하므로 여기선 칩만 그린다.
+ */
 @Composable
 private fun ReviewFilterRow(selected: ReviewFilter, onSelect: (ReviewFilter) -> Unit) {
-    LazyRow(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(bottom = 10.dp),
-    ) {
-        items(ReviewFilter.entries) { filter ->
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        ReviewFilter.entries.forEach { filter ->
             val isSelected = filter == selected
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
                     .background(if (isSelected) Lime else MaterialTheme.colorScheme.surfaceVariant)
                     .clickable { onSelect(filter) }
-                    .padding(horizontal = 14.dp, vertical = 6.dp),
+                    .padding(horizontal = 12.dp, vertical = 5.dp),
             ) {
                 Text(
                     text = filter.label,

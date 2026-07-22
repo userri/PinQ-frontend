@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -63,8 +64,13 @@ fun LibraryListScreen(
     onToggleBookmark: (AttemptItem) -> Unit,
     /** 미풀이 북마크 탭 → 풀이 화면 진입. null 이면 비활성. */
     onStartQuiz: ((AttemptItem) -> Unit)? = null,
-    /** 카테고리칩 아래 추가 필터 Row (오답노트의 복습 필터칩). null 이면 없음. */
+    /** 카운트 줄 우측에 붙는 추가 필터(오답노트의 복습 필터칩). null 이면 없음. */
     extraFilterRow: (@Composable () -> Unit)? = null,
+    /**
+     * 대제목 노출 여부. 탭 안(오답노트/북마크/전체이력)에선 탭 라벨과 중복이라 false —
+     * 카운트만 얇은 줄로 보여준다. 독립 화면(뒤로가기 있는 전체이력)에선 true.
+     */
+    showTitle: Boolean = true,
     /** 정원 나무 딥링크 — 진입 시 이 문제로 스크롤하고 카드를 펼친다. */
     focusQuizId: Long? = null,
     /** 카드 펼침 시 상세(선택지·해설·기사) 지연 로드. null 이면 items 가 이미 전체. */
@@ -91,25 +97,45 @@ fun LibraryListScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
     ) {
-        // 헤더
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            if (subtitle.isNotBlank()) {
+        if (showTitle) {
+            // 독립 화면용 — 대제목 + 카운트 (탭이 없어 제목이 필요한 경우)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                if (subtitle.isNotBlank()) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        } else {
+            // 탭 안 — 대제목은 탭 라벨과 중복이라 생략. 카운트(좌) + 복습필터(우)를 한 줄에.
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text(
                     text = subtitle,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                Spacer(Modifier.weight(1f))
+                extraFilterRow?.invoke()
             }
         }
 
@@ -125,7 +151,8 @@ fun LibraryListScreen(
             },
             onClear = { selectedCategories = emptySet() },
         )
-        extraFilterRow?.invoke()
+        // showTitle 모드에선 복습필터가 카운트 줄에 못 붙으므로 카테고리 아래에 둔다(폴백).
+        if (showTitle) extraFilterRow?.invoke()
 
         when {
             isLoading -> LoadingState()
@@ -174,7 +201,7 @@ private fun CategoryFilterRow(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         item(key = "all") {
