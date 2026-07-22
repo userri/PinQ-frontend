@@ -37,8 +37,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import com.finq.app.R
+import androidx.compose.ui.tooling.preview.Preview
 import com.finq.app.data.model.AttemptItem
+import com.finq.app.data.model.Category
+import com.finq.app.data.model.QuizOption
+import com.finq.app.data.model.ReviewStatus
 import com.finq.app.data.repository.ReviewStage
+import com.finq.app.ui.theme.FinQTheme
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -461,6 +466,78 @@ private fun AnswerRow(label: String, text: String, isCorrect: Boolean) {
                 style = MaterialTheme.typography.bodySmall,
                 color = textColor,
                 fontWeight = FontWeight.Medium,
+            )
+        }
+    }
+}
+
+/**
+ * 오답노트 카드 3상태 미리보기.
+ *  - 복습중: stage 1, 미래 due → 성장 스트립 노출
+ *  - 졸업: graduated=true → 🌳 뱃지, 스트립 없음
+ *  - legacy: review=null → 스트립·복습 뱃지 모두 없음
+ */
+@Preview(showBackground = true, backgroundColor = 0xFF081A2E)
+@Composable
+private fun AttemptItemCardPreview() {
+    // 인라인 더미 선지 (미리 연습·정답 판별용)
+    val dummyChoices = listOf(
+        QuizOption(id = 1L, optionNumber = 1, text = "기준금리를 올린다"),
+        QuizOption(id = 2L, optionNumber = 2, text = "기준금리를 내린다"),
+        QuizOption(id = 3L, optionNumber = 3, text = "지급준비율을 낮춘다"),
+        QuizOption(id = 4L, optionNumber = 4, text = "국채를 매입한다"),
+    )
+    fun dummy(review: ReviewStatus?) = AttemptItem(
+        quizId = review?.stage?.toLong() ?: 99L,
+        category = Category.selectable.first(),
+        question = "물가가 계속 오를 때 중앙은행이 취하는 대표적 정책은?",
+        choices = dummyChoices,
+        selectedChoiceId = 2L,
+        correctChoiceId = 1L,
+        correct = false,
+        explanation = "물가 상승을 억제하려면 기준금리를 올려 시중 유동성을 줄인다.",
+        keyword = "기준금리",
+        article = null,
+        bookmarked = true,
+        solvedAtIso = null,
+        review = review,
+    )
+
+    FinQTheme {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            // 복습중 — stage 1, 미래 due
+            AttemptItemCard(
+                item = dummy(
+                    ReviewStatus(
+                        stage = 1,
+                        waterCount = 1,
+                        absorbedCount = 1,
+                        graduated = false,
+                        dueDateIso = LocalDate.now().plusDays(3).toString(),
+                    ),
+                ),
+                onToggleBookmark = {},
+            )
+            // 졸업 — 다 키운 나무
+            AttemptItemCard(
+                item = dummy(
+                    ReviewStatus(
+                        stage = 3,
+                        waterCount = 3,
+                        absorbedCount = 3,
+                        graduated = true,
+                        dueDateIso = null,
+                    ),
+                ),
+                onToggleBookmark = {},
+            )
+            // legacy — 복습 이력 없음
+            AttemptItemCard(
+                item = dummy(null),
+                onToggleBookmark = {},
             )
         }
     }
