@@ -29,6 +29,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -78,10 +79,12 @@ fun AttemptItemCard(
      */
     onLoadDetail: (suspend (Long) -> AttemptItem)? = null,
 ) {
-    var expanded by remember(item.quizId) { mutableStateOf(initialExpanded) }
+    // rememberSaveable — LazyColumn 이 카드를 스크롤로 폐기했다 되살려도 펼침 상태 보존
+    // (items(key = quizId) 덕에 항목별로 저장/복원된다).
+    var expanded by rememberSaveable(item.quizId) { mutableStateOf(initialExpanded) }
     // 미리 연습 로컬 상태 — 서버/졸업과 완전 분리. 선택한 선지 id, 없으면 미채점.
-    var practiceOpen by remember(item.quizId) { mutableStateOf(false) }
-    var practicePick by remember(item.quizId) { mutableStateOf<Long?>(null) }
+    var practiceOpen by rememberSaveable(item.quizId) { mutableStateOf(false) }
+    var practicePick by rememberSaveable(item.quizId) { mutableStateOf<Long?>(null) }
     val context = LocalContext.current
     val dateStr = remember(item.solvedAtIso) { formatSolvedDate(item.solvedAtIso) }
 
@@ -224,13 +227,15 @@ fun AttemptItemCard(
             Spacer(Modifier.height(10.dp))
 
             // 성장 근접 스트립 — 복습중(자라는) 오답만. 졸업/legacy 는 growthStrip 이 null.
+            // 밀도를 줄이려 "관련될 때만" 노출한다: 오늘 물 줄 수 있거나(dueToday)
+            // 졸업 임박(finalStage)일 때만. 중간 단계·먼 미래는 상단 물 뱃지로 갈음하고 숨김.
             item.review?.let { review ->
                 growthStrip(
                     stage = review.stage,
                     graduated = review.graduated,
                     dueDateIso = review.dueDateIso,
                     today = LocalDate.now(),
-                )?.let { strip ->
+                )?.takeIf { it.dueToday || it.finalStage }?.let { strip ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = strip.stageText,
