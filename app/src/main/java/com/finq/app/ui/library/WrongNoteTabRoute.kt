@@ -2,7 +2,6 @@ package com.finq.app.ui.library
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,11 +19,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.finq.app.R
+import com.finq.app.ui.theme.BgSubtle
 import com.finq.app.ui.theme.Lime
 import com.finq.app.ui.theme.OnLime
+import com.finq.app.ui.theme.TextSecondary
 
 /**
  * 하단 네비게이션 "오답노트" 탭 진입 화면.
@@ -84,25 +86,33 @@ fun WrongNoteTabRoute(
 }
 
 /**
- * 복습 상태 칩 — 카운트 줄 우측에 인라인으로 붙는다.
- * 배경·너비는 부모(카운트 Row)가 제공하므로 여기선 칩만 그린다.
+ * 복습 상태 필터 — 세그먼트 컨트롤(연결된 캡슐).
+ *
+ * 카운트 줄 우측에 인라인으로 붙는다. 단일 선택이므로 다중 선택인 카테고리 칩과
+ * 시각적으로 구별하려 하나로 연결된 형태를 쓴다(선택 칸만 Lime 채움).
+ * 배경 트랙만 여기서 그리고 바깥 여백은 부모(카운트 Row)가 제공한다.
  */
 @Composable
 private fun ReviewFilterRow(selected: ReviewFilter, onSelect: (ReviewFilter) -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(BgSubtle)
+            .padding(3.dp),
+    ) {
         ReviewFilter.entries.forEach { filter ->
             val isSelected = filter == selected
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
-                    .background(if (isSelected) Lime else MaterialTheme.colorScheme.surfaceVariant)
+                    .background(if (isSelected) Lime else Color.Transparent)
                     .clickable { onSelect(filter) }
                     .padding(horizontal = 12.dp, vertical = 5.dp),
             ) {
                 Text(
                     text = filter.label,
                     style = MaterialTheme.typography.labelMedium,
-                    color = if (isSelected) OnLime else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (isSelected) OnLime else TextSecondary,
                     fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                 )
             }
