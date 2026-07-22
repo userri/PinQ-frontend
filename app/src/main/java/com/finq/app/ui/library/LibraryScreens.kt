@@ -1,5 +1,6 @@
 package com.finq.app.ui.library
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -68,11 +69,12 @@ fun LibraryListScreen(
     focusQuizId: Long? = null,
     modifier: Modifier = Modifier,
 ) {
-    var selectedCategory by remember { mutableStateOf<Category?>(null) }
+    // 다중 선택 — 빈 셋이면 "전체". 선택된 카테고리들의 합집합(OR)을 보여준다.
+    var selectedCategories by remember { mutableStateOf<Set<Category>>(emptySet()) }
 
-    val filtered = remember(items, selectedCategory) {
-        if (selectedCategory == null) items
-        else items.filter { it.category == selectedCategory }
+    val filtered = remember(items, selectedCategories) {
+        if (selectedCategories.isEmpty()) items
+        else items.filter { it.category in selectedCategories }
     }
 
     val listState = rememberLazyListState()
@@ -109,16 +111,28 @@ fun LibraryListScreen(
             }
         }
 
-        // 카테고리 필터칩
+        // 카테고리 필터칩 (다중 선택)
         CategoryFilterRow(
-            selected = selectedCategory,
-            onSelect = { selectedCategory = it },
+            selected = selectedCategories,
+            onToggle = { cat ->
+                val next = if (cat in selectedCategories) selectedCategories - cat
+                else selectedCategories + cat
+                // 전부 선택하면 "전체"와 같으므로 자동 환원
+                selectedCategories =
+                    if (next.containsAll(Category.selectable)) emptySet() else next
+            },
+            onClear = { selectedCategories = emptySet() },
         )
         extraFilterRow?.invoke()
 
         when {
             isLoading -> LoadingState()
             error != null -> ErrorState(message = error, onRetry = onRetry)
+            // 원본은 있는데 필터 결과만 빈 경우 — 일반 빈 상태와 구분해 안내
+            filtered.isEmpty() && items.isNotEmpty() -> EmptyState(
+                iconRes = emptyIconRes,
+                message = "선택한 카테고리에는 문제가 없어요",
+            )
             filtered.isEmpty() -> EmptyState(iconRes = emptyIconRes, message = emptyMessage)
             else -> LazyColumn(
                 state = listState,
@@ -141,16 +155,18 @@ fun LibraryListScreen(
     }
 }
 
+/**
+ * 카테고리 다중 선택 칩 Row.
+ *
+ * "전체"는 선택 초기화 버튼처럼 동작하고(빈 셋 = 전체), 나머지 칩은 탭할 때마다
+ * 켜고 끌 수 있다. 여러 개를 켜면 그 카테고리들의 합집합이 보인다.
+ */
 @Composable
 private fun CategoryFilterRow(
-    selected: Category?,
-    onSelect: (Category?) -> Unit,
+    selected: Set<Category>,
+    onToggle: (Category) -> Unit,
+    onClear: () -> Unit,
 ) {
-    // enum 에서 동적 생성 — 카테고리가 추가돼도(예: INFLATION) 여기 수정 없이 자동 반영된다.
-    val filters: List<Pair<String, Category?>> =
-        listOf<Pair<String, Category?>>("전체" to null) +
-            Category.selectable.map { it.displayName to it }
-
     LazyRow(
         modifier = Modifier
             .fillMaxWidth()
@@ -158,23 +174,49 @@ private fun CategoryFilterRow(
             .padding(horizontal = 16.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        items(filters) { (label, cat) ->
-            val isSelected = cat == selected
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(50))
-                    .background(if (isSelected) Lime else MaterialTheme.colorScheme.surfaceVariant)
-                    .clickable { onSelect(cat) }
-                    .padding(horizontal = 14.dp, vertical = 6.dp),
-            ) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = if (isSelected) OnLime else MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                )
-            }
+        item(key = "all") {
+            FilterChip(
+                label = "전체",
+                isSelected = selected.isEmpty(),
+                onClick = onClear,
+            )
         }
+        // enum 에서 동적 생성 — 카테고리가 추가돼도(예: INFLATION) 여기 수정 없이 자동 반영된다.
+        items(Category.selectable, key = { it.name }) { cat ->
+            val isSelected = cat in selected
+            FilterChip(
+                // 선택된 칩은 ✓ 로 "여러 개 켜져 있음"을 한눈에 보여준다.
+                label = if (isSelected) "✓ ${cat.displayName}" else cat.displayName,
+                isSelected = isSelected,
+                onClick = { onToggle(cat) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun FilterChip(
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+) {
+    val background by animateColorAsState(
+        targetValue = if (isSelected) Lime else MaterialTheme.colorScheme.surfaceVariant,
+        label = "chipBg",
+    )
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(background)
+            .clickable { onClick() }
+            .padding(horizontal = 14.dp, vertical = 6.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = if (isSelected) OnLime else MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+        )
     }
 }
 
