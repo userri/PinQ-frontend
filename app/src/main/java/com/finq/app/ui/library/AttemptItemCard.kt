@@ -65,6 +65,9 @@ fun AttemptItemCard(
     initialExpanded: Boolean = false,
 ) {
     var expanded by remember(item.quizId) { mutableStateOf(initialExpanded) }
+    // 미리 연습 로컬 상태 — 서버/졸업과 완전 분리. 선택한 선지 id, 없으면 미채점.
+    var practiceOpen by remember(item.quizId) { mutableStateOf(false) }
+    var practicePick by remember(item.quizId) { mutableStateOf<Long?>(null) }
     val context = LocalContext.current
     val dateStr = remember(item.solvedAtIso) { formatSolvedDate(item.solvedAtIso) }
 
@@ -278,6 +281,92 @@ fun AttemptItemCard(
                                 style = MaterialTheme.typography.labelSmall,
                                 color = Lime,
                                 fontWeight = FontWeight.SemiBold,
+                            )
+                        }
+                    }
+                }
+
+                // ── 미리 연습 (순수 연습 · 물주기와 무관) ──────────────────
+                if (!item.unsolved) {
+                    Spacer(Modifier.height(12.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(Modifier.height(10.dp))
+
+                    if (!practiceOpen) {
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = BgSubtle,
+                            modifier = Modifier.clickable {
+                                practiceOpen = true
+                                practicePick = null
+                            },
+                        ) {
+                            Text(
+                                text = "미리 연습 (물주기 아님)",
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Lime,
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = "연습은 나무 성장에 반영되지 않아요. 물은 예정일에 복습으로 줄 수 있어요.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = TextMuted,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        item.choices.forEach { option ->
+                            val picked = practicePick == option.id
+                            val isAnswer = option.id == item.correctChoiceId
+                            // 선택 후에만 정답/오답 색을 드러낸다.
+                            val bg = when {
+                                practicePick == null -> BgSubtle
+                                isAnswer -> Grass1
+                                picked -> MaterialTheme.colorScheme.errorContainer
+                                else -> BgSubtle
+                            }
+                            val fg = when {
+                                practicePick == null -> MaterialTheme.colorScheme.onSurface
+                                isAnswer -> Lime
+                                picked -> MaterialTheme.colorScheme.onErrorContainer
+                                else -> TextMuted
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = bg,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 6.dp)
+                                    .clickable(enabled = practicePick == null) { practicePick = option.id },
+                            ) {
+                                Text(
+                                    text = option.text,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = fg,
+                                    fontWeight = FontWeight.Medium,
+                                )
+                            }
+                        }
+                        if (practicePick != null) {
+                            val correct = isPracticeCorrect(practicePick!!, item.correctChoiceId)
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = if (correct) "정답이에요 (연습이라 물은 안 줬어요)"
+                                       else "오답이에요 · 예정일에 복습으로 다시 만나요",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = if (correct) Lime else MaterialTheme.colorScheme.error,
+                            )
+                            Text(
+                                text = "다시 연습",
+                                modifier = Modifier
+                                    .padding(top = 8.dp)
+                                    .clickable { practicePick = null },
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Lime,
                             )
                         }
                     }
