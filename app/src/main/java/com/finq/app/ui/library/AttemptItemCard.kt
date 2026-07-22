@@ -45,6 +45,7 @@ import java.time.format.DateTimeFormatter
 import com.finq.app.ui.theme.BgSubtle
 import com.finq.app.ui.theme.Grass1
 import com.finq.app.ui.theme.Lime
+import com.finq.app.ui.theme.TextMuted
 import com.finq.app.ui.theme.TextSecondary
 
 /**
@@ -177,6 +178,35 @@ fun AttemptItemCard(
             }
 
             Spacer(Modifier.height(10.dp))
+
+            // 성장 근접 스트립 — 복습중(자라는) 오답만. 졸업/legacy 는 growthStrip 이 null.
+            item.review?.let { review ->
+                growthStrip(
+                    stage = review.stage,
+                    graduated = review.graduated,
+                    dueDateIso = review.dueDateIso,
+                    today = LocalDate.now(),
+                )?.let { strip ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = strip.stageText,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            // 마지막 단계만 Lime 포인트, 그 외 중립.
+                            color = if (strip.finalStage) Lime else TextSecondary,
+                        )
+                        if (strip.dueText != null) {
+                            Text(
+                                text = "  ·  ${strip.dueText}",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (strip.dueToday) Lime else TextMuted,
+                                fontWeight = if (strip.dueToday) FontWeight.SemiBold else FontWeight.Normal,
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                }
+            }
 
             Text(
                 text = item.question,
