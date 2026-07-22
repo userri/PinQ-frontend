@@ -26,7 +26,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -857,6 +860,26 @@ private fun AnswerRoute(
     val state by viewModel.uiState.collectAsState()
     val quiz = state.currentQuiz
     val answer = state.lastAnswer
+
+    // 첫 오답 인트로 — 첫 오답이 '복습 나무'가 되는 순간 딱 한 번 개념을 소개한다.
+    val introContext = LocalContext.current
+    var showIntro by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(answer) {
+        if (answer != null && !answer.isCorrect &&
+            !com.finq.app.ui.components.hasSeenReviewTreeIntro(introContext)
+        ) {
+            com.finq.app.ui.components.markReviewTreeIntroSeen(introContext)
+            showIntro = true
+        }
+    }
+    if (showIntro) {
+        com.finq.app.ui.components.ReviewTreeConceptDialog(
+            title = "🌱 첫 복습 나무가 태어났어요",
+            confirmLabel = "키워볼게요",
+            onDismiss = { showIntro = false },
+        )
+    }
+
     if (quiz == null || answer == null) {
         LoadingBox()
     } else {
