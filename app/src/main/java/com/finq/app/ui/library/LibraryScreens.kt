@@ -67,6 +67,8 @@ fun LibraryListScreen(
     extraFilterRow: (@Composable () -> Unit)? = null,
     /** 정원 나무 딥링크 — 진입 시 이 문제로 스크롤하고 카드를 펼친다. */
     focusQuizId: Long? = null,
+    /** 카드 펼침 시 상세(선택지·해설·기사) 지연 로드. null 이면 items 가 이미 전체. */
+    onLoadDetail: (suspend (Long) -> AttemptItem)? = null,
     modifier: Modifier = Modifier,
 ) {
     // 다중 선택 — 빈 셋이면 "전체". 선택된 카테고리들의 합집합(OR)을 보여준다.
@@ -148,6 +150,7 @@ fun LibraryListScreen(
                         onToggleBookmark = { onToggleBookmark(item) },
                         onStartQuiz = onStartQuiz?.let { cb -> { cb(item) } },
                         initialExpanded = item.quizId == focusQuizId,
+                        onLoadDetail = onLoadDetail,
                     )
                 }
             }

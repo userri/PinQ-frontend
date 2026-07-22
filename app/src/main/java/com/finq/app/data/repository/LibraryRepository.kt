@@ -22,6 +22,9 @@ interface LibraryRepository {
     /** 북마크 목록 (최신 북마크순). */
     suspend fun getBookmarks(): List<AttemptItem>
 
+    /** 단건 상세 (선택지·해설·기사 포함) — 카드 펼침 시 지연 로드. */
+    suspend fun getAttemptDetail(quizId: Long): AttemptItem
+
     /** 북마크 추가. 토글 결과(bookmarked=true) 반환. */
     suspend fun addBookmark(quizId: Long): Boolean
 

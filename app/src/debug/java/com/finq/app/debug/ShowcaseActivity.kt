@@ -46,7 +46,7 @@ import java.time.LocalDate
  *
  *   adb shell am start -n com.finq.app/com.finq.app.debug.ShowcaseActivity --es screen home
  *
- * screen: home | home_pending | home_zero | quiz | answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | filters | wrongnote | grass | review | review_graduated | review_next | garden | garden_canvas | concept
+ * screen: home | home_pending | home_zero | quiz | answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | filters | wrongnote | lazyload | grass | review | review_graduated | review_next | garden | garden_canvas | concept
  * 릴리즈 빌드에는 포함되지 않는다(app/src/debug 소스셋).
  */
 class ShowcaseActivity : ComponentActivity() {
@@ -322,6 +322,45 @@ class ShowcaseActivity : ComponentActivity() {
                                 explanation = "", keyword = null, solvedAtIso = null,
                             ),
                             onToggleBookmark = {},
+                        )
+                    }
+
+                    // 상세 지연 로드 — 목록 요약(선택지·해설 없음)을 펼치면 로더로 상세를 가져온다.
+                    "lazyload" -> Column(
+                        Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                    ) {
+                        // ① 성공: 요약 카드(빈 choices·빈 해설) → 펼치면 0.8초 뒤 상세 채워짐
+                        AttemptItemCard(
+                            item = sampleAttempt(correct = false).copy(
+                                choices = emptyList(),
+                                explanation = "",
+                                keyword = null,
+                                article = null,
+                                solved = true,   // 푼 문제 → 펼침 시 지연 로드
+                            ),
+                            onToggleBookmark = {},
+                            initialExpanded = true,
+                            onLoadDetail = { id ->
+                                kotlinx.coroutines.delay(800)
+                                sampleAttempt(correct = false).copy(quizId = id)
+                            },
+                        )
+                        // ② 실패: 로더가 예외 → "자세히 불러오지 못했어요 · 다시 시도"
+                        AttemptItemCard(
+                            item = sampleAttempt(correct = true).copy(
+                                quizId = 77L,
+                                choices = emptyList(),
+                                explanation = "",
+                                keyword = null,
+                                solved = true,
+                                question = "상세 로드 실패 시 재시도 UI 확인용 문제",
+                            ),
+                            onToggleBookmark = {},
+                            initialExpanded = true,
+                            onLoadDetail = {
+                                kotlinx.coroutines.delay(600)
+                                throw RuntimeException("네트워크 오류")
+                            },
                         )
                     }
 

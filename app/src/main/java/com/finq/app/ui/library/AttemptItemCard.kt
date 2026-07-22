@@ -7,6 +7,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,12 +18,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -68,6 +71,12 @@ fun AttemptItemCard(
     onStartQuiz: (() -> Unit)? = null,
     /** 정원 딥링크로 진입한 카드 — 처음부터 펼쳐 보여준다. */
     initialExpanded: Boolean = false,
+    /**
+     * 상세 지연 로드. 목록이 요약(선택지·해설·기사 없음)만 줄 때, 펼치는 순간
+     * 이 콜백으로 단건 상세를 가져온다. null 이면 [item] 이 이미 전체 데이터라
+     * 보고 곧바로 렌더한다(프리뷰·Showcase·구서버 전체응답 경로).
+     */
+    onLoadDetail: (suspend (Long) -> AttemptItem)? = null,
 ) {
     var expanded by remember(item.quizId) { mutableStateOf(initialExpanded) }
     // 미리 연습 로컬 상태 — 서버/졸업과 완전 분리. 선택한 선지 id, 없으면 미채점.
@@ -76,9 +85,36 @@ fun AttemptItemCard(
     val context = LocalContext.current
     val dateStr = remember(item.solvedAtIso) { formatSolvedDate(item.solvedAtIso) }
 
-    val hasArticle = item.article != null
-        && !item.article.url.isBlank()
-        && !item.article.title.isBlank()
+    // 상세 지연 로드 상태 — quizId 로 키잉해 카드 재사용 시 초기화.
+    var detail by remember(item.quizId) { mutableStateOf<AttemptItem?>(null) }
+    var detailLoading by remember(item.quizId) { mutableStateOf(false) }
+    var detailError by remember(item.quizId) { mutableStateOf<String?>(null) }
+    var retryTick by remember(item.quizId) { mutableStateOf(0) }
+
+    // 지연 로드가 필요한 경로인지 — 로더가 있고, 아직 못 받았고, 푼 문제일 때만.
+    val needsDetailLoad = onLoadDetail != null && !item.unsolved
+    // 펼쳤을 때 heavy 필드는 상세를 우선 사용(없으면 요약 item — Showcase/구서버 경로).
+    val effective = detail ?: item
+    // 상세를 아직 받는 중이라 본문을 아직 못 그리는 상태.
+    val showDetailLoading = detailLoading ||
+        (needsDetailLoad && detail == null && detailError == null)
+
+    LaunchedEffect(expanded, item.quizId, retryTick) {
+        if (expanded && needsDetailLoad && detail == null && onLoadDetail != null) {
+            detailLoading = true
+            detailError = null
+            runCatching { onLoadDetail(item.quizId) }
+                .onSuccess { detail = it; detailLoading = false }
+                .onFailure {
+                    detailError = it.message ?: "불러오지 못했어요"
+                    detailLoading = false
+                }
+        }
+    }
+
+    val hasArticle = effective.article != null
+        && !effective.article.url.isBlank()
+        && !effective.article.title.isBlank()
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -235,23 +271,53 @@ fun AttemptItemCard(
                 )
             }
 
-            if (expanded) {
+            if (expanded && showDetailLoading) {
+                Spacer(Modifier.height(12.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Spacer(Modifier.height(16.dp))
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+
+            if (expanded && !showDetailLoading && detailError != null) {
+                Spacer(Modifier.height(12.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    text = "자세히 불러오지 못했어요",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = "다시 시도",
+                    modifier = Modifier
+                        .padding(top = 6.dp)
+                        .clickable { retryTick++ },
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Lime,
+                )
+            }
+
+            if (expanded && !showDetailLoading && detailError == null) {
                 Spacer(Modifier.height(12.dp))
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Spacer(Modifier.height(10.dp))
 
                 AnswerRow(
-                    label = if (item.correct) "내 답 (정답)" else "내 답",
-                    text = item.myAnswerText,
-                    isCorrect = item.correct,
+                    label = if (effective.correct) "내 답 (정답)" else "내 답",
+                    text = effective.myAnswerText,
+                    isCorrect = effective.correct,
                 )
 
-                if (!item.correct) {
+                if (!effective.correct) {
                     Spacer(Modifier.height(6.dp))
-                    AnswerRow(label = "정답", text = item.correctAnswerText, isCorrect = true)
+                    AnswerRow(label = "정답", text = effective.correctAnswerText, isCorrect = true)
                 }
 
-                if (item.explanation.isNotBlank()) {
+                if (effective.explanation.isNotBlank()) {
                     Spacer(Modifier.height(10.dp))
                     Text(
                         text = "해설",
@@ -261,13 +327,13 @@ fun AttemptItemCard(
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        text = item.explanation,
+                        text = effective.explanation,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
 
-                if (!item.keyword.isNullOrBlank()) {
+                if (!effective.keyword.isNullOrBlank()) {
                     Spacer(Modifier.height(8.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
@@ -281,7 +347,7 @@ fun AttemptItemCard(
                             color = BgSubtle,
                         ) {
                             Text(
-                                text = item.keyword,
+                                text = effective.keyword,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = Lime,
@@ -321,9 +387,9 @@ fun AttemptItemCard(
                             color = TextMuted,
                         )
                         Spacer(Modifier.height(8.dp))
-                        item.choices.forEach { option ->
+                        effective.choices.forEach { option ->
                             val picked = practicePick == option.id
-                            val isAnswer = option.id == item.correctChoiceId
+                            val isAnswer = option.id == effective.correctChoiceId
                             // 선택 후에만 정답/오답 색을 드러낸다.
                             val bg = when {
                                 practicePick == null -> BgSubtle
@@ -355,7 +421,7 @@ fun AttemptItemCard(
                             }
                         }
                         if (practicePick != null) {
-                            val correct = isPracticeCorrect(practicePick!!, item.correctChoiceId)
+                            val correct = isPracticeCorrect(practicePick!!, effective.correctChoiceId)
                             Spacer(Modifier.height(4.dp))
                             Text(
                                 text = if (correct) "정답이에요 (연습이라 물은 안 줬어요)"
@@ -378,7 +444,7 @@ fun AttemptItemCard(
                 }
 
                 if (hasArticle) {
-                    val article = item.article!!
+                    val article = effective.article!!
                     Spacer(Modifier.height(12.dp))
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     Spacer(Modifier.height(10.dp))

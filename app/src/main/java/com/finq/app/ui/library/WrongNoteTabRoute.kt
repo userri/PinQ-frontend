@@ -76,6 +76,7 @@ fun WrongNoteTabRoute(
         onRetry = viewModel::loadWrongNotes,
         onToggleBookmark = { item -> viewModel.toggleBookmark(item.quizId, item.bookmarked) },
         focusQuizId = focusQuizId,
+        onLoadDetail = viewModel::fetchDetail,
         extraFilterRow = {
             ReviewFilterRow(selected = reviewFilter, onSelect = { reviewFilter = it })
         },

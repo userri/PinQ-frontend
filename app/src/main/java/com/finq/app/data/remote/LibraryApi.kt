@@ -22,6 +22,10 @@ interface LibraryApi {
     @GET("api/me/attempts")
     suspend fun getMyAttempts(): List<AttemptItemApiResponse>
 
+    /** 단건 상세 — 목록이 요약만 줄 때 카드 펼침 시 호출. 선택지·해설·기사 포함. */
+    @GET("api/me/attempts/{quizId}")
+    suspend fun getAttemptDetail(@Path("quizId") quizId: Long): AttemptItemApiResponse
+
     @GET("api/me/wrong-notes")
     suspend fun getMyWrongNotes(): List<AttemptItemApiResponse>
 

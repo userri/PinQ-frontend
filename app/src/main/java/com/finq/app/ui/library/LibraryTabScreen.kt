@@ -143,6 +143,7 @@ private fun AttemptHistoryTabContent(
         emptyIconRes = R.drawable.ic_tab_book,
         onRetry = viewModel::loadAttempts,
         onToggleBookmark = { item -> viewModel.toggleBookmark(item.quizId, item.bookmarked) },
+        onLoadDetail = viewModel::fetchDetail,
         modifier = modifier,
     )
 }

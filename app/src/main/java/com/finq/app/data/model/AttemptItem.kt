@@ -26,6 +26,11 @@ data class AttemptItem(
     val solvedAtIso: String?,
     /** 복습(물 주기) 상태. null 이면 한 번도 복습 큐에 오른 적 없음. */
     val review: ReviewStatus? = null,
+    /**
+     * 서버가 내려준 풀이 완료 플래그. null 이면 구서버(플래그 미제공) →
+     * 기존처럼 correctChoiceId 마스킹 여부로 판별한다. [unsolved] 참고.
+     */
+    val solved: Boolean? = null,
 ) {
     /** 화면 표시용 — 내가 고른 선택지의 텍스트. 없으면 "기록 없음". */
     val myAnswerText: String
@@ -36,14 +41,13 @@ data class AttemptItem(
     /**
      * 아직 풀지 않은 문제인가 — 미풀이 북마크(치팅 방지 마스킹) 판별.
      *
-     * 서버가 미풀이 항목의 정답 정보(correctChoiceId·explanation·keyword)를 null 로 마스킹하므로
-     * [correctChoiceId] 유무가 가장 확실한 신호다. selectedChoiceId/solvedAt 는
-     *  - 이미 푼 문제인데도 solvedAt 을 null 로 두는 소스가 있거나
-     *  - 레거시 데이터가 selectedChoiceId 를 null 로 두는
-     * 경우가 있어 단독으로는 오판을 낸다.
+     * 목록 경량화 이후엔 correctChoiceId 가 요약 응답에서 빠지므로,
+     * 서버 [solved] 플래그가 있으면 그걸 최우선으로 신뢰한다.
+     * 플래그가 없는 구서버에선 예전처럼 correctChoiceId 마스킹 여부로 판별한다
+     * (서버가 미풀이 항목의 정답 정보를 null 로 마스킹하기 때문).
      */
     val unsolved: Boolean
-        get() = correctChoiceId == null
+        get() = solved?.not() ?: (correctChoiceId == null)
 
     /** 화면 표시용 — 정답 선택지의 텍스트. 미풀이(마스킹)면 "-". */
     val correctAnswerText: String

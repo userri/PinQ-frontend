@@ -28,6 +28,9 @@ class ApiLibraryRepository(
     override suspend fun getBookmarks(): List<AttemptItem> =
         api.getMyBookmarks().map { it.toDomain() }
 
+    override suspend fun getAttemptDetail(quizId: Long): AttemptItem =
+        api.getAttemptDetail(quizId).toDomain()
+
     override suspend fun addBookmark(quizId: Long): Boolean =
         api.addBookmark(quizId).bookmarked
 
@@ -49,6 +52,7 @@ class ApiLibraryRepository(
         article = article?.toDomain(),
         bookmarked = bookmarked,
         solvedAtIso = solvedAt,
+        solved = solved,
         review = review?.let {
             ReviewStatus(
                 stage = it.stage,

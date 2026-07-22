@@ -77,6 +77,7 @@ fun AttemptHistoryRoute(
             onToggleBookmark = { item ->
                 viewModel.toggleBookmark(item.quizId, item.bookmarked)
             },
+            onLoadDetail = viewModel::fetchDetail,
             modifier = Modifier.weight(1f),
         )
     }

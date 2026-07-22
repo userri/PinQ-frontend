@@ -85,6 +85,14 @@ class LibraryViewModel(
     }
 
     /**
+     * 단건 상세 로드 — 카드를 펼칠 때 호출. 목록은 요약만 담고 있어
+     * 선택지·해설·기사는 이걸로 지연 로드한다. 상태를 건드리지 않는 순수 조회라
+     * 호출한 카드가 자체 로컬 상태(로딩/에러/결과)를 관리한다.
+     */
+    suspend fun fetchDetail(quizId: Long): AttemptItem =
+        repository.getAttemptDetail(quizId)
+
+    /**
      * 북마크 토글. 낙관적 업데이트 — 즉시 UI 반영, 실패 시 롤백.
      *
      * 북마크 탭에서 해제한 경우엔 리스트에서 즉시 제거되지만,
