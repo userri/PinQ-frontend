@@ -37,14 +37,20 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import com.finq.app.R
+import androidx.compose.ui.tooling.preview.Preview
 import com.finq.app.data.model.AttemptItem
+import com.finq.app.data.model.Category
+import com.finq.app.data.model.QuizOption
+import com.finq.app.data.model.ReviewStatus
 import com.finq.app.data.repository.ReviewStage
+import com.finq.app.ui.theme.FinQTheme
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import com.finq.app.ui.theme.BgSubtle
 import com.finq.app.ui.theme.Grass1
 import com.finq.app.ui.theme.Lime
+import com.finq.app.ui.theme.TextMuted
 import com.finq.app.ui.theme.TextSecondary
 
 /**
@@ -64,6 +70,9 @@ fun AttemptItemCard(
     initialExpanded: Boolean = false,
 ) {
     var expanded by remember(item.quizId) { mutableStateOf(initialExpanded) }
+    // 미리 연습 로컬 상태 — 서버/졸업과 완전 분리. 선택한 선지 id, 없으면 미채점.
+    var practiceOpen by remember(item.quizId) { mutableStateOf(false) }
+    var practicePick by remember(item.quizId) { mutableStateOf<Long?>(null) }
     val context = LocalContext.current
     val dateStr = remember(item.solvedAtIso) { formatSolvedDate(item.solvedAtIso) }
 
@@ -178,6 +187,35 @@ fun AttemptItemCard(
 
             Spacer(Modifier.height(10.dp))
 
+            // 성장 근접 스트립 — 복습중(자라는) 오답만. 졸업/legacy 는 growthStrip 이 null.
+            item.review?.let { review ->
+                growthStrip(
+                    stage = review.stage,
+                    graduated = review.graduated,
+                    dueDateIso = review.dueDateIso,
+                    today = LocalDate.now(),
+                )?.let { strip ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = strip.stageText,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            // 마지막 단계만 Lime 포인트, 그 외 중립.
+                            color = if (strip.finalStage) Lime else TextSecondary,
+                        )
+                        if (strip.dueText != null) {
+                            Text(
+                                text = "  ·  ${strip.dueText}",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (strip.dueToday) Lime else TextMuted,
+                                fontWeight = if (strip.dueToday) FontWeight.SemiBold else FontWeight.Normal,
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                }
+            }
+
             Text(
                 text = item.question,
                 style = MaterialTheme.typography.bodyMedium,
@@ -248,6 +286,92 @@ fun AttemptItemCard(
                                 style = MaterialTheme.typography.labelSmall,
                                 color = Lime,
                                 fontWeight = FontWeight.SemiBold,
+                            )
+                        }
+                    }
+                }
+
+                // ── 미리 연습 (순수 연습 · 물주기와 무관) ──────────────────
+                if (!item.unsolved) {
+                    Spacer(Modifier.height(12.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(Modifier.height(10.dp))
+
+                    if (!practiceOpen) {
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = BgSubtle,
+                            modifier = Modifier.clickable {
+                                practiceOpen = true
+                                practicePick = null
+                            },
+                        ) {
+                            Text(
+                                text = "미리 연습 (물주기 아님)",
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Lime,
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = "연습은 나무 성장에 반영되지 않아요. 물은 예정일에 복습으로 줄 수 있어요.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = TextMuted,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        item.choices.forEach { option ->
+                            val picked = practicePick == option.id
+                            val isAnswer = option.id == item.correctChoiceId
+                            // 선택 후에만 정답/오답 색을 드러낸다.
+                            val bg = when {
+                                practicePick == null -> BgSubtle
+                                isAnswer -> Grass1
+                                picked -> MaterialTheme.colorScheme.errorContainer
+                                else -> BgSubtle
+                            }
+                            val fg = when {
+                                practicePick == null -> MaterialTheme.colorScheme.onSurface
+                                isAnswer -> Lime
+                                picked -> MaterialTheme.colorScheme.onErrorContainer
+                                else -> TextMuted
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = bg,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 6.dp)
+                                    .clickable(enabled = practicePick == null) { practicePick = option.id },
+                            ) {
+                                Text(
+                                    text = option.text,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = fg,
+                                    fontWeight = FontWeight.Medium,
+                                )
+                            }
+                        }
+                        if (practicePick != null) {
+                            val correct = isPracticeCorrect(practicePick!!, item.correctChoiceId)
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = if (correct) "정답이에요 (연습이라 물은 안 줬어요)"
+                                       else "오답이에요 · 예정일에 복습으로 다시 만나요",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = if (correct) Lime else MaterialTheme.colorScheme.error,
+                            )
+                            Text(
+                                text = "다시 연습",
+                                modifier = Modifier
+                                    .padding(top = 8.dp)
+                                    .clickable { practicePick = null },
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Lime,
                             )
                         }
                     }
@@ -342,6 +466,78 @@ private fun AnswerRow(label: String, text: String, isCorrect: Boolean) {
                 style = MaterialTheme.typography.bodySmall,
                 color = textColor,
                 fontWeight = FontWeight.Medium,
+            )
+        }
+    }
+}
+
+/**
+ * 오답노트 카드 3상태 미리보기.
+ *  - 복습중: stage 1, 미래 due → 성장 스트립 노출
+ *  - 졸업: graduated=true → 🌳 뱃지, 스트립 없음
+ *  - legacy: review=null → 스트립·복습 뱃지 모두 없음
+ */
+@Preview(showBackground = true, backgroundColor = 0xFF081A2E)
+@Composable
+private fun AttemptItemCardPreview() {
+    // 인라인 더미 선지 (미리 연습·정답 판별용)
+    val dummyChoices = listOf(
+        QuizOption(id = 1L, optionNumber = 1, text = "기준금리를 올린다"),
+        QuizOption(id = 2L, optionNumber = 2, text = "기준금리를 내린다"),
+        QuizOption(id = 3L, optionNumber = 3, text = "지급준비율을 낮춘다"),
+        QuizOption(id = 4L, optionNumber = 4, text = "국채를 매입한다"),
+    )
+    fun dummy(review: ReviewStatus?) = AttemptItem(
+        quizId = review?.stage?.toLong() ?: 99L,
+        category = Category.selectable.first(),
+        question = "물가가 계속 오를 때 중앙은행이 취하는 대표적 정책은?",
+        choices = dummyChoices,
+        selectedChoiceId = 2L,
+        correctChoiceId = 1L,
+        correct = false,
+        explanation = "물가 상승을 억제하려면 기준금리를 올려 시중 유동성을 줄인다.",
+        keyword = "기준금리",
+        article = null,
+        bookmarked = true,
+        solvedAtIso = null,
+        review = review,
+    )
+
+    FinQTheme {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            // 복습중 — stage 1, 미래 due
+            AttemptItemCard(
+                item = dummy(
+                    ReviewStatus(
+                        stage = 1,
+                        waterCount = 1,
+                        absorbedCount = 1,
+                        graduated = false,
+                        dueDateIso = LocalDate.now().plusDays(3).toString(),
+                    ),
+                ),
+                onToggleBookmark = {},
+            )
+            // 졸업 — 다 키운 나무
+            AttemptItemCard(
+                item = dummy(
+                    ReviewStatus(
+                        stage = 3,
+                        waterCount = 3,
+                        absorbedCount = 3,
+                        graduated = true,
+                        dueDateIso = null,
+                    ),
+                ),
+                onToggleBookmark = {},
+            )
+            // legacy — 복습 이력 없음
+            AttemptItemCard(
+                item = dummy(null),
+                onToggleBookmark = {},
             )
         }
     }
