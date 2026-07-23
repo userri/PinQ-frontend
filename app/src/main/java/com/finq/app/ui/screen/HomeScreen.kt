@@ -134,7 +134,7 @@ fun HomeScreen(
     val treeCount = garden?.graduatedTrees ?: 0
     val growingCount = garden?.growing?.size ?: 0
     // 언덕 미세 성장 — 나무가 늘수록 로그 스케일로 완만히 상승. 화면 높이 40% 상한.
-    val hillFraction = min(0.16f + 0.045f * ln(1f + treeCount), 0.40f)
+    val hillFraction = min(0.19f + 0.045f * ln(1f + treeCount), 0.40f)
 
     Box(modifier = modifier.fillMaxSize().background(NightTop)) {
         NightSceneBackground(
@@ -273,9 +273,10 @@ private fun NightSceneBackground(
         }
     }
 
-    // 앞줄 나무 — 최근 졸업 우선 최대 7그루, 모자라면 자라는 중 항목으로 채운다.
+    // 앞줄 나무 — 최근 졸업 우선 최대 5그루, 모자라면 자라는 중 항목으로 채운다.
+    // 나머지는 뒷줄 실루엣 숲이 담당(개별 렌더 폭증 방지).
     val frontItems = remember(garden) {
-        (garden.graduated.sortedByDescending { it.graduatedAtIso ?: "" } + garden.growing).take(7)
+        (garden.graduated.sortedByDescending { it.graduatedAtIso ?: "" } + garden.growing).take(5)
     }
     val treeCount = garden.graduatedTrees
     // 뒷줄 실루엣 — 나무 8그루 초과분만큼 밀도 증가(상한 18개).
@@ -370,33 +371,35 @@ private fun NightSceneBackground(
             ),
         )
 
-        // ⑥ 풀결 텍스처 — 고정 패턴의 작은 세로선.
+        // ⑥ 풀결 텍스처 — 능선 근처 지면 커버(화면 하단까지 내려가 잘려 보이지 않게).
         run {
-            val n = 30
+            val n = 22
+            val band = size.height - hillTop
             repeat(n) { i ->
                 val xf = ((i * 37 % n) + 0.5f) / n
                 val yf = (i * 17 % n).toFloat() / n
                 val x = size.width * xf
                 val y = hillTop + hillOffsetAt(xf) * size.height +
-                    (size.height - hillTop) * 0.15f + yf * (size.height - hillTop) * 0.6f
-                val h = size.height * 0.014f
+                    band * 0.10f + yf * band * 0.32f
+                val h = size.height * 0.012f
                 drawLine(
-                    color = Grass3.copy(alpha = 0.3f),
+                    color = Grass3.copy(alpha = 0.25f),
                     start = Offset(x, y),
                     end = Offset(x, y - h),
-                    strokeWidth = size.width / 320f,
+                    strokeWidth = size.width / 340f,
                 )
             }
         }
 
         // ⑦ 앞줄 나무 — 커스텀 단계 아이콘, 유기적 흩뿌림(요일과 무관).
+        // 깊이 범위를 능선 근처로 제한해 화면 하단 클리핑(밑동 잘림)을 막는다.
         val slotRnd = Random(4242)
-        val baseXs = listOf(0.12f, 0.85f, 0.34f, 0.65f, 0.50f, 0.22f, 0.76f)
+        val baseXs = listOf(0.14f, 0.82f, 0.40f, 0.64f, 0.26f)
+        val band = size.height - hillTop
         frontItems.forEachIndexed { i, item ->
-            val xf = (baseXs[i] + (slotRnd.nextFloat() - 0.5f) * 0.08f).coerceIn(0.06f, 0.94f)
+            val xf = (baseXs[i] + (slotRnd.nextFloat() - 0.5f) * 0.06f).coerceIn(0.08f, 0.92f)
             val depth = slotRnd.nextFloat()  // 0 = 능선 근처(멀리), 1 = 아래(가까이)
-            val y = hillTop + hillOffsetAt(xf) * size.height +
-                (size.height - hillTop) * (0.18f + depth * 0.42f)
+            val y = hillTop + hillOffsetAt(xf) * size.height + band * (0.10f + depth * 0.28f)
             drawGardenItem(
                 item = item,
                 cx = xf * size.width,
@@ -571,14 +574,7 @@ private fun WeekGrassStrip(
                 }
             }
         }
-
-        // 잔디≠스트릭 축 분리 안내 — "복습만 한 날 스트릭 1일" 혼동 방지.
-        Spacer(Modifier.height(10.dp))
-        Text(
-            text = "연속 학습은 데일리 퀴즈 기준이에요. 복습만 한 날은 연한 잔디만 심어져요 🌱",
-            style = MaterialTheme.typography.labelSmall,
-            color = TextMuted,
-        )
+        // 잔디≠스트릭 안내문은 마이페이지 잔디밭으로 위임 — 홈에서는 밀도 위해 생략.
     }
 }
 
@@ -625,12 +621,52 @@ private fun TodayQuizCard(
 ) {
     val hasQuiz = quizCount > 0
 
+    if (!hasQuiz) {
+        // 완료 상태 — 복습 카드와 같은 높이의 조용한 컴팩트 행(밤하늘 여백 확보).
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(BgElevated.copy(alpha = 0.40f))
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(Lime.copy(alpha = 0.14f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(text = "✓", color = Lime, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            }
+            Spacer(Modifier.size(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "오늘 분량 완료",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary,
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = if (todayTotal > 0) "${todayCorrect}/${todayTotal} 정답 · 내일 오전 6시 새 퀴즈"
+                           else "내일 오전 6시에 새 퀴즈가 도착해요",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextMuted,
+                )
+            }
+        }
+        return
+    }
+
+    // 퀴즈 남음 — 홈의 주 행동. 프로미넌트하게(단, 여백 확보 위해 패딩 축소).
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
             .background(BgElevated.copy(alpha = 0.45f))
-            .padding(24.dp),
+            .padding(20.dp),
     ) {
         Column {
             Text(
@@ -639,60 +675,38 @@ private fun TodayQuizCard(
                 color = TextSecondary,
                 fontWeight = FontWeight.SemiBold,
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(6.dp))
             Text(
-                text = if (hasQuiz) "${quizCount}문제 준비됐어요"
-                       else "오늘 분량을 다 풀었어요",
+                text = "${quizCount}문제 준비됐어요",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.ExtraBold,
                 color = TextPrimary,
             )
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(4.dp))
             Text(
-                text = if (hasQuiz) "예상 소요 3분 · 매일 오전 6시 발송"
-                       else "내일 오전 6시에 새 퀴즈가 도착해요",
+                text = "예상 소요 3분 · 매일 오전 6시 발송",
                 style = MaterialTheme.typography.bodySmall,
                 color = TextMuted,
             )
-            Spacer(Modifier.height(20.dp))
-            if (hasQuiz) {
-                Button(
-                    onClick = onStartQuiz,
-                    shape = RoundedCornerShape(50),
-                    colors = ButtonDefaults.buttonColors(containerColor = Lime, contentColor = OnLime),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
-                    modifier = Modifier.heightIn(min = 42.dp),
-                ) {
-                    Text(
-                        text = "풀기",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Spacer(Modifier.size(8.dp))
-                    Text(
-                        text = "→",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-            } else {
-                // 조용한 완료 칩 — 비활성 톤(BgSubtle + TextMuted), 라임 저채도 금지.
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(50))
-                        .background(BgSubtle.copy(alpha = 0.55f))
-                        .heightIn(min = 42.dp)
-                        .padding(horizontal = 24.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = if (todayTotal > 0) "오늘 분량 완료 ✓ · ${todayCorrect}/${todayTotal} 정답"
-                               else "오늘 분량 완료 ✓",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = TextMuted,
-                    )
-                }
+            Spacer(Modifier.height(16.dp))
+            Button(
+                onClick = onStartQuiz,
+                shape = RoundedCornerShape(50),
+                colors = ButtonDefaults.buttonColors(containerColor = Lime, contentColor = OnLime),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+                modifier = Modifier.heightIn(min = 42.dp),
+            ) {
+                Text(
+                    text = "풀기",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(Modifier.size(8.dp))
+                Text(
+                    text = "→",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                )
             }
         }
     }

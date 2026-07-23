@@ -76,18 +76,17 @@ fun WaterGrassCard(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(if (hasReviews) Lime else BgSubtle),
+                    // 유리 톤 배지 — 라임 저채도 틴트(솔리드 라임 원 금지, 밤 풍경과 통일).
+                    .background(Lime.copy(alpha = if (hasReviews) 0.16f else 0.10f)),
                 contentAlignment = Alignment.Center,
             ) {
-                if (hasReviews) {
-                    Text(text = "💧", fontSize = 18.sp)
-                } else {
-                    Image(
-                        painter = painterResource(R.drawable.ic_stage_grass),
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
+                Image(
+                    painter = painterResource(
+                        if (hasReviews) R.drawable.ic_water_drop else R.drawable.ic_stage_grass
+                    ),
+                    contentDescription = null,
+                    modifier = Modifier.size(22.dp),
+                )
             }
             Spacer(Modifier.size(12.dp))
             Column(modifier = Modifier.weight(1f)) {
