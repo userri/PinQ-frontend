@@ -61,6 +61,13 @@ class HomeViewModel(
                 null
             }
 
+            // 정원: 히어로 미니 프리뷰 — 실패해도 빈 정원으로 그리면 되므로 폴백 null.
+            val garden = try {
+                reviewRepository.getGarden()
+            } catch (e: Exception) {
+                null
+            }
+
             _uiState.update {
                 it.copy(
                     isLoading = false,
@@ -72,6 +79,9 @@ class HomeViewModel(
                     weekLevels = grass?.let(::weekLevelsFrom) ?: List(7) { 0 },
                     reviewCount = reviews?.items?.size ?: 0,
                     nextReviewDate = reviews?.nextDueDate,
+                    todayTotal = quizzes.size,
+                    todayCorrect = quizzes.count { it.correct == true },
+                    garden = garden ?: it.garden,
                 )
             }
         }

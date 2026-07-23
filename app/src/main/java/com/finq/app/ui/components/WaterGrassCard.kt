@@ -30,6 +30,7 @@ import com.finq.app.ui.theme.BgSubtle
 import com.finq.app.ui.theme.BgSurface
 import com.finq.app.ui.theme.FinQTheme
 import com.finq.app.ui.theme.Lime
+import com.finq.app.ui.theme.OnLime
 import com.finq.app.ui.theme.Outline
 import com.finq.app.ui.theme.TextMuted
 import com.finq.app.ui.theme.TextPrimary
@@ -98,12 +99,20 @@ fun WaterGrassCard(
             }
             if (hasReviews) {
                 Spacer(Modifier.size(8.dp))
-                Text(
-                    text = "→",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Lime,
-                )
+                // 유일한 복습 진입점 CTA — Lime 필 버튼(카드 전체도 클릭 가능).
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(Lime)
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                ) {
+                    Text(
+                        text = "물 주러 가기 →",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = OnLime,
+                    )
+                }
             }
         }
     }

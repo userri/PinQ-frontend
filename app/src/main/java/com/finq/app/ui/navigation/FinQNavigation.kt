@@ -335,6 +335,10 @@ fun FinQNavHost(
                     nickname = state.nickname,
                     reviewCount = state.reviewCount,
                     nextReviewDate = state.nextReviewDate,
+                    garden = state.garden,
+                    todayTotal = state.todayTotal,
+                    todayCorrect = state.todayCorrect,
+                    onOpenGarden = { navController.navigate(FinQRoutes.GARDEN) },
                     onWaterGrass = { navController.navigate(FinQRoutes.REVIEW_GRAPH) },
                     onStartQuiz = {
                         // SESSION_GRAPH 가 이미 백스택에 있으면 복귀(중간 이탈 케이스),
@@ -471,6 +475,9 @@ fun FinQNavHost(
                         // 이렇게 해야 이후 마이/홈 탭 전환의 saveState/restoreState 부기가 깨지지 않는다
                         // (기존엔 library_tab 이 GARDEN·MYPAGE 위에 쌓여 마이 탭 이동이 no-op 이 됐다).
                         // restoreState 는 생략 — 새 focusQuizId 로 새로 진입해야 스크롤·펼침이 동작한다.
+                        // 정원은 저장 스택에 남기지 않는다 — 홈이 정원 진입점이 된 뒤로,
+                        // 마이 탭 복원 시 정원이 되살아나는 어색함을 막기 위해 먼저 걷어낸다.
+                        navController.popBackStack()
                         navController.navigate("library_tab?focusQuizId=$quizId") {
                             popUpTo(FinQRoutes.HOME) { saveState = true }
                             launchSingleTop = true

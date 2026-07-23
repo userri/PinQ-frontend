@@ -24,4 +24,10 @@ data class HomeUiState(
     val reviewCount: Int = 0,
     /** reviewCount == 0 일 때 안내할 다음 물 주기 날짜. */
     val nextReviewDate: LocalDate? = null,
+    /** 오늘 세트 전체 문제 수 — 완료 상태 "N/M 정답" 표기용. */
+    val todayTotal: Int = 0,
+    /** 오늘 세트에서 첫 시도에 맞힌 수 (quiz.correct == true). */
+    val todayCorrect: Int = 0,
+    /** 정원 히어로 미니 프리뷰 데이터. 로드 실패 시 null — 빈 정원으로 그린다. */
+    val garden: com.finq.app.data.repository.ReviewGarden? = null,
 )

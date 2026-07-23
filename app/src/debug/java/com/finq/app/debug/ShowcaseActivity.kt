@@ -46,7 +46,7 @@ import java.time.LocalDate
  *
  *   adb shell am start -n com.finq.app/com.finq.app.debug.ShowcaseActivity --es screen home
  *
- * screen: home | home_pending | home_zero | quiz | answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | filters | wrongnote | lazyload | grass | review | review_graduated | review_next | garden | garden_canvas | concept
+ * screen: home | home_pending | home_zero | home_done_water | home_done | quiz | answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | filters | wrongnote | lazyload | grass | review | review_graduated | review_next | garden | garden_canvas | concept
  * 릴리즈 빌드에는 포함되지 않는다(app/src/debug 소스셋).
  */
 class ShowcaseActivity : ComponentActivity() {
@@ -431,9 +431,11 @@ class ShowcaseActivity : ComponentActivity() {
                         onStartQuiz = {},
                         onRetry = {},
                         nickname = "유리",
+                        reviewCount = 3,
+                        garden = sampleGarden,
                     )
 
-                    // 스트릭 문구 분기: 미풀이 + streak==0 → 시작 유도 문구
+                    // 스트릭 문구 분기: 미풀이 + streak==0 → 시작 유도 문구. 정원도 빈 상태.
                     "home_zero" -> HomeScreen(
                         quizCount = 3,
                         streak = 0,
@@ -447,6 +449,43 @@ class ShowcaseActivity : ComponentActivity() {
                         nickname = "유리",
                     )
 
+                    // 퀴즈 다 풂 + 물 줄 잔디 있음 — 완료 칩(N/M 정답) + 복습 카드 Lime CTA
+                    "home_done_water" -> HomeScreen(
+                        quizCount = 0,
+                        streak = 8,
+                        solvedToday = true,
+                        maxStreak = 15,
+                        weekLevels = listOf(2, 0, 4, 1, 3, -1, -1),
+                        isLoading = false,
+                        error = null,
+                        onStartQuiz = {},
+                        onRetry = {},
+                        nickname = "유리",
+                        reviewCount = 4,
+                        garden = sampleGarden,
+                        todayTotal = 3,
+                        todayCorrect = 2,
+                    )
+
+                    // 퀴즈 다 풂 + 물 줄 잔디도 없음 — 조용한 완료 + "다음 물 주기 M/d"
+                    "home_done" -> HomeScreen(
+                        quizCount = 0,
+                        streak = 8,
+                        solvedToday = true,
+                        maxStreak = 15,
+                        weekLevels = listOf(2, 0, 4, 1, 3, -1, -1),
+                        isLoading = false,
+                        error = null,
+                        onStartQuiz = {},
+                        onRetry = {},
+                        nickname = "유리",
+                        reviewCount = 0,
+                        nextReviewDate = LocalDate.now().plusDays(2),
+                        garden = sampleGarden,
+                        todayTotal = 3,
+                        todayCorrect = 3,
+                    )
+
                     else -> HomeScreen(
                         quizCount = 3,
                         streak = 7,
@@ -458,6 +497,8 @@ class ShowcaseActivity : ComponentActivity() {
                         onStartQuiz = {},
                         onRetry = {},
                         nickname = "유리",
+                        reviewCount = 3,
+                        garden = sampleGarden,
                     )
                 }
             }
@@ -498,6 +539,23 @@ class ShowcaseActivity : ComponentActivity() {
             ConceptStat("INFLATION", "물가", 5, 4, 0.80f),
         )
         ConceptStats(categories = cats, weakest = cats[1])
+    }
+
+    /** 홈 정원 히어로 케이스용 샘플 정원. */
+    private val sampleGarden: ReviewGarden by lazy {
+        ReviewGarden(
+            growing = listOf(
+                gardenSample(1, ReviewStage.SPROUT),
+                gardenSample(2, ReviewStage.GRASS),
+                gardenSample(3, ReviewStage.ALMOST_TREE),
+                gardenSample(4, ReviewStage.SPROUT),
+            ),
+            graduated = listOf(
+                gardenSample(101, ReviewStage.ALMOST_TREE).copy(graduatedAtIso = "2026-07-19T12:00:00"),
+                gardenSample(102, ReviewStage.ALMOST_TREE).copy(graduatedAtIso = "2026-07-20T12:00:00"),
+            ),
+            graduatedTrees = 5,
+        )
     }
 
     /** 정원 캔버스 케이스용 샘플 항목 — quizId·단계만 다르게. */
