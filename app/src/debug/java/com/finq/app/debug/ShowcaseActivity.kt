@@ -488,6 +488,22 @@ class ShowcaseActivity : ComponentActivity() {
                         todayCorrect = 3,
                     )
 
+                    // 언덕 스케일링: 다수(nn그루) — 실루엣 숲 밀도·언덕 높이 상승 확인
+                    "home_forest_many" -> HomeScreen(
+                        quizCount = 3,
+                        streak = 30,
+                        solvedToday = true,
+                        maxStreak = 42,
+                        weekLevels = listOf(2, 3, 4, 1, 3, -1, -1),
+                        isLoading = false,
+                        error = null,
+                        onStartQuiz = {},
+                        onRetry = {},
+                        nickname = "유리",
+                        reviewCount = 2,
+                        garden = manyTreesGarden,
+                    )
+
                     else -> HomeScreen(
                         quizCount = 3,
                         streak = 7,
@@ -557,6 +573,22 @@ class ShowcaseActivity : ComponentActivity() {
                 gardenSample(102, ReviewStage.ALMOST_TREE).copy(graduatedAtIso = "2026-07-20T12:00:00"),
             ),
             graduatedTrees = 5,
+        )
+    }
+
+    /** 다수 나무 케이스 — 뒷줄 실루엣 숲 + 언덕 상승 스케일링 확인용. */
+    private val manyTreesGarden: ReviewGarden by lazy {
+        ReviewGarden(
+            growing = listOf(
+                gardenSample(1, ReviewStage.SPROUT),
+                gardenSample(2, ReviewStage.GRASS),
+                gardenSample(3, ReviewStage.ALMOST_TREE),
+            ),
+            graduated = (101L..112L).map {
+                gardenSample(it, ReviewStage.ALMOST_TREE)
+                    .copy(graduatedAtIso = "2026-07-%02dT12:00:00".format((it - 100)))
+            },
+            graduatedTrees = 23,
         )
     }
 

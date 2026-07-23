@@ -1,8 +1,8 @@
 package com.finq.app.ui.components
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,18 +23,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.finq.app.R
+import com.finq.app.ui.theme.BgBase
 import com.finq.app.ui.theme.BgSubtle
 import com.finq.app.ui.theme.BgSurface
 import com.finq.app.ui.theme.FinQTheme
 import com.finq.app.ui.theme.Lime
-import com.finq.app.ui.theme.OnLime
-import com.finq.app.ui.theme.Outline
 import com.finq.app.ui.theme.TextMuted
 import com.finq.app.ui.theme.TextPrimary
 import java.time.LocalDate
@@ -58,14 +59,14 @@ fun WaterGrassCard(
 ) {
     val hasReviews = reviewCount > 0
 
+    // 유리 패널 — 밤하늘 배경이 비치는 반투명 카드(테두리 없음).
     Card(
         modifier = modifier
             .fillMaxWidth()
             .then(if (hasReviews) Modifier.clickable(onClick = onClick) else Modifier),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = BgSurface),
+        colors = CardDefaults.cardColors(containerColor = BgSurface.copy(alpha = 0.45f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = BorderStroke(1.dp, Outline),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
@@ -110,18 +111,31 @@ fun WaterGrassCard(
             }
             if (hasReviews) {
                 Spacer(Modifier.size(8.dp))
-                // 유일한 복습 진입점 CTA — Lime 필 버튼(카드 전체도 클릭 가능).
+                // 유일한 복습 진입점 CTA — 밤 풍경 속 네온사인(Lime 테두리 + 글로우).
                 Box(
                     modifier = Modifier
+                        .drawBehind {
+                            // 버튼 뒤 은은한 Lime 번짐.
+                            drawCircle(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(Lime.copy(alpha = 0.30f), Lime.copy(alpha = 0f)),
+                                    center = center,
+                                    radius = size.maxDimension * 0.72f,
+                                ),
+                                radius = size.maxDimension * 0.72f,
+                                center = center,
+                            )
+                        }
                         .clip(RoundedCornerShape(50))
-                        .background(Lime)
+                        .background(BgBase.copy(alpha = 0.55f))
+                        .border(1.dp, Lime, RoundedCornerShape(50))
                         .padding(horizontal = 14.dp, vertical = 8.dp),
                 ) {
                     Text(
                         text = "물 주러 가기 →",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
-                        color = OnLime,
+                        color = Lime,
                     )
                 }
             }

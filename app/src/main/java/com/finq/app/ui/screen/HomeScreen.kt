@@ -1,6 +1,9 @@
 package com.finq.app.ui.screen
 
-import androidx.compose.foundation.Image
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -9,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,53 +20,89 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.finq.app.R
+import com.finq.app.data.repository.GardenItem
 import com.finq.app.data.repository.ReviewGarden
+import com.finq.app.data.repository.ReviewStage
 import com.finq.app.ui.components.WaterGrassCard
-import com.finq.app.ui.components.garden.GardenCanvas
+import com.finq.app.ui.theme.BgBase
 import com.finq.app.ui.theme.BgElevated
 import com.finq.app.ui.theme.BgSubtle
 import com.finq.app.ui.theme.BgSurface
 import com.finq.app.ui.theme.FinQTheme
+import com.finq.app.ui.theme.Grass1
+import com.finq.app.ui.theme.Grass2
+import com.finq.app.ui.theme.Grass3
 import com.finq.app.ui.theme.Lime
 import com.finq.app.ui.theme.OnLime
-import com.finq.app.ui.theme.Outline
 import com.finq.app.ui.theme.TextMuted
 import com.finq.app.ui.theme.TextPrimary
 import com.finq.app.ui.theme.TextSecondary
 import com.finq.app.ui.theme.streakColor
+import kotlinx.coroutines.delay
 import java.time.LocalDate
 import java.util.Calendar
+import kotlin.math.ln
+import kotlin.math.min
+import kotlin.math.pow
+import kotlin.random.Random
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 파생 색 — Color.kt 토큰의 lerp 만 사용(새 브랜드색 금지).
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 화면 최상단 깊은 밤 — BgBase 를 어둠 쪽으로 내린 값. */
+private val NightTop = lerp(BgBase, Color.Black, 0.62f)
+
+/** 수평선 부근 — 밤하늘이 잔디 쪽으로 아주 살짝 물드는 값. */
+private val HorizonGlow = lerp(BgBase, Grass1, 0.35f)
+
+/** 언덕 하단의 짙은 그린. */
+private val GrassDeep = lerp(Grass1, Color.Black, 0.45f)
+
+/** 뒷줄 실루엣 숲 — 언덕보다 한 톤 어두운 단색. */
+private val ForestSilhouette = lerp(Grass1, Color.Black, 0.25f)
 
 /**
- * 홈 화면 — Stateless View.
+ * 홈 화면 — "밤하늘 아래 잔디밭" 한 장면.
  *
- * G1 "정원 히어로" 구성:
- *  [정원 히어로(내 정원 미니 프리뷰 + 이번 주 잔디 스트립)] → [오늘의 퀴즈 카드] → [복습 카드].
- * 히어로가 정원 진입점, 복습 카드가 유일한 복습 진입점이다.
+ * 화면 전체가 위(별이 촘촘한 밤 네이비)에서 아래(잔디 언덕)로 이어지는 배경 풍경이고,
+ * UI 는 그 위에 뜬 반투명 유리 패널이다.
+ * 구성: [워드마크·인사말] → [오늘의 퀴즈] → [복습(물주기)] → [이번 주 잔디 스트립]
+ *       → (하늘 여백) → [잔디 언덕 + 나무들] (전체 탭 → 정원).
+ * 역할 분리: 퀴즈 카드는 완료 시 조용한 상태, 복습 카드가 유일한 복습 진입점.
  */
 @Composable
 fun HomeScreen(
@@ -83,7 +123,7 @@ fun HomeScreen(
     reviewCount: Int = 0,
     nextReviewDate: LocalDate? = null,
     onWaterGrass: () -> Unit = {},
-    /** 히어로 미니 프리뷰용 정원. null(로드 실패/이전)이면 빈 정원으로 그린다. */
+    /** 하단 잔디밭용 정원. null(로드 실패/이전)이면 빈 언덕으로 그린다. */
     garden: ReviewGarden? = null,
     onOpenGarden: () -> Unit = {},
     /** 오늘 세트 전체/정답 수 — 퀴즈 완료 상태 "N/M 정답" 표기용. */
@@ -91,17 +131,38 @@ fun HomeScreen(
     todayCorrect: Int = 0,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 20.dp),
-    ) {
-        // ── 앱 바: 워드마크만 ─────────────────────────────────────
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
+    val treeCount = garden?.graduatedTrees ?: 0
+    val growingCount = garden?.growing?.size ?: 0
+    // 언덕 미세 성장 — 나무가 늘수록 로그 스케일로 완만히 상승. 화면 높이 40% 상한.
+    val hillFraction = min(0.16f + 0.045f * ln(1f + treeCount), 0.40f)
+
+    Box(modifier = modifier.fillMaxSize().background(NightTop)) {
+        NightSceneBackground(
+            garden = garden ?: ReviewGarden.EMPTY,
+            hillFraction = hillFraction,
+            modifier = Modifier.fillMaxSize(),
+        )
+
+        // ── 잔디밭 탭 영역 — 언덕 + 라벨 전체가 정원 진입점 ──────────
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .fillMaxHeight(min(hillFraction + 0.08f, 0.46f))
+                .clickable(onClick = onOpenGarden),
+        ) {
+            GardenLabel(
+                treeCount = treeCount,
+                growingCount = growingCount,
+                modifier = Modifier.align(Alignment.TopCenter),
+            )
+        }
+
+        // ── 유리 패널 UI — 상단 고정, 아래는 하늘 여백(Spacer weight) ──
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp, vertical = 20.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -118,154 +179,300 @@ fun HomeScreen(
                     color = Lime,
                     letterSpacing = (-0.5).sp,
                 )
-            }
-        }
-
-        Spacer(Modifier.height(16.dp))
-
-        // ── 정원 히어로 — 인사말 + 내 정원 프리뷰 + 이번 주 잔디 스트립 ──
-        val todayDow = remember {
-            (Calendar.getInstance().get(Calendar.DAY_OF_WEEK) + 5) % 7
-        }
-        GardenHero(
-            nickname = nickname,
-            garden = garden,
-            streak = streak,
-            solvedToday = solvedToday,
-            maxStreak = maxStreak,
-            weekLevels = weekLevels,
-            todayDow = todayDow,
-            onOpenGarden = onOpenGarden,
-        )
-
-        Spacer(Modifier.height(16.dp))
-
-        // ── 오늘의 퀴즈 카드 — 퀴즈만 담당(복습 광고 금지) ─────────────
-        when {
-            isLoading -> HeroCardLoading()
-            error != null -> HeroCardError(error = error, onRetry = onRetry)
-            else -> TodayQuizCard(
-                quizCount = quizCount,
-                todayTotal = todayTotal,
-                todayCorrect = todayCorrect,
-                onStartQuiz = onStartQuiz,
-            )
-        }
-
-        Spacer(Modifier.height(16.dp))
-
-        // ── 복습 카드 — 유일한 복습 진입점, 항상 노출 ────────────────
-        WaterGrassCard(
-            reviewCount = reviewCount,
-            nextDueDate = nextReviewDate,
-            onClick = onWaterGrass,
-        )
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 정원 히어로
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * 하늘~잔디 언덕 한 장면. 위 = 인사말 + 나무 카운트 + 정원 프리뷰(탭 → 정원 화면),
- * 아래 = "이번 주" 잔디 스트립(구분선 + 톤 변화로 시각 분리).
- *
- * 프리뷰의 나무 배치는 GardenCanvas(computeGardenLayout)의 지터·원근 배치를 그대로 써서
- * 유기적으로 흩어진 군집으로 보인다 — 요일과 1:1 매칭되어 보이면 안 된다.
- */
-@Composable
-private fun GardenHero(
-    nickname: String,
-    garden: ReviewGarden?,
-    streak: Int,
-    solvedToday: Boolean,
-    maxStreak: Int,
-    weekLevels: List<Int>,
-    todayDow: Int,
-    onOpenGarden: () -> Unit,
-) {
-    val shape = RoundedCornerShape(20.dp)
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .border(1.dp, Outline, shape)
-            .background(BgSurface),
-    ) {
-        val treeCount = garden?.graduatedTrees ?: 0
-        val growingCount = garden?.growing?.size ?: 0
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(196.dp)
-                .clickable(onClick = onOpenGarden),
-        ) {
-            GardenCanvas(
-                garden = garden ?: ReviewGarden.EMPTY,
-                compact = true,
-                modifier = Modifier.fillMaxSize(),
-            )
-            // 하늘 영역(위 40%) 위 오버레이 — 인사말 + 카운트.
-            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+                Spacer(Modifier.weight(1f))
                 Text(
                     text = if (nickname.isNotEmpty()) "안녕하세요, ${nickname}님" else "안녕하세요",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = TextSecondary,
                 )
-                Spacer(Modifier.height(3.dp))
-                // 나무/새싹 카운트 — 이모지 대신 커스텀 벡터 아이콘(마이·내공부 탭과 통일).
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Image(
-                        painter = painterResource(R.drawable.ic_stage_tree),
-                        contentDescription = null,
-                        modifier = Modifier.size(15.dp),
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = "${treeCount}그루",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = TextSecondary,
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Image(
-                        painter = painterResource(R.drawable.ic_stage_sprout),
-                        contentDescription = null,
-                        modifier = Modifier.size(15.dp),
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = "자라는 중 $growingCount",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = TextSecondary,
-                    )
-                }
             }
-            Text(
-                text = "내 정원 →",
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = Lime,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(horizontal = 14.dp, vertical = 14.dp),
+
+            Spacer(Modifier.height(16.dp))
+
+            // ── 오늘의 퀴즈 카드 — 퀴즈만 담당(복습 광고 금지) ──────────
+            when {
+                isLoading -> HeroCardLoading()
+                error != null -> HeroCardError(error = error, onRetry = onRetry)
+                else -> TodayQuizCard(
+                    quizCount = quizCount,
+                    todayTotal = todayTotal,
+                    todayCorrect = todayCorrect,
+                    onStartQuiz = onStartQuiz,
+                )
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            // ── 복습 카드 — 유일한 복습 진입점, 항상 노출 ──────────────
+            WaterGrassCard(
+                reviewCount = reviewCount,
+                nextDueDate = nextReviewDate,
+                onClick = onWaterGrass,
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            // ── 이번 주 잔디 스트립 — 유리 패널 톤 ────────────────────
+            val todayDow = remember {
+                (Calendar.getInstance().get(Calendar.DAY_OF_WEEK) + 5) % 7
+            }
+            WeekGrassStrip(
+                streak = streak,
+                solvedToday = solvedToday,
+                maxStreak = maxStreak,
+                weekLevels = weekLevels,
+                todayDow = todayDow,
+            )
+
+            // 구성된 여백 — 카드와 언덕 사이 하늘. 콘텐츠로 채우지 않는다.
+            Spacer(Modifier.weight(1f))
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 밤 풍경 배경 — 하늘 그라디언트 + 별 + 별똥별 + 잔디 언덕 + 나무 (단일 Canvas)
+// ─────────────────────────────────────────────────────────────────────────────
+
+private const val STAR_COUNT = 56
+
+/** 시드 고정 별 한 개 — 좌표는 분율, y 는 하늘 밴드 내 분율(0=꼭대기). */
+private data class Star(val xFrac: Float, val yFrac: Float, val radiusDp: Float, val alpha: Float, val lime: Boolean)
+
+@Composable
+private fun NightSceneBackground(
+    garden: ReviewGarden,
+    hillFraction: Float,
+    modifier: Modifier = Modifier,
+) {
+    // 별 — remember 로 시드 고정(매 프레임 랜덤 금지). 밀도 그라데이션: 상단 촘촘·수평선 성김.
+    val stars = remember {
+        val rnd = Random(20260723)
+        List(STAR_COUNT) {
+            Star(
+                xFrac = rnd.nextFloat(),
+                yFrac = rnd.nextFloat().pow(1.8f),  // 위쪽으로 몰리는 분포
+                radiusDp = 1f + rnd.nextFloat() * 1.5f,
+                alpha = 0.3f + rnd.nextFloat() * 0.6f,
+                lime = rnd.nextFloat() < 0.08f,
+            )
+        }
+    }
+
+    // 별똥별 — 20~50초 간격으로 1초짜리 사선 낙하 1개.
+    val shootProgress = remember { Animatable(0f) }
+    var shootStart by remember { mutableStateOf(Offset(0.7f, 0.12f)) }
+    LaunchedEffect(Unit) {
+        val rnd = Random(System.nanoTime())
+        while (true) {
+            delay(rnd.nextLong(20_000L, 50_000L))
+            shootStart = Offset(0.15f + rnd.nextFloat() * 0.65f, 0.05f + rnd.nextFloat() * 0.2f)
+            shootProgress.snapTo(0f)
+            shootProgress.animateTo(1f, tween(durationMillis = 1000, easing = LinearEasing))
+            shootProgress.snapTo(0f)
+        }
+    }
+
+    // 앞줄 나무 — 최근 졸업 우선 최대 7그루, 모자라면 자라는 중 항목으로 채운다.
+    val frontItems = remember(garden) {
+        (garden.graduated.sortedByDescending { it.graduatedAtIso ?: "" } + garden.growing).take(7)
+    }
+    val treeCount = garden.graduatedTrees
+    // 뒷줄 실루엣 — 나무 8그루 초과분만큼 밀도 증가(상한 18개).
+    val silhouetteCount = (treeCount - 8).coerceIn(0, 18)
+
+    val treePainter = painterResource(R.drawable.ic_stage_tree)
+    val almostTreePainter = painterResource(R.drawable.ic_stage_almost_tree)
+    val grassPainter = painterResource(R.drawable.ic_stage_grass)
+    val sproutPainter = painterResource(R.drawable.ic_stage_sprout)
+
+    Canvas(modifier = modifier) {
+        val hillTop = size.height * (1f - hillFraction)
+
+        // ① 하늘 — 깊은 밤 → BgBase → 수평선 글로우.
+        // 렉트는 전체 높이로 채운다(능선 곡선 아래 틈이 배경색으로 노출되지 않게;
+        // endY 이후는 마지막 색으로 클램프되고 언덕이 위에 덮인다).
+        drawRect(
+            brush = Brush.verticalGradient(
+                0.0f to NightTop,
+                0.55f to BgBase,
+                1.0f to HorizonGlow,
+                endY = hillTop,
+            ),
+            size = size,
+        )
+
+        // ② 별 — 하늘 밴드 안에서만.
+        stars.forEach { s ->
+            drawCircle(
+                color = (if (s.lime) Lime else Color.White).copy(alpha = s.alpha),
+                radius = s.radiusDp.dp.toPx() / 2f,
+                center = Offset(s.xFrac * size.width, s.yFrac * hillTop * 0.92f),
             )
         }
 
-        // ── 이번 주 잔디 스트립 — 히어로 안의 자체 띠(톤 변화 + 구분선) ──
-        HorizontalDivider(color = Outline, thickness = 1.dp)
-        WeekGrassStrip(
-            streak = streak,
-            solvedToday = solvedToday,
-            maxStreak = maxStreak,
-            weekLevels = weekLevels,
-            todayDow = todayDow,
+        // ③ 별똥별 — 진행 중일 때만 사선 낙하 + 꼬리 페이드.
+        val p = shootProgress.value
+        if (p > 0f && p < 1f) {
+            val travel = size.width * 0.28f
+            val head = Offset(
+                shootStart.x * size.width + travel * p,
+                shootStart.y * hillTop + travel * 0.6f * p,
+            )
+            val tail = head - Offset(travel * 0.22f, travel * 0.132f)
+            val fade = if (p < 0.2f) p / 0.2f else 1f - (p - 0.2f) / 0.8f
+            drawLine(
+                brush = Brush.linearGradient(
+                    colors = listOf(Color.White.copy(alpha = 0f), Color.White.copy(alpha = 0.8f * fade)),
+                    start = tail,
+                    end = head,
+                ),
+                start = tail,
+                end = head,
+                strokeWidth = 1.6.dp.toPx(),
+                cap = StrokeCap.Round,
+            )
+        }
+
+        // ④ 뒷줄 실루엣 숲 — 언덕 능선 뒤 어두운 라운드 셰이프들(개별 렌더 아님).
+        if (silhouetteCount > 0) {
+            val rnd = Random(77)
+            repeat(silhouetteCount) { i ->
+                val x = size.width * ((i + 0.5f) / silhouetteCount + (rnd.nextFloat() - 0.5f) * 0.05f)
+                val r = size.height * (0.022f + rnd.nextFloat() * 0.022f)
+                drawCircle(
+                    color = ForestSilhouette,
+                    radius = r,
+                    center = Offset(x, hillTop + hillOffsetAt(x / size.width) * size.height - r * 0.5f),
+                )
+            }
+        }
+
+        // ⑤ 잔디 언덕 — 완만한 능선의 앞 언덕.
+        val hillPath = Path().apply {
+            moveTo(0f, hillTop + hillOffsetAt(0f) * size.height)
+            var x = 0f
+            while (x <= size.width) {
+                lineTo(x, hillTop + hillOffsetAt(x / size.width) * size.height)
+                x += size.width / 24f
+            }
+            lineTo(size.width, hillTop + hillOffsetAt(1f) * size.height)
+            lineTo(size.width, size.height)
+            lineTo(0f, size.height)
+            close()
+        }
+        drawPath(
+            path = hillPath,
+            brush = Brush.verticalGradient(
+                colors = listOf(Grass2, Grass1, GrassDeep),
+                startY = hillTop,
+                endY = size.height,
+            ),
+        )
+
+        // ⑥ 풀결 텍스처 — 고정 패턴의 작은 세로선.
+        run {
+            val n = 30
+            repeat(n) { i ->
+                val xf = ((i * 37 % n) + 0.5f) / n
+                val yf = (i * 17 % n).toFloat() / n
+                val x = size.width * xf
+                val y = hillTop + hillOffsetAt(xf) * size.height +
+                    (size.height - hillTop) * 0.15f + yf * (size.height - hillTop) * 0.6f
+                val h = size.height * 0.014f
+                drawLine(
+                    color = Grass3.copy(alpha = 0.3f),
+                    start = Offset(x, y),
+                    end = Offset(x, y - h),
+                    strokeWidth = size.width / 320f,
+                )
+            }
+        }
+
+        // ⑦ 앞줄 나무 — 커스텀 단계 아이콘, 유기적 흩뿌림(요일과 무관).
+        val slotRnd = Random(4242)
+        val baseXs = listOf(0.12f, 0.85f, 0.34f, 0.65f, 0.50f, 0.22f, 0.76f)
+        frontItems.forEachIndexed { i, item ->
+            val xf = (baseXs[i] + (slotRnd.nextFloat() - 0.5f) * 0.08f).coerceIn(0.06f, 0.94f)
+            val depth = slotRnd.nextFloat()  // 0 = 능선 근처(멀리), 1 = 아래(가까이)
+            val y = hillTop + hillOffsetAt(xf) * size.height +
+                (size.height - hillTop) * (0.18f + depth * 0.42f)
+            drawGardenItem(
+                item = item,
+                cx = xf * size.width,
+                groundY = y,
+                scale = 0.75f + depth * 0.45f,
+                treePainter = treePainter,
+                almostTreePainter = almostTreePainter,
+                grassPainter = grassPainter,
+                sproutPainter = sproutPainter,
+            )
+        }
+    }
+}
+
+/** 언덕 능선의 x(0~1) 지점 오프셋(화면 높이 분율) — 좌우로 살짝 굽은 완만한 곡선. */
+private fun hillOffsetAt(xFrac: Float): Float {
+    val c = (xFrac - 0.42f)
+    return 0.012f + c * c * 0.10f
+}
+
+/** 정원 항목 하나를 커스텀 단계 아이콘으로 — 밑동이 지면(groundY)에 닿게 그린다. */
+private fun DrawScope.drawGardenItem(
+    item: GardenItem,
+    cx: Float,
+    groundY: Float,
+    scale: Float,
+    treePainter: Painter,
+    almostTreePainter: Painter,
+    grassPainter: Painter,
+    sproutPainter: Painter,
+) {
+    val unit = size.height * 0.035f * scale
+    val (painter, side) = when {
+        item.graduatedAtIso != null -> treePainter to unit * 3.6f
+        item.stage == ReviewStage.SPROUT -> sproutPainter to unit * 2.3f
+        item.stage == ReviewStage.GRASS -> grassPainter to unit * 2.5f
+        else -> almostTreePainter to unit * 3.1f  // ALMOST_TREE
+    }
+    translate(left = cx - side / 2f, top = groundY - side * 0.9f) {
+        with(painter) { draw(size = Size(side, side)) }
+    }
+}
+
+/** 잔디밭 라벨 — "N그루의 숲 · 자라는 중 M →". 숫자는 graduatedTrees 카운터 신뢰. */
+@Composable
+private fun GardenLabel(
+    treeCount: Int,
+    growingCount: Int,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(50))
+            .background(BgBase.copy(alpha = 0.45f))
+            .padding(horizontal = 14.dp, vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        androidx.compose.foundation.Image(
+            painter = painterResource(R.drawable.ic_stage_tree),
+            contentDescription = null,
+            modifier = Modifier.size(15.dp),
+        )
+        Spacer(Modifier.width(6.dp))
+        Text(
+            text = if (treeCount == 0 && growingCount == 0) "오답을 복습하면 숲이 자라요 →"
+                   else "${treeCount}그루의 숲 · 자라는 중 $growingCount →",
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            color = TextPrimary,
         )
     }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 이번 주 잔디 스트립 — 유리 패널
+// ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * 이번 주(월~일) 잔디 스트립 — 요일별 학습량을 잔디 블록 높이로 표현.
@@ -284,7 +491,13 @@ private fun WeekGrassStrip(
 ) {
     val dayLabels = listOf("월", "화", "수", "목", "금", "토", "일")
 
-    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(BgSurface.copy(alpha = 0.45f))
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -335,7 +548,10 @@ private fun WeekGrassStrip(
                             .width(26.dp)
                             .height(barHeight)
                             .clip(RoundedCornerShape(topStart = 5.dp, topEnd = 5.dp))
-                            .background(if (isFilled) streakColor(level) else BgElevated)
+                            .background(
+                                if (isFilled) streakColor(level)
+                                else BgElevated.copy(alpha = 0.6f)
+                            )
                             .then(
                                 if (isToday && !isFilled)
                                     Modifier.border(
@@ -372,7 +588,7 @@ private fun StatPill(iconRes: Int, text: String) {
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(50))
-            .background(BgSubtle)
+            .background(BgSubtle.copy(alpha = 0.55f))
             .padding(horizontal = 10.dp, vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -393,7 +609,7 @@ private fun StatPill(iconRes: Int, text: String) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 오늘의 퀴즈 카드
+// 오늘의 퀴즈 카드 — 유리 패널
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -413,8 +629,7 @@ private fun TodayQuizCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
-            .background(BgElevated)
-            .border(1.dp, Outline, RoundedCornerShape(20.dp))
+            .background(BgElevated.copy(alpha = 0.45f))
             .padding(24.dp),
     ) {
         Column {
@@ -465,7 +680,7 @@ private fun TodayQuizCard(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(50))
-                        .background(BgSubtle)
+                        .background(BgSubtle.copy(alpha = 0.55f))
                         .heightIn(min = 42.dp)
                         .padding(horizontal = 24.dp),
                     contentAlignment = Alignment.Center,
@@ -490,8 +705,7 @@ private fun HeroCardLoading() {
             .fillMaxWidth()
             .height(180.dp)
             .clip(RoundedCornerShape(20.dp))
-            .background(BgElevated)
-            .border(1.dp, Outline, RoundedCornerShape(20.dp)),
+            .background(BgElevated.copy(alpha = 0.45f)),
         contentAlignment = Alignment.Center,
     ) {
         CircularProgressIndicator(color = Lime)
@@ -500,34 +714,28 @@ private fun HeroCardLoading() {
 
 @Composable
 private fun HeroCardError(error: String, onRetry: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer,
-        ),
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.75f))
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Text(
-                text = "퀴즈를 불러오지 못했어요",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onErrorContainer,
-            )
-            Text(
-                text = error,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f),
-            )
-            OutlinedButton(onClick = onRetry) {
-                Text("다시 시도")
-            }
+        Text(
+            text = "퀴즈를 불러오지 못했어요",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onErrorContainer,
+        )
+        Text(
+            text = error,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f),
+        )
+        OutlinedButton(onClick = onRetry) {
+            Text("다시 시도")
         }
     }
 }
