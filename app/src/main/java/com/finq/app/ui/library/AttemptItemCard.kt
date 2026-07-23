@@ -94,8 +94,10 @@ fun AttemptItemCard(
     var detailError by remember(item.quizId) { mutableStateOf<String?>(null) }
     var retryTick by remember(item.quizId) { mutableStateOf(0) }
 
-    // 지연 로드가 필요한 경로인지 — 로더가 있고, 아직 못 받았고, 푼 문제일 때만.
-    val needsDetailLoad = onLoadDetail != null && !item.unsolved
+    // 지연 로드가 필요한 경로인지 — 로더가 있고, 푼 문제이고, 목록이 요약(선택지 없음)일 때만.
+    // 목록이 아직 무거운 필드를 통째로 주는 시기엔 이미 item 에 상세가 있으므로 재요청하지 않는다
+    // (백엔드가 목록에서 무거운 필드를 제거하면 choices 가 비어 자동으로 지연 로드가 켜진다).
+    val needsDetailLoad = onLoadDetail != null && !item.unsolved && item.choices.isEmpty()
     // 펼쳤을 때 heavy 필드는 상세를 우선 사용(없으면 요약 item — Showcase/구서버 경로).
     val effective = detail ?: item
     // 상세를 아직 받는 중이라 본문을 아직 못 그리는 상태.
