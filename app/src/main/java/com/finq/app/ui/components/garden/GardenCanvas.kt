@@ -13,15 +13,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.finq.app.R
 import com.finq.app.data.repository.GardenItem
 import com.finq.app.data.repository.ReviewGarden
 import com.finq.app.data.repository.ReviewStage
@@ -31,8 +33,6 @@ import com.finq.app.ui.theme.FinQTheme
 import com.finq.app.ui.theme.Grass1
 import com.finq.app.ui.theme.Grass2
 import com.finq.app.ui.theme.Grass3
-import com.finq.app.ui.theme.GrassMax
-import com.finq.app.ui.theme.Lime
 import com.finq.app.ui.theme.TextMuted
 
 private const val COMPACT_MAX_SLOTS = 12
@@ -62,6 +62,12 @@ fun GardenCanvas(
     }
     val empty = layout.slots.isEmpty()
 
+    // 정원 내부 식물은 커스텀 벡터 아이콘(뱃지·헤더와 동일 세트)으로 그린다.
+    val treePainter = painterResource(R.drawable.ic_stage_tree)
+    val almostTreePainter = painterResource(R.drawable.ic_stage_almost_tree)
+    val grassPainter = painterResource(R.drawable.ic_stage_grass)
+    val sproutPainter = painterResource(R.drawable.ic_stage_sprout)
+
     Box(modifier = modifier) {
         Canvas(
             modifier = Modifier
@@ -80,7 +86,9 @@ fun GardenCanvas(
             drawSkyAndField()
             drawGrassTufts()
             // 뒤(작은 y)부터 그려 앞 항목이 자연스럽게 겹치게 한다.
-            layout.slots.sortedBy { it.yFrac }.forEach { drawSlot(it) }
+            layout.slots.sortedBy { it.yFrac }.forEach {
+                drawSlot(it, treePainter, almostTreePainter, grassPainter, sproutPainter)
+            }
         }
 
         if (empty) {
@@ -162,62 +170,35 @@ private fun DrawScope.drawGrassTufts() {
     }
 }
 
-private fun DrawScope.drawSlot(slot: GardenSlot) {
+/**
+ * 슬롯 한 개를 커스텀 벡터 아이콘으로 그린다.
+ *
+ * 아이콘은 24x24 뷰포트 정사각형이고 식물 밑동이 뷰포트 하단(≈y22)에 있으므로,
+ * 밑동이 잔디 지면(cx, cy)에 닿도록 하단-중앙을 기준점으로 배치한다.
+ * 성장 단계가 높을수록 크게 그려 원근·성장감을 준다(scale 은 원근 배율).
+ */
+private fun DrawScope.drawSlot(
+    slot: GardenSlot,
+    treePainter: Painter,
+    almostTreePainter: Painter,
+    grassPainter: Painter,
+    sproutPainter: Painter,
+) {
     val cx = slot.xFrac * size.width
     val cy = fieldY(slot.yFrac, size.height)
     val unit = size.height * 0.055f * slot.scale  // 기본 치수 단위
 
-    when {
-        slot.graduated -> drawTree(cx, cy, unit)
-        slot.stage == ReviewStage.SPROUT -> drawSprout(cx, cy, unit)
-        slot.stage == ReviewStage.GRASS -> drawBush(cx, cy, unit)
-        else -> drawSapling(cx, cy, unit)  // ALMOST_TREE
+    val (painter, side) = when {
+        slot.graduated -> treePainter to unit * 3.6f
+        slot.stage == ReviewStage.SPROUT -> sproutPainter to unit * 2.3f
+        slot.stage == ReviewStage.GRASS -> grassPainter to unit * 2.5f
+        else -> almostTreePainter to unit * 3.1f  // ALMOST_TREE
     }
-}
 
-/** 완성 나무 — 줄기 + 3단 캐노피. 캐노피 하이라이트만 Lime 포인트. */
-private fun DrawScope.drawTree(cx: Float, cy: Float, unit: Float) {
-    drawRoundRect(
-        color = Grass1,
-        topLeft = Offset(cx - unit * 0.14f, cy - unit * 1.2f),
-        size = Size(unit * 0.28f, unit * 1.2f),
-        cornerRadius = CornerRadius(unit * 0.1f),
-    )
-    drawCircle(color = Grass2, radius = unit * 0.75f, center = Offset(cx, cy - unit * 1.5f))
-    drawCircle(color = Grass3, radius = unit * 0.55f, center = Offset(cx - unit * 0.45f, cy - unit * 1.2f))
-    drawCircle(color = Grass3, radius = unit * 0.55f, center = Offset(cx + unit * 0.45f, cy - unit * 1.2f))
-    drawCircle(color = GrassMax, radius = unit * 0.30f, center = Offset(cx + unit * 0.25f, cy - unit * 1.75f))
-    drawCircle(color = Lime.copy(alpha = 0.9f), radius = unit * 0.10f, center = Offset(cx - unit * 0.2f, cy - unit * 1.85f))
-}
-
-/** 새싹(stage 0) — 짧은 줄기 + 떡잎 두 장. */
-private fun DrawScope.drawSprout(cx: Float, cy: Float, unit: Float) {
-    drawLine(color = Grass2, start = Offset(cx, cy), end = Offset(cx, cy - unit * 0.5f), strokeWidth = unit * 0.1f)
-    drawCircle(color = Grass3, radius = unit * 0.22f, center = Offset(cx - unit * 0.2f, cy - unit * 0.55f))
-    drawCircle(color = Grass3, radius = unit * 0.22f, center = Offset(cx + unit * 0.2f, cy - unit * 0.55f))
-}
-
-/** 풀(stage 1) — 잎 3갈래 부채꼴. */
-private fun DrawScope.drawBush(cx: Float, cy: Float, unit: Float) {
-    val path = Path().apply {
-        moveTo(cx, cy)
-        quadraticBezierTo(cx - unit * 0.6f, cy - unit * 0.5f, cx - unit * 0.35f, cy - unit * 0.9f)
-        quadraticBezierTo(cx - unit * 0.05f, cy - unit * 0.5f, cx, cy)
-        moveTo(cx, cy)
-        quadraticBezierTo(cx, cy - unit * 0.7f, cx, cy - unit * 1.05f)
-        quadraticBezierTo(cx + unit * 0.08f, cy - unit * 0.6f, cx, cy)
-        moveTo(cx, cy)
-        quadraticBezierTo(cx + unit * 0.6f, cy - unit * 0.5f, cx + unit * 0.35f, cy - unit * 0.9f)
-        quadraticBezierTo(cx + unit * 0.05f, cy - unit * 0.5f, cx, cy)
+    // 밑동(뷰포트 하단)을 지면에 살짝 묻히게 — top = cy - side*0.9.
+    translate(left = cx - side / 2f, top = cy - side * 0.9f) {
+        with(painter) { draw(size = Size(side, side)) }
     }
-    drawPath(path, color = Grass3)
-}
-
-/** 나무 직전(stage 2) — 가는 줄기 + 작은 캐노피. */
-private fun DrawScope.drawSapling(cx: Float, cy: Float, unit: Float) {
-    drawLine(color = Grass1, start = Offset(cx, cy), end = Offset(cx, cy - unit * 0.9f), strokeWidth = unit * 0.14f)
-    drawCircle(color = Grass2, radius = unit * 0.45f, center = Offset(cx, cy - unit * 1.1f))
-    drawCircle(color = Grass3, radius = unit * 0.28f, center = Offset(cx + unit * 0.15f, cy - unit * 1.25f))
 }
 
 @Preview(showBackground = true, backgroundColor = 0xFF081A2E)
