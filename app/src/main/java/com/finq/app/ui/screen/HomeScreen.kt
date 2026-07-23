@@ -1,5 +1,6 @@
 package com.finq.app.ui.screen
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -215,11 +216,33 @@ private fun GardenHero(
                     color = TextPrimary,
                 )
                 Spacer(Modifier.height(3.dp))
-                Text(
-                    text = "🌳 ${treeCount}그루 · 자라는 중 $growingCount",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = TextSecondary,
-                )
+                // 나무/새싹 카운트 — 이모지 대신 커스텀 벡터 아이콘(마이·내공부 탭과 통일).
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Image(
+                        painter = painterResource(R.drawable.ic_stage_tree),
+                        contentDescription = null,
+                        modifier = Modifier.size(15.dp),
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        text = "${treeCount}그루",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = TextSecondary,
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Image(
+                        painter = painterResource(R.drawable.ic_stage_sprout),
+                        contentDescription = null,
+                        modifier = Modifier.size(15.dp),
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        text = "자라는 중 $growingCount",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = TextSecondary,
+                    )
+                }
             }
             Text(
                 text = "내 정원 →",
