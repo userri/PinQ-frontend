@@ -1,5 +1,6 @@
 package com.finq.app.data.repository
 
+import com.finq.app.R
 import com.finq.app.data.model.QuizOption
 import com.finq.app.data.model.RelatedArticle
 import java.time.LocalDate
@@ -9,10 +10,10 @@ import java.time.LocalDate
  *
  * 서버의 stage(0~2)를 잔디 컨셉으로 표현한다.
  */
-enum class ReviewStage(val label: String, val emoji: String) {
-    SPROUT("새싹", "🌱"),
-    GRASS("풀", "🌿"),
-    ALMOST_TREE("나무 직전", "🪴"),
+enum class ReviewStage(val label: String, val iconRes: Int) {
+    SPROUT("새싹", R.drawable.ic_stage_sprout),
+    GRASS("풀", R.drawable.ic_stage_grass),
+    ALMOST_TREE("나무 직전", R.drawable.ic_stage_almost_tree),
     ;
 
     /** 이번에 맞히면 졸업(나무)하는 마지막 단계인가. */

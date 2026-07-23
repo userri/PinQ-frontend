@@ -1,6 +1,7 @@
 package com.finq.app.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,10 +23,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.finq.app.R
 import com.finq.app.ui.theme.BgSubtle
 import com.finq.app.ui.theme.BgSurface
 import com.finq.app.ui.theme.FinQTheme
@@ -75,7 +78,15 @@ fun WaterGrassCard(
                     .background(if (hasReviews) Lime else BgSubtle),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(text = if (hasReviews) "💧" else "🌿", fontSize = 18.sp)
+                if (hasReviews) {
+                    Text(text = "💧", fontSize = 18.sp)
+                } else {
+                    Image(
+                        painter = painterResource(R.drawable.ic_stage_grass),
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
             }
             Spacer(Modifier.size(12.dp))
             Column(modifier = Modifier.weight(1f)) {

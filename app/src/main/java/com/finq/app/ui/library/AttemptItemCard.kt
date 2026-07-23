@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -191,14 +192,27 @@ fun AttemptItemCard(
                             shape = RoundedCornerShape(50),
                             color = BgSubtle,
                         ) {
-                            Text(
-                                text = if (review.graduated) "🌳 나무 완성"
-                                       else "${ReviewStage.of(review.stage).emoji} 물 ${review.waterCount}번",
+                            Row(
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (review.graduated) Lime else TextSecondary,
-                                fontWeight = FontWeight.SemiBold,
-                            )
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Image(
+                                    painter = painterResource(
+                                        if (review.graduated) R.drawable.ic_stage_tree
+                                        else ReviewStage.of(review.stage).iconRes,
+                                    ),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(13.dp),
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = if (review.graduated) "나무 완성"
+                                           else "물 ${review.waterCount}번",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (review.graduated) Lime else TextSecondary,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                            }
                         }
                     }
                     if (dateStr != null) {
@@ -239,6 +253,12 @@ fun AttemptItemCard(
                     today = LocalDate.now(),
                 )?.takeIf { it.dueToday || it.finalStage }?.let { strip ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        Image(
+                            painter = painterResource(strip.stageIconRes),
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                        )
+                        Spacer(Modifier.width(4.dp))
                         Text(
                             text = strip.stageText,
                             style = MaterialTheme.typography.labelMedium,

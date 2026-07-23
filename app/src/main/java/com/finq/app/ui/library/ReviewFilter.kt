@@ -13,10 +13,10 @@ import com.finq.app.data.model.AttemptItem
  * "복습 큐에 아직 없는 오답"(review == null)은 배포 이전 레거시뿐이라
  * 별도 필터로 두지 않는다 — '전체'에 포함해 보여준다.
  */
-enum class ReviewFilter(val label: String) {
+enum class ReviewFilter(val label: String, val iconRes: Int? = null) {
     ALL("전체"),
     GROWING("복습중"),
-    GRADUATED("졸업🌳"),
+    GRADUATED("졸업", com.finq.app.R.drawable.ic_stage_tree),
 }
 
 fun List<AttemptItem>.applyReviewFilter(filter: ReviewFilter): List<AttemptItem> = when (filter) {

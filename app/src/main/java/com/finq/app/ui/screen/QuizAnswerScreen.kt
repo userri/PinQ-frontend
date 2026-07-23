@@ -96,6 +96,8 @@ fun QuizAnswerScreen(
     modifier: Modifier = Modifier,
     /** 헤더 카테고리 라벨 override. 복습처럼 서버가 라벨을 직접 주는 경우에 쓴다. */
     categoryLabel: String? = null,
+    /** 복습 헤더 등에서 카테고리 앞에 붙일 단계 아이콘. null 이면 아이콘 없음. */
+    categoryIconRes: Int? = null,
     /** 복습에서 이 문제를 완전히 익혔을 때 축하 배너를 띄운다. */
     graduated: Boolean = false,
     /** 졸업 배너 문구 override. null 이면 기본 "이 문제를 완전히 익혔어요! 나무가 됐어요". */
@@ -139,6 +141,14 @@ fun QuizAnswerScreen(
                 )
             }
             Spacer(Modifier.weight(1f))
+            if (categoryIconRes != null) {
+                Image(
+                    painter = painterResource(categoryIconRes),
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.size(5.dp))
+            }
             Text(
                 text = "Q${quizIndex + 1} · ${categoryLabel ?: quiz.category.displayName}",
                 style = MaterialTheme.typography.titleMedium,
@@ -319,7 +329,11 @@ private fun GraduatedBanner(message: String? = null) {
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(text = "🌳", style = MaterialTheme.typography.titleMedium)
+        Image(
+            painter = painterResource(R.drawable.ic_stage_tree),
+            contentDescription = null,
+            modifier = Modifier.size(22.dp),
+        )
         Spacer(Modifier.size(10.dp))
         Text(
             text = message ?: "이 문제를 완전히 익혔어요! 나무가 됐어요",

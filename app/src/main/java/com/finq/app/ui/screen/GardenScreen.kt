@@ -1,11 +1,14 @@
 package com.finq.app.ui.screen
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -23,9 +26,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.finq.app.R
 import com.finq.app.data.repository.GardenItem
 import com.finq.app.data.repository.ReviewGarden
 import com.finq.app.data.repository.ReviewStage
@@ -123,13 +128,29 @@ fun GardenScreen(
                 }
             }
             garden != null -> Column(modifier = Modifier.fillMaxSize()) {
-                Text(
-                    text = "자라는 중 ${garden.growing.size} · 🌳 키운 나무 ${garden.graduatedTrees}그루",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = TextSecondary,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
-                )
+                ) {
+                    Text(
+                        text = "자라는 중 ${garden.growing.size} · ",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = TextSecondary,
+                    )
+                    Image(
+                        painter = painterResource(R.drawable.ic_stage_tree),
+                        contentDescription = null,
+                        modifier = Modifier.size(15.dp),
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        text = "키운 나무 ${garden.graduatedTrees}그루",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = TextSecondary,
+                    )
+                }
                 Text(
                     text = "나무를 누르면 그 문제의 오답노트로 가요",
                     style = MaterialTheme.typography.labelSmall,

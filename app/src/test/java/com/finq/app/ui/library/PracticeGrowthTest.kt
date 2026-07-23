@@ -19,14 +19,16 @@ class PracticeGrowthTest {
     @Test
     fun `stage 0 은 1 of 3 단계 · 새싹`() {
         val s = growthStrip(stage = 0, graduated = false, dueDateIso = null, today = today)!!
-        assertEquals("🌱 1/3단계", s.stageText)
+        assertEquals("1/3단계", s.stageText)
+        assertEquals(com.finq.app.R.drawable.ic_stage_sprout, s.stageIconRes)
         assertFalse(s.finalStage)
     }
 
     @Test
     fun `stage 2 는 마지막 단계 플래그`() {
         val s = growthStrip(stage = 2, graduated = false, dueDateIso = "2026-07-24", today = today)!!
-        assertEquals("🪴 3/3단계", s.stageText)
+        assertEquals("3/3단계", s.stageText)
+        assertEquals(com.finq.app.R.drawable.ic_stage_almost_tree, s.stageIconRes)
         assertTrue(s.finalStage)
     }
 

@@ -1,8 +1,12 @@
 package com.finq.app.ui.screen
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,11 +21,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.finq.app.R
 import com.finq.app.ui.theme.BgBase
 import com.finq.app.ui.theme.FinQTheme
 import com.finq.app.ui.theme.Lime
@@ -59,7 +65,15 @@ fun ReviewDoneScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Text(text = if (nothingToReview) "🌿" else "💧", fontSize = 56.sp)
+        if (nothingToReview) {
+            Image(
+                painter = painterResource(R.drawable.ic_stage_grass),
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+            )
+        } else {
+            Text(text = "💧", fontSize = 56.sp)
+        }
         Spacer(Modifier.height(20.dp))
 
         Text(
@@ -80,13 +94,21 @@ fun ReviewDoneScreen(
             )
             if (graduatedCount > 0) {
                 Spacer(Modifier.height(8.dp))
-                Text(
-                    text = "🌳 ${graduatedCount}문제를 완전히 익혔어요",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = TextSecondary,
-                    textAlign = TextAlign.Center,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Image(
+                        painter = painterResource(R.drawable.ic_stage_tree),
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Spacer(Modifier.width(5.dp))
+                    Text(
+                        text = "${graduatedCount}문제를 완전히 익혔어요",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TextSecondary,
+                        textAlign = TextAlign.Center,
+                    )
+                }
             }
         }
 

@@ -1,6 +1,7 @@
 package com.finq.app.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -30,9 +31,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.finq.app.R
 import com.finq.app.data.repository.GrassCalendar
 import com.finq.app.data.repository.GrassDay
 import com.finq.app.ui.theme.BgElevated
@@ -92,15 +95,25 @@ fun GrassCalendarCard(
                     color = TextPrimary,
                 )
                 // 복습으로 졸업한 문제 = 키운 나무.
-                Text(
-                    text = "🌳 키운 나무 ${grass.graduatedTrees}그루" + if (onTreesClick != null) " →" else "",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = TextSecondary,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.then(
                         if (onTreesClick != null) Modifier.clickable(onClick = onTreesClick) else Modifier
                     ),
-                )
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.ic_stage_tree),
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        text = "키운 나무 ${grass.graduatedTrees}그루" + if (onTreesClick != null) " →" else "",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = TextSecondary,
+                    )
+                }
             }
             Spacer(Modifier.height(12.dp))
 
