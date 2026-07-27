@@ -24,7 +24,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -47,7 +46,6 @@ import com.finq.app.ui.theme.TextSecondary
 import com.finq.app.ui.theme.streakColor
 import java.time.DayOfWeek
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
 private val CELL = 13.dp
@@ -111,9 +109,10 @@ fun GrassCalendarBody(grass: GrassCalendar) {
     // 최근이 오른쪽이므로 진입 시 끝으로 보낸다.
     LaunchedEffect(weeks) { scrollState.scrollTo(scrollState.maxValue) }
 
-    // 셀 탭 시 그날 상세("N문제 풀이 · M문제 복습")를 그리드 아래에 띄운다.
-    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
-
+    // 셀은 탭할 수 없다 — 잔디는 "행동하라"가 아니라 조용히 쌓이는 앰비언트 층이다.
+    // 하루치 상세("7/12에 3문제")는 알아도 다음 행동이 없어 인사이트가 아니었고,
+    // 행동을 부르는 일은 복습 나무(오늘 물 줄 것)와 개념별 정답률(약한 개념)이 맡는다.
+    // 탭이 사라지면서 12dp 셀의 터치 타깃 문제와 안내 문구도 함께 정리된다.
     Column {
         GrassSummaryRow(grass)
         Spacer(Modifier.height(14.dp))
@@ -146,12 +145,7 @@ fun GrassCalendarBody(grass: GrassCalendar) {
                         Column(verticalArrangement = Arrangement.spacedBy(GAP)) {
                             repeat(DAYS_PER_WEEK) { dayOfWeek ->
                                 val date = gridStart.plusDays((week.toLong() * DAYS_PER_WEEK) + dayOfWeek)
-                                GrassCell(
-                                    date = date,
-                                    grass = grass,
-                                    isSelected = date == selectedDate,
-                                    onClick = { selectedDate = date },
-                                )
+                                GrassCell(date = date, grass = grass)
                             }
                         }
                     }
@@ -161,10 +155,6 @@ fun GrassCalendarBody(grass: GrassCalendar) {
 
         Spacer(Modifier.height(12.dp))
         GrassLegend()
-
-        // 선택한 날짜 상세 — 없으면 안내 문구.
-        Spacer(Modifier.height(10.dp))
-        GrassDayDetail(date = selectedDate, day = selectedDate?.let(grass::dayAt))
     }
 }
 
@@ -172,8 +162,6 @@ fun GrassCalendarBody(grass: GrassCalendar) {
 private fun GrassCell(
     date: LocalDate,
     grass: GrassCalendar,
-    isSelected: Boolean,
-    onClick: () -> Unit,
 ) {
     // 집계 범위 밖(from 이전 / 오늘 이후)은 빈 자리로 남겨 격자만 유지한다.
     val outOfRange = date < grass.from || date > grass.to
@@ -182,40 +170,17 @@ private fun GrassCell(
         return
     }
 
+    // 오늘만 테두리로 표시한다 — 선택 개념이 없어졌으므로 "지금 어디"만 남긴다.
     val isToday = date == grass.to
-    val borderColor = when {
-        isSelected -> Lime
-        isToday -> TextPrimary
-        else -> null
-    }
     Box(
         modifier = Modifier
             .size(CELL)
             .clip(RoundedCornerShape(3.dp))
             .background(streakColor(grass.levelAt(date)))
             .then(
-                if (borderColor != null) Modifier.border(1.5.dp, borderColor, RoundedCornerShape(3.dp))
+                if (isToday) Modifier.border(1.5.dp, TextPrimary, RoundedCornerShape(3.dp))
                 else Modifier
-            )
-            .clickable(onClick = onClick),
-    )
-}
-
-private val DETAIL_DATE_FORMAT = DateTimeFormatter.ofPattern("M월 d일")
-
-/** 선택한 날짜의 풀이/복습 상세. 복습만 한 날은 그 맥락을 함께 보여준다. */
-@Composable
-private fun GrassDayDetail(date: LocalDate?, day: GrassDay?) {
-    val text = when {
-        date == null -> "날짜를 눌러 그날의 활동을 확인해요"
-        day == null -> "${date.format(DETAIL_DATE_FORMAT)} · 활동 없음"
-        day.reviewOnly -> "${date.format(DETAIL_DATE_FORMAT)} · 복습만 한 날 — 연한 잔디 (복습 ${day.reviewed}문제)"
-        else -> "${date.format(DETAIL_DATE_FORMAT)} · ${day.solved}문제 풀이 · ${day.reviewed}문제 복습"
-    }
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelSmall,
-        color = if (date == null) TextMuted else TextSecondary,
+            ),
     )
 }
 

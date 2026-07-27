@@ -307,7 +307,7 @@ fun MyPageContent(
             text = "앱 정보",
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = TextMuted,
         )
         Spacer(Modifier.height(8.dp))
         InfoRow(label = "버전", value = appVersion)
@@ -321,7 +321,7 @@ fun MyPageContent(
             text = "알림",
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = TextMuted,
         )
         Spacer(Modifier.height(8.dp))
         Row(
@@ -382,7 +382,7 @@ fun MyPageContent(
             text = "계정",
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = TextMuted,
         )
         Spacer(Modifier.height(8.dp))
         OutlinedButton(

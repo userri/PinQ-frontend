@@ -104,7 +104,7 @@ private fun WeakestConceptBanner(weakest: ConceptStat) {
             Spacer(Modifier.height(2.dp))
             Text(
                 text = "정답률 ${weakest.correctRate.toPercent()}% · ${weakest.correct}/${weakest.total}문제",
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelMedium,
                 color = TextSecondary,
             )
         }

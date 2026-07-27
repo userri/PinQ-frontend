@@ -133,7 +133,7 @@ fun TreeRecordBlock(
                 // 보조는 딱 한 줄. 크기·굵기를 섞지 않고 숫자만 색으로 한 톤 올린다.
                 Text(
                     text = supportLine(graduatedTrees, growingCount, almostTrees),
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.labelMedium,
                     color = TextMuted,
                 )
             }
