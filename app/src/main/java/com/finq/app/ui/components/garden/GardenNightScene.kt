@@ -313,11 +313,15 @@ private fun plantGeometry(p: ScenePlant, width: Float, height: Float): Triple<Fl
     val groundY = hillTop + ridgeOffsetAt(p.xFrac) * height + band * (0.06f + p.depth * 0.72f)
     // 최종 크기 = 단계별 기본 × 깊이 배율 — 가까운 나무직전은 우뚝, 먼 새싹은 자잘하게.
     val unit = height * 0.040f * (0.55f + p.depth * 0.80f)
+    // 배율은 아이콘이 뷰포트를 채우는 정도가 달라 광학 보정이 들어간다 —
+    // 풀은 잎날이 폭을 꽉 채워 같은 변 길이에서도 크게 보이므로 낮추고,
+    // 나무직전은 벡터 자체를 키운 만큼(1.24×) 배율을 내려 균형을 맞춘다.
+    // 순서는 항상 새싹 < 풀 < 나무직전 < 나무 로 유지한다(성장 서사).
     val side = when {
         p.item.graduatedAtIso != null -> unit * 3.6f
-        p.item.stage == ReviewStage.SPROUT -> unit * 2.3f
-        p.item.stage == ReviewStage.GRASS -> unit * 2.5f
-        else -> unit * 3.1f  // ALMOST_TREE
+        p.item.stage == ReviewStage.SPROUT -> unit * 2.0f
+        p.item.stage == ReviewStage.GRASS -> unit * 2.1f
+        else -> unit * 2.7f  // ALMOST_TREE — 벡터가 1.24× 커져 실효 크기는 3.35 상당
     }
     return Triple(cx, groundY, side)
 }
