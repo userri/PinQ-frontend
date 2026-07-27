@@ -7,12 +7,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -35,9 +37,9 @@ import com.finq.app.data.repository.GardenItem
 import com.finq.app.data.repository.ReviewGarden
 import com.finq.app.data.repository.ReviewStage
 import com.finq.app.ui.components.ReviewTreeConceptDialog
-import com.finq.app.ui.components.garden.GardenCanvas
+import com.finq.app.ui.components.garden.GardenNightScene
 import com.finq.app.ui.theme.BgBase
-import com.finq.app.ui.theme.BgSubtle
+import com.finq.app.ui.theme.BgSurface
 import com.finq.app.ui.theme.FinQTheme
 import com.finq.app.ui.theme.Lime
 import com.finq.app.ui.theme.TextMuted
@@ -46,9 +48,10 @@ import com.finq.app.ui.theme.TextSecondary
 import java.time.LocalDate
 
 /**
- * 정원 — 잔디 위에 나무가 자란 그림 한 장 (순수 시각 보상).
+ * 정원 — 화면 전체가 밤하늘 아래 잔디밭 한 장면(순수 시각 보상).
  *
- * 목록 기능은 오답노트 복습 필터칩으로 이관됐다. 나무/새싹 탭 → 오답노트 해당 문제.
+ * 앞줄 큐레이션 식물(성장 전시 중심 10~15개)만 클릭 가능 → 오답노트 해당 문제.
+ * 나머지는 능선 뒤 실루엣 + "전체 N개 보기" 행이 담당한다.
  * "총 몇 그루"는 항상 [ReviewGarden.graduatedTrees] 카운터가 진실.
  */
 @Composable
@@ -58,8 +61,12 @@ fun GardenScreen(
     error: String?,
     onRetry: () -> Unit,
     onBack: () -> Unit,
-    /** 나무/새싹 탭 → 오답노트 해당 문제로. */
+    /** 앞줄 식물 탭 → 오답노트 해당 문제로. */
     onOpenQuiz: (Long) -> Unit,
+    /** "전체 N개 보기" → 오답노트 탭으로. */
+    onOpenAll: () -> Unit = {},
+    /** "오늘 물 줄 잔디 N개" → 복습 세션으로. 정원은 보상, 복습은 작업 공간. */
+    onStartReview: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var showHelp by remember { mutableStateOf(false) }
@@ -71,51 +78,7 @@ fun GardenScreen(
         )
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(BgBase),
-    ) {
-        // ── 상단 바 ──────────────────────────────────────────────
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = "←",
-                style = MaterialTheme.typography.titleLarge,
-                color = TextPrimary,
-                modifier = Modifier
-                    .clickable(onClick = onBack)
-                    .padding(12.dp),
-            )
-            Text(
-                text = "정원",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary,
-            )
-            Spacer(Modifier.weight(1f))
-            // 복습 나무 개념 설명 — 레이아웃이 아닌 개념을 설명해 UI 변경에 강함.
-            Box(
-                modifier = Modifier
-                    .padding(end = 8.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(BgSubtle)
-                    .clickable { showHelp = true }
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
-            ) {
-                Text(
-                    text = "? 복습 나무란",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = TextSecondary,
-                )
-            }
-        }
-
+    Box(modifier = modifier.fillMaxSize().background(BgBase)) {
         when {
             isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = Lime)
@@ -127,10 +90,78 @@ fun GardenScreen(
                     Button(onClick = onRetry) { Text("다시 시도") }
                 }
             }
-            garden != null -> Column(modifier = Modifier.fillMaxSize()) {
+            garden != null -> {
+                // 배경 씬 — 화면 전체(카드·테두리 없음). 상단 바 뒤까지 하늘이 이어진다.
+                GardenNightScene(
+                    garden = garden,
+                    onItemTap = onOpenQuiz,
+                    modifier = Modifier.fillMaxSize(),
+                )
+                if (garden.growing.isEmpty() && garden.graduatedTrees == 0) {
+                    Text(
+                        text = "오답을 복습하면 나무가 자라요",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextMuted,
+                        modifier = Modifier.align(Alignment.Center),
+                    )
+                }
+            }
+        }
+
+        // ── 오버레이 UI — 유리 톤으로 밤하늘에 녹인다. 씬은 풀블리드, UI 만 인셋.
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding(),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "←",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = TextPrimary,
+                    modifier = Modifier
+                        .clickable(onClick = onBack)
+                        .padding(12.dp),
+                )
+                Text(
+                    text = "정원",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary,
+                )
+                Spacer(Modifier.weight(1f))
+                // 복습 나무 개념 설명 — 레이아웃이 아닌 개념을 설명해 UI 변경에 강함.
+                Box(
+                    modifier = Modifier
+                        .padding(end = 8.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(BgSurface.copy(alpha = 0.45f))
+                        .clickable { showHelp = true }
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                ) {
+                    Text(
+                        text = "? 복습 나무란",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TextSecondary,
+                    )
+                }
+            }
+
+            if (garden != null && !isLoading && error == null) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                    modifier = Modifier
+                        .padding(horizontal = 20.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(BgBase.copy(alpha = 0.40f))
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
                 ) {
                     Text(
                         text = "자라는 중 ${garden.growing.size} · ",
@@ -151,28 +182,63 @@ fun GardenScreen(
                         color = TextSecondary,
                     )
                 }
-                Text(
-                    text = "나무를 누르면 그 문제의 오답노트로 가요",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = TextMuted,
-                    modifier = Modifier.padding(horizontal = 20.dp),
-                )
-                Spacer(Modifier.height(8.dp))
-                GardenCanvas(
-                    garden = garden,
-                    onItemTap = onOpenQuiz,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp)
-                        .padding(bottom = 16.dp)
-                        .clip(RoundedCornerShape(20.dp)),
-                )
+
+                // due 안내 — 오늘 물 줄 수 있는 잔디가 있으면 복습 세션 진입 한 줄.
+                val today = remember { LocalDate.now() }
+                val dueCount = remember(garden) {
+                    garden.growing.count { it.dueDate != null && !it.dueDate!!.isAfter(today) }
+                }
+                if (dueCount > 0) {
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .padding(horizontal = 20.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(Lime.copy(alpha = 0.14f))
+                            .clickable(onClick = onStartReview)
+                            .padding(horizontal = 12.dp, vertical = 7.dp),
+                    ) {
+                        Text(
+                            text = "오늘 물 줄 잔디 ${dueCount}개 →",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Lime,
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.weight(1f))
+
+            // ── 전체 보기 — "+N" 배지 대신 명시적 행. 앞줄 밖 항목의 존재를 전달한다.
+            if (garden != null && !isLoading && error == null) {
+                val total = garden.growing.size + garden.graduatedTrees
+                if (total > 0) {
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .padding(bottom = 20.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(BgBase.copy(alpha = 0.45f))
+                            .clickable(onClick = onOpenAll)
+                            .padding(horizontal = 16.dp, vertical = 9.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "전체 ${total}개 보기 →",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary,
+                        )
+                    }
+                }
             }
         }
     }
 }
 
-@Preview(showBackground = true, backgroundColor = 0xFF081A2E)
+@Preview(showBackground = true, backgroundColor = 0xFF081A2E, heightDp = 800)
 @Composable
 private fun GardenScreenPreview() {
     FinQTheme {

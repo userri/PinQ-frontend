@@ -46,7 +46,7 @@ import java.time.LocalDate
  *
  *   adb shell am start -n com.finq.app/com.finq.app.debug.ShowcaseActivity --es screen home
  *
- * screen: home | home_pending | home_zero | home_done_water | home_done | quiz | answer | solo_quiz | solo_answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | filters | wrongnote | lazyload | grass | review | review_graduated | review_next | garden | garden_canvas | concept
+ * screen: home | home_pending | home_zero | home_done_water | home_done | quiz | answer | solo_quiz | solo_answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | filters | wrongnote | lazyload | grass | review | review_graduated | review_next | garden | garden_empty | garden_growing_many | garden_trees_few | garden_trees_many | garden_canvas | concept
  * 릴리즈 빌드에는 포함되지 않는다(app/src/debug 소스셋).
  */
 class ShowcaseActivity : ComponentActivity() {
@@ -193,6 +193,59 @@ class ShowcaseActivity : ComponentActivity() {
                         onRetry = {},
                         onBack = {},
                         onOpenQuiz = {},
+                    )
+
+                    // 정원 리디자인 검증 케이스 — 빈/자라는중만 다수(실계정 상태)/나무 소수/나무 다수
+                    "garden_empty" -> GardenScreen(
+                        garden = ReviewGarden.EMPTY,
+                        isLoading = false, error = null,
+                        onRetry = {}, onBack = {}, onOpenQuiz = {},
+                    )
+
+                    // 실계정 상태 재현: 자라는 중 49 · 나무 0 · 일부 due(오늘 물 주기 가능)
+                    "garden_growing_many" -> GardenScreen(
+                        garden = ReviewGarden(
+                            growing = List(49) { i ->
+                                gardenSample(
+                                    300L + i,
+                                    ReviewStage.values()[i % ReviewStage.values().size],
+                                ).copy(
+                                    waterCount = i % 7,
+                                    dueDate = if (i % 5 == 0) LocalDate.now() else LocalDate.now().plusDays(3),
+                                )
+                            },
+                            graduated = emptyList(),
+                            graduatedTrees = 0,
+                        ),
+                        isLoading = false, error = null,
+                        onRetry = {}, onBack = {}, onOpenQuiz = {},
+                    )
+
+                    "garden_trees_few" -> GardenScreen(
+                        garden = ReviewGarden(
+                            growing = List(6) { i -> gardenSample(400L + i, ReviewStage.values()[i % 3]) },
+                            graduated = List(3) { i ->
+                                gardenSample(500L + i, ReviewStage.ALMOST_TREE)
+                                    .copy(graduatedAtIso = "2026-07-1${i + 1}T12:00:00")
+                            },
+                            graduatedTrees = 3,
+                        ),
+                        isLoading = false, error = null,
+                        onRetry = {}, onBack = {}, onOpenQuiz = {},
+                    )
+
+                    // 나무 다수 스케일링 — 카운터(40)가 목록(10)보다 큰 레거시 포함
+                    "garden_trees_many" -> GardenScreen(
+                        garden = ReviewGarden(
+                            growing = List(12) { i -> gardenSample(600L + i, ReviewStage.values()[i % 3]) },
+                            graduated = List(10) { i ->
+                                gardenSample(700L + i, ReviewStage.ALMOST_TREE)
+                                    .copy(graduatedAtIso = "2026-07-0${(i % 9) + 1}T12:00:00")
+                            },
+                            graduatedTrees = 40,
+                        ),
+                        isLoading = false, error = null,
+                        onRetry = {}, onBack = {}, onOpenQuiz = {},
                     )
 
                     // 복습 미졸업 (graduated=false) — 다음 물 주기 안내

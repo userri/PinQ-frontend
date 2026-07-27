@@ -496,6 +496,16 @@ fun FinQNavHost(
                             launchSingleTop = true
                         }
                     },
+                    onOpenAll = {
+                        // "전체 N개 보기" — 특정 문제 포커스 없이 오답노트 탭으로(같은 스택 규약).
+                        navController.popBackStack()
+                        navController.navigate(FinQRoutes.LIBRARY_TAB) {
+                            popUpTo(FinQRoutes.HOME) { saveState = true }
+                            launchSingleTop = true
+                        }
+                    },
+                    // 정원은 보상 공간, 복습은 작업 공간 — 홈 물주기 카드와 같은 진입.
+                    onStartReview = { navController.navigate(FinQRoutes.REVIEW_GRAPH) },
                 )
             }
 
