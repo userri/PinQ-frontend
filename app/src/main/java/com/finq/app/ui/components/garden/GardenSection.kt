@@ -1,16 +1,13 @@
 package com.finq.app.ui.components.garden
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.finq.app.data.repository.GrassCalendar
@@ -47,26 +44,14 @@ fun GardenSection(
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = "잔디밭",
-            style = MaterialTheme.typography.titleSmall,
+            style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = TextPrimary,
         )
         Spacer(Modifier.height(12.dp))
 
         when {
-            grass != null -> {
-                GrassCalendarBody(grass = grass)
-                Spacer(Modifier.height(16.dp))
-                TreeRecordBlock(
-                    // 카운터가 진실 — 정원 목록이 아직 없어도 이 숫자는 바로 그릴 수 있다.
-                    graduatedTrees = grass.graduatedTrees,
-                    garden = garden,
-                    onOpenGarden = onOpenGarden,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(RecordBandColor),
-                )
-            }
+            grass != null -> GrassCalendarBody(grass = grass)
             grassFailed -> GrassCalendarError(onRetry = onRetryGrass)
             else -> GrassCalendarSkeleton()
         }

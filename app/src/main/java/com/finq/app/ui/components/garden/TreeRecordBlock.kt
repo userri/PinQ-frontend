@@ -68,22 +68,25 @@ fun TreeRecordBlock(
     val growing = garden?.growing
     val almostTrees = growing?.count { it.stage == ReviewStage.ALMOST_TREE } ?: 0
 
+    // 자체 패딩을 두지 않는다 — 박스였을 때의 잔재다. 지금은 잔디밭·개념별 정답률과
+    // 같은 급의 섹션이라 페이지 패딩만 쓰고, 좌우 기준선을 다른 섹션과 맞춘다.
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onOpenGarden)
-            .padding(horizontal = 16.dp, vertical = 16.dp),
+            .clickable(onClick = onOpenGarden),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            // 잔디밭·개념별 정답률과 같은 급의 섹션 제목 — 나무는 잔디의 하위가 아니라
+            // 별도 축(잔디=일일 활동, 나무=복습)이라 동급으로 선다.
             Text(
-                text = "복습 나무 기록",
-                style = MaterialTheme.typography.labelMedium,
+                text = "복습 나무",
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = TextSecondary,
+                color = TextPrimary,
             )
             // 화살표는 글자(→)가 아니라 아이콘으로 — 글리프는 베이스라인에 어정쩡하게 걸려
             // 폰트마다 굵기·크기가 달라진다. 셰브론은 획 2개짜리 단순 글리프라
@@ -111,64 +114,79 @@ fun TreeRecordBlock(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.Bottom,
         ) {
+            // 주역 숫자는 "가장 큰 참말"을 고른다. 나무가 0인데 49개가 자라는 중일 때
+            // "첫 나무를 키워보세요"를 크게 띄우면, 실제로 벌어지는 일을 부정하는 문구가 된다.
             Column(modifier = Modifier.weight(1f)) {
-                if (graduatedTrees > 0) {
-                    Row {
-                        Text(
-                            text = "$graduatedTrees",
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Lime,
-                            modifier = Modifier.alignByBaseline(),
-                        )
-                        Spacer(Modifier.width(3.dp))
-                        Text(
-                            text = "그루",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = TextMuted,
-                            modifier = Modifier.alignByBaseline(),
-                        )
-                    }
-                    // "키운 나무" 라벨은 두지 않는다 — 섹션 제목이 이미 "복습 나무 기록"이고
-                    // 단위가 "그루"라 같은 말을 세 번 하게 된다.
-                } else {
-                    // 0그루 — 음수 정보("0")를 크게 띄우는 대신 다음 행동을 말한다.
-                    Text(
-                        text = "첫 나무를 키워보세요",
+                val growingCount = growing?.size ?: 0
+                when {
+                    graduatedTrees > 0 -> HeroCount(value = graduatedTrees, unit = "그루")
+                    growingCount > 0 -> HeroCount(value = growingCount, unit = "자라는 중")
+                    else -> Text(
+                        text = "아직 나무가 없어요",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary,
                     )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = "오답에 세 번 물을 주면 나무 한 그루",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = TextMuted,
-                    )
                 }
+
+                Spacer(Modifier.height(4.dp))
+                // 보조는 딱 한 줄. 크기·굵기를 섞지 않고 숫자만 색으로 한 톤 올린다.
+                Text(
+                    text = supportLine(graduatedTrees, growingCount, almostTrees),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextMuted,
+                )
             }
 
             Spacer(Modifier.width(12.dp))
             PlantStrip(graduatedTrees = graduatedTrees, growing = growing)
         }
+    }
+}
 
-        // 진행 중 현황 — 정원을 아직 못 받았으면(null) 0으로 깜빡이지 않게 줄 자체를 생략.
-        // 크기·굵기를 섞지 않고 한 줄·한 스타일로 두고, 숫자만 색으로 한 톤 올린다.
-        if (growing != null && growing.isNotEmpty()) {
-            Spacer(Modifier.height(14.dp))
-            Text(
-                text = buildAnnotatedString {
-                    append("자라는 중 ")
-                    withStyle(SpanStyle(color = TextSecondary)) { append("${growing.size}") }
-                    if (almostTrees > 0) {
-                        append("  ·  곧 나무 ")
-                        withStyle(SpanStyle(color = TextSecondary)) { append("$almostTrees") }
-                    }
-                },
-                style = MaterialTheme.typography.labelSmall,
-                color = TextMuted,
-            )
+/** 주역 숫자 + 단위. 숫자만 라임, 단위는 중립 — 베이스라인 정렬. */
+@Composable
+private fun HeroCount(value: Int, unit: String) {
+    Row {
+        Text(
+            text = "$value",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.ExtraBold,
+            color = Lime,
+            modifier = Modifier.alignByBaseline(),
+        )
+        Spacer(Modifier.width(3.dp))
+        Text(
+            text = unit,
+            style = MaterialTheme.typography.labelMedium,
+            color = TextMuted,
+            modifier = Modifier.alignByBaseline(),
+        )
+    }
+}
+
+/**
+ * 보조 한 줄. 주역이 무엇이 됐는지에 따라 남은 사실만 말한다 —
+ * 성장 규칙("세 번 맞히면 나무") 설명은 개념 시트가 맡는다.
+ */
+@Composable
+private fun supportLine(trees: Int, growing: Int, almost: Int) = buildAnnotatedString {
+    when {
+        trees > 0 && growing > 0 -> {
+            append("자라는 중 ")
+            withStyle(SpanStyle(color = TextSecondary)) { append("$growing") }
+            if (almost > 0) {
+                append("  ·  곧 나무 ")
+                withStyle(SpanStyle(color = TextSecondary)) { append("$almost") }
+            }
         }
+        trees > 0 -> append("키운 나무")
+        growing > 0 && almost > 0 -> {
+            append("곧 나무 ")
+            withStyle(SpanStyle(color = TextSecondary)) { append("$almost") }
+        }
+        growing > 0 -> append("복습할 때마다 자라요")
+        else -> append("오답을 복습하면 자라기 시작해요")
     }
 }
 

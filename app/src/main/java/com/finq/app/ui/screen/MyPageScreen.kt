@@ -65,6 +65,7 @@ import com.finq.app.data.repository.GrassCalendar
 import com.finq.app.data.repository.ReviewGarden
 import com.finq.app.ui.components.ConceptStatsSection
 import com.finq.app.ui.components.garden.GardenSection
+import com.finq.app.ui.components.garden.TreeRecordBlock
 import com.finq.app.ui.theme.BgSubtle
 import com.finq.app.ui.theme.Error
 import com.finq.app.ui.theme.Lime
@@ -275,6 +276,20 @@ fun MyPageContent(
             onRetryGrass = onRetryGrass,
             onOpenGarden = onOpenGarden,
         )
+
+        // ── 복습 나무 ─────────────────────────────────────────────
+        // 잔디밭의 하위가 아니라 동급 섹션이다 — 잔디(일일 활동)와 나무(복습)는
+        // 도메인상 다른 축이고, 남의 섹션 안에 넣으면 구분하려고 박스를 쳐야 해서
+        // 페이지에서 혼자 카드가 된다.
+        if (grass != null) {
+            SectionDivider()
+            TreeRecordBlock(
+                // 카운터가 진실 — 정원 목록이 아직 없어도 이 숫자는 바로 그릴 수 있다.
+                graduatedTrees = grass.graduatedTrees,
+                garden = garden,
+                onOpenGarden = onOpenGarden,
+            )
+        }
 
         // ── 개념별 정답률 / 취약 개념 ─────────────────────────────
         // 표본이 아예 없으면(카테고리 비었음) 섹션 자체를 숨긴다.
