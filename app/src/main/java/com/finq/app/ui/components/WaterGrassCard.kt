@@ -110,35 +110,44 @@ fun WaterGrassCard(
             }
             if (hasReviews) {
                 Spacer(Modifier.size(8.dp))
-                // 유일한 복습 진입점 CTA — 밤 풍경 속 네온사인(Lime 테두리 + 글로우).
-                Box(
-                    modifier = Modifier
-                        .drawBehind {
-                            // 버튼 뒤 은은한 Lime 번짐.
-                            drawCircle(
-                                brush = Brush.radialGradient(
-                                    colors = listOf(Lime.copy(alpha = 0.30f), Lime.copy(alpha = 0f)),
-                                    center = center,
-                                    radius = size.maxDimension * 0.72f,
-                                ),
-                                radius = size.maxDimension * 0.72f,
-                                center = center,
-                            )
-                        }
-                        .clip(RoundedCornerShape(50))
-                        .background(BgBase.copy(alpha = 0.55f))
-                        .border(1.dp, Lime, RoundedCornerShape(50))
-                        .padding(horizontal = 14.dp, vertical = 8.dp),
-                ) {
-                    Text(
-                        text = "물 주러 가기 →",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Lime,
-                    )
-                }
+                NeonCtaPill(text = "물 주러 가기 →")
             }
         }
+    }
+}
+
+/**
+ * 홈 유리 카드의 CTA — 밤 풍경 속 네온사인(Lime 테두리 + 글로우).
+ * 물주기·오늘의 퀴즈 카드가 공유해 홈 진입점 스타일을 통일한다.
+ * 클릭은 카드 전체가 받으므로 필 자체는 표시 전용이다.
+ */
+@Composable
+fun NeonCtaPill(text: String, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .drawBehind {
+                // 버튼 뒤 은은한 Lime 번짐.
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(Lime.copy(alpha = 0.30f), Lime.copy(alpha = 0f)),
+                        center = center,
+                        radius = size.maxDimension * 0.72f,
+                    ),
+                    radius = size.maxDimension * 0.72f,
+                    center = center,
+                )
+            }
+            .clip(RoundedCornerShape(50))
+            .background(BgBase.copy(alpha = 0.55f))
+            .border(1.dp, Lime, RoundedCornerShape(50))
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            color = Lime,
+        )
     }
 }
 

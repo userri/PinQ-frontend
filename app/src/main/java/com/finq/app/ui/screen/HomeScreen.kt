@@ -16,13 +16,10 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -56,6 +53,7 @@ import com.finq.app.R
 import com.finq.app.data.repository.GardenItem
 import com.finq.app.data.repository.ReviewGarden
 import com.finq.app.data.repository.ReviewStage
+import com.finq.app.ui.components.NeonCtaPill
 import com.finq.app.ui.components.WaterGrassCard
 import com.finq.app.ui.theme.BgBase
 import com.finq.app.ui.theme.BgElevated
@@ -66,7 +64,6 @@ import com.finq.app.ui.theme.Grass1
 import com.finq.app.ui.theme.Grass2
 import com.finq.app.ui.theme.Grass3
 import com.finq.app.ui.theme.Lime
-import com.finq.app.ui.theme.OnLime
 import com.finq.app.ui.theme.TextMuted
 import com.finq.app.ui.theme.TextPrimary
 import com.finq.app.ui.theme.TextSecondary
@@ -438,12 +435,25 @@ private fun DrawScope.drawGardenItem(
         item.stage == ReviewStage.GRASS -> grassPainter to unit * 2.5f
         else -> almostTreePainter to unit * 3.1f  // ALMOST_TREE
     }
-    translate(left = cx - side / 2f, top = groundY - side * 0.9f) {
+    // 지면 앵커 — 아이콘 밑동(벡터가 평평하게 끝나는 절단면)을 가리는 어두운 풀 그림자.
+    // 아이콘보다 먼저 그려 밑동이 그림자에 "심긴" 것처럼 보이게 한다.
+    drawOval(
+        color = GrassDeep.copy(alpha = 0.55f),
+        topLeft = Offset(cx - side * 0.30f, groundY - side * 0.055f),
+        size = Size(side * 0.60f, side * 0.11f),
+    )
+    // 벡터 콘텐츠는 뷰포트의 ~0.875 지점에서 끝난다(24 중 21) — top 을 0.85·side 로 잡아
+    // 밑동을 지면에 살짝(-0.025·side) 심는다. 예전 0.9 는 밑동이 지면 위에 떠 끊겨 보였다.
+    translate(left = cx - side / 2f, top = groundY - side * 0.85f) {
         with(painter) { draw(size = Size(side, side)) }
     }
 }
 
-/** 잔디밭 라벨 — "N그루의 숲 · 자라는 중 M →". 숫자는 graduatedTrees 카운터 신뢰. */
+/**
+ * 잔디밭 라벨. 숫자는 graduatedTrees 카운터 신뢰.
+ * 나무가 아직 없으면 "0그루의 숲" 같은 초라한 표기 대신
+ * 자라는 중인 잔디와 첫 나무 유도를 보여준다(아이콘도 새싹으로).
+ */
 @Composable
 private fun GardenLabel(
     treeCount: Int,
@@ -458,14 +468,19 @@ private fun GardenLabel(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         androidx.compose.foundation.Image(
-            painter = painterResource(R.drawable.ic_stage_tree),
+            painter = painterResource(
+                if (treeCount > 0) R.drawable.ic_stage_tree else R.drawable.ic_stage_sprout
+            ),
             contentDescription = null,
             modifier = Modifier.size(15.dp),
         )
         Spacer(Modifier.width(6.dp))
         Text(
-            text = if (treeCount == 0 && growingCount == 0) "오답을 복습하면 숲이 자라요 →"
-                   else "${treeCount}그루의 숲 · 자라는 중 $growingCount →",
+            text = when {
+                treeCount == 0 && growingCount == 0 -> "오답을 복습하면 숲이 자라요 →"
+                treeCount == 0 -> "자라는 중 $growingCount · 첫 나무를 키워보세요 →"
+                else -> "${treeCount}그루의 숲 · 자라는 중 $growingCount →"
+            },
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
             color = TextPrimary,
@@ -609,8 +624,8 @@ private fun StatPill(iconRes: Int, text: String) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * 오늘의 퀴즈 카드 — 퀴즈만 담당.
- * 다 풀면 "오늘 분량 완료 ✓ · N/M 정답" 조용한 완료 상태(CTA·복습 유도 없음).
+ * 오늘의 퀴즈 카드 — 퀴즈만 담당. 복습(물주기) 카드와 같은 컴팩트 유리 행 스타일:
+ * [원형 배지] + [제목/부제] + [네온 CTA]. 다 풀면 조용한 완료 상태(CTA 없음).
  */
 @Composable
 private fun TodayQuizCard(
@@ -621,108 +636,71 @@ private fun TodayQuizCard(
 ) {
     val hasQuiz = quizCount > 0
 
-    if (!hasQuiz) {
-        // 완료 상태 — 복습 카드와 같은 높이의 조용한 컴팩트 행(밤하늘 여백 확보).
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(BgElevated.copy(alpha = 0.40f))
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(Lime.copy(alpha = 0.14f)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(text = "✓", color = Lime, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-            }
-            Spacer(Modifier.size(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "오늘 분량 완료",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary,
-                )
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    text = if (todayTotal > 0) "${todayCorrect}/${todayTotal} 정답 · 내일 오전 6시 새 퀴즈"
-                           else "내일 오전 6시에 새 퀴즈가 도착해요",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextMuted,
-                )
-            }
-        }
-        return
-    }
-
-    // 퀴즈 남음 — 홈의 주 행동. 프로미넌트하게(단, 여백 확보 위해 패딩 축소).
-    Box(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(BgElevated.copy(alpha = 0.45f))
-            .padding(20.dp),
+            .clip(RoundedCornerShape(16.dp))
+            .background(BgSurface.copy(alpha = 0.45f))
+            .then(if (hasQuiz) Modifier.clickable(onClick = onStartQuiz) else Modifier)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(50))
+                // 물주기 카드와 동일한 유리 톤 배지 — 라임 저채도 틴트.
+                .background(Lime.copy(alpha = if (hasQuiz) 0.16f else 0.10f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (hasQuiz) {
+                androidx.compose.foundation.Image(
+                    painter = painterResource(R.drawable.ic_lightbulb),
+                    contentDescription = null,
+                    modifier = Modifier.size(22.dp),
+                )
+            } else {
+                Text(text = "✓", color = Lime, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            }
+        }
+        Spacer(Modifier.size(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "오늘의 퀴즈",
-                style = MaterialTheme.typography.labelMedium,
-                color = TextSecondary,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = "${quizCount}문제 준비됐어요",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.ExtraBold,
+                text = if (hasQuiz) "오늘의 퀴즈 ${quizCount}문제" else "오늘 분량 완료",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
                 color = TextPrimary,
             )
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(2.dp))
             Text(
-                text = "예상 소요 3분 · 매일 오전 6시 발송",
+                text = when {
+                    hasQuiz -> "예상 소요 3분 · 매일 오전 6시 발송"
+                    todayTotal > 0 -> "${todayCorrect}/${todayTotal} 정답 · 내일 오전 6시 새 퀴즈"
+                    else -> "내일 오전 6시에 새 퀴즈가 도착해요"
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = TextMuted,
             )
-            Spacer(Modifier.height(16.dp))
-            Button(
-                onClick = onStartQuiz,
-                shape = RoundedCornerShape(50),
-                colors = ButtonDefaults.buttonColors(containerColor = Lime, contentColor = OnLime),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
-                modifier = Modifier.heightIn(min = 42.dp),
-            ) {
-                Text(
-                    text = "풀기",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                )
-                Spacer(Modifier.size(8.dp))
-                Text(
-                    text = "→",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
+        }
+        if (hasQuiz) {
+            Spacer(Modifier.size(8.dp))
+            NeonCtaPill(text = "풀러 가기 →")
         }
     }
 }
 
 @Composable
 private fun HeroCardLoading() {
+    // 로드 후 컴팩트 행 카드와 같은 높이로 잡아 레이아웃 점프를 막는다.
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(180.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .background(BgElevated.copy(alpha = 0.45f)),
+            .height(68.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(BgSurface.copy(alpha = 0.45f)),
         contentAlignment = Alignment.Center,
     ) {
-        CircularProgressIndicator(color = Lime)
+        CircularProgressIndicator(color = Lime, modifier = Modifier.size(26.dp))
     }
 }
 
