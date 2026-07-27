@@ -262,7 +262,9 @@ private fun MonthLabels(gridStart: LocalDate, weeks: Int) {
  */
 @Composable
 private fun GrassSummaryRow(grass: GrassCalendar) {
-    Row(modifier = Modifier.fillMaxWidth()) {
+    // 히트맵 격자는 좌측 요일 라벨(DAY_LABEL_WIDTH) 만큼 안으로 밀려 있다.
+    // 같은 만큼 들여써야 섹션 안에 왼쪽 기준선이 두 개 생기지 않는다.
+    Row(modifier = Modifier.fillMaxWidth().padding(start = DAY_LABEL_WIDTH)) {
         SummaryStat(value = "${grass.totalActiveDays}일", label = "활동", modifier = Modifier.weight(1f))
         SummaryStat(value = "${grass.perfectDays}일", label = "만점", modifier = Modifier.weight(1f))
         SummaryStat(value = "${grass.currentStreak}일", label = "연속", modifier = Modifier.weight(1f))

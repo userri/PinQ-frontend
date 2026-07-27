@@ -19,7 +19,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -83,7 +86,7 @@ fun TreeRecordBlock(
             )
             // 진입점이 아니라 곁가지 — 조용한 텍스트 링크로만 둔다.
             Text(
-                text = "정원 →",
+                text = "내 정원 →",
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
                 color = Lime,
@@ -114,12 +117,8 @@ fun TreeRecordBlock(
                             modifier = Modifier.alignByBaseline(),
                         )
                     }
-                    Spacer(Modifier.height(2.dp))
-                    Text(
-                        text = "키운 나무",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = TextMuted,
-                    )
+                    // "키운 나무" 라벨은 두지 않는다 — 섹션 제목이 이미 "복습 나무 기록"이고
+                    // 단위가 "그루"라 같은 말을 세 번 하게 된다.
                 } else {
                     // 0그루 — 음수 정보("0")를 크게 띄우는 대신 다음 행동을 말한다.
                     Text(
@@ -142,38 +141,22 @@ fun TreeRecordBlock(
         }
 
         // 진행 중 현황 — 정원을 아직 못 받았으면(null) 0으로 깜빡이지 않게 줄 자체를 생략.
+        // 크기·굵기를 섞지 않고 한 줄·한 스타일로 두고, 숫자만 색으로 한 톤 올린다.
         if (growing != null && growing.isNotEmpty()) {
             Spacer(Modifier.height(14.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                MiniStat(label = "자라는 중", value = "${growing.size}")
-                if (almostTrees > 0) {
-                    Text(
-                        text = "·",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = TextMuted,
-                    )
-                    MiniStat(label = "곧 나무", value = "$almostTrees")
-                }
-            }
+            Text(
+                text = buildAnnotatedString {
+                    append("자라는 중 ")
+                    withStyle(SpanStyle(color = TextSecondary)) { append("${growing.size}") }
+                    if (almostTrees > 0) {
+                        append("  ·  곧 나무 ")
+                        withStyle(SpanStyle(color = TextSecondary)) { append("$almostTrees") }
+                    }
+                },
+                style = MaterialTheme.typography.labelSmall,
+                color = TextMuted,
+            )
         }
-    }
-}
-
-@Composable
-private fun MiniStat(label: String, value: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = TextMuted,
-        )
-        Spacer(Modifier.width(4.dp))
-        Text(
-            text = value,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
-            color = TextSecondary,
-        )
     }
 }
 
