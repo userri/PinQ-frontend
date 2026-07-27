@@ -65,8 +65,6 @@ fun QuizScreen(
     isSubmitting: Boolean = false,
     /** 헤더 카테고리 라벨 override. 복습처럼 서버가 라벨을 직접 주는 경우에 쓴다. */
     categoryLabel: String? = null,
-    /** 복습 헤더 등에서 카테고리 앞에 붙일 단계 아이콘. null 이면 아이콘 없음. */
-    categoryIconRes: Int? = null,
     /** 헤더 아래 안내 한 줄 (예: "복습은 기록에 영향 없어요"). null 이면 표시하지 않는다. */
     headerNote: String? = null,
     /** 북마크 토글 상태. [onToggleBookmark] 가 null 이면 아이콘을 그리지 않는다(복습 화면 등). */
@@ -99,14 +97,8 @@ fun QuizScreen(
                 )
             }
             Spacer(Modifier.weight(1f))
-            if (categoryIconRes != null) {
-                Image(
-                    painter = painterResource(categoryIconRes),
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                )
-                Spacer(Modifier.size(5.dp))
-            }
+            // 단계 아이콘 없음 — categoryLabel 이 이미 단계명("새싹 · 금리")을 말하고,
+            // 18dp 는 Material 광학 최소(20dp) 아래라 획이 뭉갠다.
             Text(
                 text = "Q${quizIndex + 1} · ${categoryLabel ?: quiz.category.displayName}",
                 style = MaterialTheme.typography.titleMedium,

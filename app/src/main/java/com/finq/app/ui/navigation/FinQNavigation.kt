@@ -662,7 +662,6 @@ fun FinQNavHost(
                                 onClose = { navController.exitReviewToHome() },
                                 isSubmitting = state.isSubmitting,
                                 categoryLabel = "${item.stage.label} · ${item.categoryLabel}",
-                                categoryIconRes = item.stage.iconRes,
                                 headerNote = buildString {
                                     if (item.waterCount > 0) append("💧 물 ${item.waterCount}번 · 흡수 ${item.absorbedCount}번 · ")
                                     if (item.stage.isFinalStage) append("한 번 더 맞히면 나무가 돼요 · ")
@@ -704,7 +703,6 @@ fun FinQNavHost(
                                 }
                             },
                             categoryLabel = "${item.stage.label} · ${item.categoryLabel}",
-                            categoryIconRes = item.stage.iconRes,
                             graduated = answer.graduated,
                             graduatedMessage = if (answer.graduated && answer.totalGraduatedTrees != null)
                                 "물 ${answer.waterCount}번 준 나무가 완성됐어요 — 당신의 ${answer.totalGraduatedTrees}번째 나무"
