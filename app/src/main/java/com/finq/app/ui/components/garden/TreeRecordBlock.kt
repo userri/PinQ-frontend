@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -84,13 +85,24 @@ fun TreeRecordBlock(
                 fontWeight = FontWeight.Bold,
                 color = TextSecondary,
             )
-            // 진입점이 아니라 곁가지 — 조용한 텍스트 링크로만 둔다.
-            Text(
-                text = "내 정원 →",
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                color = Lime,
-            )
+            // 화살표는 글자(→)가 아니라 아이콘으로 — 글리프는 베이스라인에 어정쩡하게 걸려
+            // 폰트마다 굵기·크기가 달라진다. 셰브론은 획 2개짜리 단순 글리프라
+            // 성장 아이콘의 20dp 하한과 달리 16dp에서도 뭉개지지 않는다.
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "내 정원",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Lime,
+                )
+                Spacer(Modifier.width(2.dp))
+                Icon(
+                    painter = painterResource(R.drawable.ic_chevron_right),
+                    contentDescription = null,
+                    tint = Lime,
+                    modifier = Modifier.size(16.dp),
+                )
+            }
         }
 
         Spacer(Modifier.height(16.dp))
