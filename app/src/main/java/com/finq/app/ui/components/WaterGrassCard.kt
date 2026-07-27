@@ -100,7 +100,9 @@ fun WaterGrassCard(
                 Spacer(Modifier.height(2.dp))
                 Text(
                     text = when {
-                        hasReviews -> "물 주면 문제가 자라요 — 3번 맞히면 나무가 돼요"
+                        // 규칙 설명("3번 맞히면 나무")은 개념 시트가 맡는다. 여기선 한 줄이면 충분하고,
+                        // 길면 좁은 카드에서 어색하게 줄바꿈된다(3번 / 맞히면).
+                        hasReviews -> "복습할수록 자라요"
                         nextDueDate != null -> "다음 물 주기 ${nextDueDate.format(DUE_DATE_FORMAT)}"
                         else -> "복습할 오답이 없어요"
                     },

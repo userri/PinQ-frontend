@@ -175,20 +175,11 @@ fun GardenScreen(
                         .background(BgBase.copy(alpha = 0.40f))
                         .padding(horizontal = 12.dp, vertical = 6.dp),
                 ) {
+                    // 나무 아이콘 없음 — "키운 나무"라는 텍스트가 이미 같은 말을 하고,
+                    // 15dp 는 Material 광학 최소(20dp) 아래다. 게다가 바로 아래 씬이
+                    // 실제 식물을 크게 렌더하고 있어 두 번 말하는 셈이 된다.
                     Text(
-                        text = "자라는 중 ${garden.growing.size} · ",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = TextSecondary,
-                    )
-                    Image(
-                        painter = painterResource(R.drawable.ic_stage_tree),
-                        contentDescription = null,
-                        modifier = Modifier.size(15.dp),
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = "키운 나무 ${garden.graduatedTrees}그루",
+                        text = "자라는 중 ${garden.growing.size}  ·  키운 나무 ${garden.graduatedTrees}그루",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = TextSecondary,
