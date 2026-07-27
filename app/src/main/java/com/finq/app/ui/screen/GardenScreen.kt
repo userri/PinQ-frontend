@@ -15,9 +15,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -36,7 +39,7 @@ import com.finq.app.R
 import com.finq.app.data.repository.GardenItem
 import com.finq.app.data.repository.ReviewGarden
 import com.finq.app.data.repository.ReviewStage
-import com.finq.app.ui.components.ReviewTreeConceptDialog
+import com.finq.app.ui.components.ReviewTreeConceptSheet
 import com.finq.app.ui.components.garden.GardenNightScene
 import com.finq.app.ui.theme.BgBase
 import com.finq.app.ui.theme.BgSurface
@@ -72,7 +75,7 @@ fun GardenScreen(
     var showHelp by remember { mutableStateOf(false) }
 
     if (showHelp) {
-        ReviewTreeConceptDialog(
+        ReviewTreeConceptSheet(
             title = "🌳 복습 나무란?",
             onDismiss = { showHelp = false },
         )
@@ -137,20 +140,29 @@ fun GardenScreen(
                 )
                 Spacer(Modifier.weight(1f))
                 // 복습 나무 개념 설명 — 레이아웃이 아닌 개념을 설명해 UI 변경에 강함.
+                // 헤더가 좁아 아이콘만 두되, 터치 영역은 48dp 를 보장한다.
                 Box(
                     modifier = Modifier
-                        .padding(end = 8.dp)
-                        .clip(RoundedCornerShape(50))
-                        .background(BgSurface.copy(alpha = 0.45f))
-                        .clickable { showHelp = true }
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                        .padding(end = 4.dp)
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .clickable(role = Role.Button) { showHelp = true },
+                    contentAlignment = Alignment.Center,
                 ) {
-                    Text(
-                        text = "? 복습 나무란",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = TextSecondary,
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(BgSurface.copy(alpha = 0.45f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_help_circle),
+                            contentDescription = "복습 나무란?",
+                            tint = TextSecondary,
+                            modifier = Modifier.size(19.dp),
+                        )
+                    }
                 }
             }
 

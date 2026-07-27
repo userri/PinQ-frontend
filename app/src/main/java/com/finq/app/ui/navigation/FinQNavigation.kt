@@ -999,9 +999,11 @@ private fun AnswerRoute(
         }
     }
     if (showIntro) {
-        com.finq.app.ui.components.ReviewTreeConceptDialog(
+        com.finq.app.ui.components.ReviewTreeConceptSheet(
             title = "🌱 첫 복습 나무가 태어났어요",
             confirmLabel = "키워볼게요",
+            // 참조가 아니라 축하 모먼트 — 히어로를 방금 난 새싹 단독으로 바꾼다.
+            variant = com.finq.app.ui.components.ReviewTreeConceptVariant.CELEBRATION,
             onDismiss = { showIntro = false },
         )
     }

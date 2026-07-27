@@ -26,9 +26,21 @@ import com.finq.app.data.repository.GardenItem
 import com.finq.app.data.repository.ReviewGarden
 import com.finq.app.data.repository.ReviewStage
 import com.finq.app.ui.components.ConceptStatsCard
+import com.finq.app.ui.components.ReviewTreeConceptSheet
+import com.finq.app.ui.components.ReviewTreeConceptVariant
 import com.finq.app.ui.components.garden.GardenCanvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Text
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import com.finq.app.ui.theme.BgBase
+import com.finq.app.ui.theme.Lime
 import com.finq.app.ui.components.GrassCalendarCard
 import com.finq.app.ui.components.WaterGrassCard
 import com.finq.app.ui.screen.GardenScreen
@@ -46,7 +58,7 @@ import java.time.LocalDate
  *
  *   adb shell am start -n com.finq.app/com.finq.app.debug.ShowcaseActivity --es screen home
  *
- * screen: home | home_pending | home_zero | home_done_water | home_done | quiz | answer | solo_quiz | solo_answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | filters | wrongnote | lazyload | grass | review | review_graduated | review_next | garden | garden_empty | garden_growing_many | garden_trees_few | garden_trees_many | garden_canvas | concept
+ * screen: home | home_pending | home_zero | home_done_water | home_done | quiz | answer | solo_quiz | solo_answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | filters | wrongnote | lazyload | grass | review | review_graduated | review_next | garden | garden_empty | garden_growing_many | garden_trees_few | garden_trees_many | garden_canvas | concept | concept_sheet | concept_sheet_intro
  * 릴리즈 빌드에는 포함되지 않는다(app/src/debug 소스셋).
  */
 class ShowcaseActivity : ComponentActivity() {
@@ -265,6 +277,29 @@ class ShowcaseActivity : ComponentActivity() {
                         nextReviewText = "다음 물 주기: 7월 15일",
                         nextLabel = "다음 복습",
                     )
+
+                    // 복습 나무 개념 시트 — 참조형(정원 "?") / 축하형(첫 오답 직후)
+                    "concept_sheet", "concept_sheet_intro" -> {
+                        val intro = screen == "concept_sheet_intro"
+                        var open by remember { mutableStateOf(true) }
+                        Box(
+                            Modifier.fillMaxSize().background(BgBase),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = "시트 다시 열기",
+                                color = Lime,
+                                modifier = Modifier.clickable { open = true },
+                            )
+                        }
+                        if (open) ReviewTreeConceptSheet(
+                            title = if (intro) "🌱 첫 복습 나무가 태어났어요" else "🌳 복습 나무란?",
+                            confirmLabel = if (intro) "키워볼게요" else "알겠어요",
+                            variant = if (intro) ReviewTreeConceptVariant.CELEBRATION
+                                      else ReviewTreeConceptVariant.REFERENCE,
+                            onDismiss = { open = false },
+                        )
+                    }
 
                     "concept" -> Column(
                         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)
