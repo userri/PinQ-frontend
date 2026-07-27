@@ -83,6 +83,8 @@ fun WrongNoteTabRoute(
         onToggleBookmark = { item -> viewModel.toggleBookmark(item.quizId, item.bookmarked) },
         focusQuizId = focusQuizId,
         onLoadDetail = viewModel::fetchDetail,
+        // 이 화면은 전부 오답 — "오답" 배지는 정보량 0이므로 카테고리를 강조한다.
+        cardEmphasis = AttemptCardEmphasis.CATEGORY,
         showTitle = false,
         extraFilterRow = {
             ReviewFilterRow(selected = reviewFilter, onSelect = { reviewFilter = it })

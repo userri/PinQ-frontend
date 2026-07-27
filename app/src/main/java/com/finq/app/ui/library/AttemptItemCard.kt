@@ -47,7 +47,6 @@ import com.finq.app.data.model.AttemptItem
 import com.finq.app.data.model.Category
 import com.finq.app.data.model.QuizOption
 import com.finq.app.data.model.ReviewStatus
-import com.finq.app.data.repository.ReviewStage
 import com.finq.app.ui.theme.FinQTheme
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -57,6 +56,23 @@ import com.finq.app.ui.theme.Grass1
 import com.finq.app.ui.theme.Lime
 import com.finq.app.ui.theme.TextMuted
 import com.finq.app.ui.theme.TextSecondary
+
+/**
+ * 카드 상단에서 배지 형태로 강조할 요소 — 화면당 정확히 하나.
+ *
+ * 카테고리·상태·복습이 모두 같은 pill 이면 위계가 0이 되므로, 화면에서 판별력을 갖는
+ * 하나만 배지로 올리고 나머지는 질문 아래 메타 한 줄(배경 없는 보조 텍스트)로 내린다.
+ */
+enum class AttemptCardEmphasis {
+    /** 정답·오답이 섞여 상태가 판별 정보인 화면(전체이력·북마크). 카테고리는 메타로 강등. */
+    STATUS,
+
+    /** 모든 항목이 오답인 화면(오답노트) — "오답" 배지는 정보량이 0이라 뺀다. */
+    CATEGORY,
+}
+
+/** 메타 한 줄의 조각. [accent] 인 조각만 Lime 포인트를 받는다(카드당 최대 1개). */
+private data class MetaPart(val text: String, val accent: Boolean = false)
 
 /**
  * 오답노트 / 북마크 / 전체이력 화면이 공통으로 사용하는 항목 카드.
@@ -69,6 +85,8 @@ import com.finq.app.ui.theme.TextSecondary
 fun AttemptItemCard(
     item: AttemptItem,
     onToggleBookmark: () -> Unit,
+    /** 상단 배지로 무엇을 강조할지 — 호출 화면이 결정한다. [AttemptCardEmphasis] */
+    emphasis: AttemptCardEmphasis = AttemptCardEmphasis.STATUS,
     /** 미풀이 북마크를 탭했을 때 풀이 화면으로 보내는 콜백. null 이면 탭해도 아무 일 없음. */
     onStartQuiz: (() -> Unit)? = null,
     /** 정원 딥링크로 진입한 카드 — 처음부터 펼쳐 보여준다. */
@@ -137,17 +155,13 @@ fun AttemptItemCard(
                     else expanded = !expanded
                 },
         ) {
-            // 상단 행: 카테고리 뱃지 + 날짜  ····  ⭐ 북마크
+            // 상단 행: 강조 배지 하나  ····  날짜 + ⭐ 북마크
             Row(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(
-                    modifier = Modifier.weight(1f),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    // 카테고리 태그는 중립 — 유채색은 포인트/정답/오답에만 쓴다.
-                    Surface(
+                when (emphasis) {
+                    // 오답노트 — 카테고리가 유일한 판별 정보. 분류이므로 중립 태그 스타일.
+                    AttemptCardEmphasis.CATEGORY -> Surface(
                         shape = RoundedCornerShape(50),
                         color = BgSubtle,
                     ) {
@@ -159,69 +173,38 @@ fun AttemptItemCard(
                             fontWeight = FontWeight.SemiBold,
                         )
                     }
-                    if (item.unsolved) {
-                        Surface(
-                            shape = RoundedCornerShape(50),
-                            color = BgSubtle,
-                        ) {
-                            Text(
-                                text = "아직 안 푼 문제",
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = TextSecondary,
-                                fontWeight = FontWeight.SemiBold,
+                    // 전체이력·북마크 — 정답/오답이 항목을 가르는 정보. 상태이므로 유채색 배지.
+                    AttemptCardEmphasis.STATUS -> {
+                        val (badgeText, badgeBg, badgeFg) = when {
+                            item.unsolved -> Triple("아직 안 푼 문제", BgSubtle, TextSecondary)
+                            item.correct -> Triple("정답", Grass1, Lime)
+                            else -> Triple(
+                                "오답",
+                                MaterialTheme.colorScheme.errorContainer,
+                                MaterialTheme.colorScheme.onErrorContainer,
                             )
                         }
-                    } else if (!item.correct) {
-                        Surface(
-                            shape = RoundedCornerShape(50),
-                            color = MaterialTheme.colorScheme.errorContainer,
-                        ) {
+                        Surface(shape = RoundedCornerShape(50), color = badgeBg) {
                             Text(
-                                text = "오답",
+                                text = badgeText,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                color = badgeFg,
                                 fontWeight = FontWeight.SemiBold,
                             )
                         }
                     }
-                    // 복습(물 주기) 상태 뱃지 — 중립 톤, 다 키운 나무만 Lime 포인트.
-                    item.review?.let { review ->
-                        Surface(
-                            shape = RoundedCornerShape(50),
-                            color = BgSubtle,
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Image(
-                                    painter = painterResource(
-                                        if (review.graduated) R.drawable.ic_stage_tree
-                                        else ReviewStage.of(review.stage).iconRes,
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(13.dp),
-                                )
-                                Spacer(Modifier.width(4.dp))
-                                Text(
-                                    text = if (review.graduated) "나무 완성"
-                                           else "물 ${review.waterCount}번",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = if (review.graduated) Lime else TextSecondary,
-                                    fontWeight = FontWeight.SemiBold,
-                                )
-                            }
-                        }
-                    }
-                    if (dateStr != null) {
-                        Text(
-                            text = dateStr,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                }
+
+                Spacer(Modifier.weight(1f))
+
+                if (dateStr != null) {
+                    Text(
+                        text = dateStr,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.width(2.dp))
                 }
 
                 // 북마크 버튼 — 카드 클릭과 분리
@@ -240,44 +223,7 @@ fun AttemptItemCard(
                 }
             }
 
-            Spacer(Modifier.height(10.dp))
-
-            // 성장 근접 스트립 — 복습중(자라는) 오답만. 졸업/legacy 는 growthStrip 이 null.
-            // 밀도를 줄이려 "관련될 때만" 노출한다: 오늘 물 줄 수 있거나(dueToday)
-            // 졸업 임박(finalStage)일 때만. 중간 단계·먼 미래는 상단 물 뱃지로 갈음하고 숨김.
-            item.review?.let { review ->
-                growthStrip(
-                    stage = review.stage,
-                    graduated = review.graduated,
-                    dueDateIso = review.dueDateIso,
-                    today = LocalDate.now(),
-                )?.takeIf { it.dueToday || it.finalStage }?.let { strip ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Image(
-                            painter = painterResource(strip.stageIconRes),
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            text = strip.stageText,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            // 마지막 단계만 Lime 포인트, 그 외 중립.
-                            color = if (strip.finalStage) Lime else TextSecondary,
-                        )
-                        if (strip.dueText != null) {
-                            Text(
-                                text = "  ·  ${strip.dueText}",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = if (strip.dueToday) Lime else TextMuted,
-                                fontWeight = if (strip.dueToday) FontWeight.SemiBold else FontWeight.Normal,
-                            )
-                        }
-                    }
-                    Spacer(Modifier.height(8.dp))
-                }
-            }
+            Spacer(Modifier.height(6.dp))
 
             Text(
                 text = item.question,
@@ -287,6 +233,81 @@ fun AttemptItemCard(
                 maxLines = if (expanded) Int.MAX_VALUE else 2,
                 overflow = TextOverflow.Ellipsis,
             )
+
+            // 성장 근접 스트립 — 복습중(자라는) 오답만. 졸업/legacy 는 growthStrip 이 null.
+            // 밀도를 줄이려 "관련될 때만" 노출한다: 오늘 물 줄 수 있거나(dueToday)
+            // 졸업 임박(finalStage)일 때만. 중간 단계·먼 미래는 메타 줄의 "물 N/3" 로 갈음하고 숨김.
+            val strip = item.review?.let { review ->
+                growthStrip(
+                    stage = review.stage,
+                    graduated = review.graduated,
+                    dueDateIso = review.dueDateIso,
+                    today = LocalDate.now(),
+                )
+            }?.takeIf { it.dueToday || it.finalStage }
+
+            // 메타 한 줄 — 배경 없는 보조 텍스트, 가운뎃점 구분. 배지로 올라간 요소는 여기서 뺀다.
+            val metaParts = buildList {
+                // 상태를 강조한 화면에선 카테고리를 테두리·배경 없는 회색 텍스트로 강등.
+                if (emphasis == AttemptCardEmphasis.STATUS) add(MetaPart(item.categoryDisplay))
+                // 오답노트에선 모든 항목이 오답이라 "오답"은 정보량 0 — 미풀이만 알린다.
+                if (emphasis == AttemptCardEmphasis.CATEGORY && item.unsolved) {
+                    add(MetaPart("아직 안 푼 문제"))
+                }
+                // 스트립이 뜨는 카드는 "N/3단계"가 같은 진행을 이미 말한다 → 중복 제거.
+                if (strip == null) {
+                    item.review?.let { review ->
+                        // "물 N번"은 진행감이 없다(좋은 건지 나쁜 건지 모름) → 분모로 목표를 보여준다.
+                        // 3번 맞히면 졸업(ReviewRepository) — WaterGrassCard 문구와 같은 3.
+                        add(
+                            if (review.graduated) MetaPart("나무 완성", accent = true)
+                            else MetaPart("물 ${review.waterCount.coerceAtMost(3)}/3"),
+                        )
+                    }
+                }
+            }
+
+            if (metaParts.isNotEmpty()) {
+                Spacer(Modifier.height(6.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    metaParts.forEachIndexed { index, part ->
+                        if (index > 0) {
+                            Text(
+                                text = " · ",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextMuted,
+                            )
+                        }
+                        Text(
+                            text = part.text,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (part.accent) Lime else TextSecondary,
+                            fontWeight = if (part.accent) FontWeight.SemiBold else FontWeight.Medium,
+                        )
+                    }
+                }
+            }
+
+            if (strip != null) {
+                Spacer(Modifier.height(6.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = strip.stageText,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        // 마지막 단계만 Lime 포인트, 그 외 중립.
+                        color = if (strip.finalStage) Lime else TextSecondary,
+                    )
+                    if (strip.dueText != null) {
+                        Text(
+                            text = "  ·  ${strip.dueText}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (strip.dueToday) Lime else TextMuted,
+                            fontWeight = if (strip.dueToday) FontWeight.SemiBold else FontWeight.Normal,
+                        )
+                    }
+                }
+            }
 
             if (!expanded) {
                 Spacer(Modifier.height(8.dp))
@@ -566,9 +587,9 @@ private fun AnswerRow(label: String, text: String, isCorrect: Boolean) {
 
 /**
  * 오답노트 카드 3상태 미리보기.
- *  - 복습중: stage 1, 미래 due → 성장 스트립 노출
- *  - 졸업: graduated=true → 🌳 뱃지, 스트립 없음
- *  - legacy: review=null → 스트립·복습 뱃지 모두 없음
+ *  - 복습중(오답노트 강조=카테고리): stage 1, 미래 due → 메타 "물 1/3"
+ *  - 졸업(전체이력 강조=상태): graduated=true → 메타 "카테고리 · 나무 완성"
+ *  - legacy: review=null → 복습 메타 없음
  */
 @Preview(showBackground = true, backgroundColor = 0xFF081A2E)
 @Composable
@@ -612,6 +633,7 @@ private fun AttemptItemCardPreview() {
                         dueDateIso = LocalDate.now().plusDays(3).toString(),
                     ),
                 ),
+                emphasis = AttemptCardEmphasis.CATEGORY,
                 onToggleBookmark = {},
             )
             // 졸업 — 다 키운 나무

@@ -75,6 +75,11 @@ fun LibraryListScreen(
     focusQuizId: Long? = null,
     /** 카드 펼침 시 상세(선택지·해설·기사) 지연 로드. null 이면 items 가 이미 전체. */
     onLoadDetail: (suspend (Long) -> AttemptItem)? = null,
+    /**
+     * 카드 상단 배지로 무엇을 강조할지. 기본은 상태(정답/오답) — 정답·오답이 섞인 화면 기준.
+     * 오답노트처럼 모든 항목이 오답인 화면은 [AttemptCardEmphasis.CATEGORY] 를 넘긴다.
+     */
+    cardEmphasis: AttemptCardEmphasis = AttemptCardEmphasis.STATUS,
     modifier: Modifier = Modifier,
 ) {
     // 다중 선택 — 빈 셋이면 "전체". 선택된 카테고리들의 합집합(OR)을 보여준다.
@@ -174,6 +179,7 @@ fun LibraryListScreen(
                 items(filtered, key = { it.quizId }) { item ->
                     AttemptItemCard(
                         item = item,
+                        emphasis = cardEmphasis,
                         onToggleBookmark = { onToggleBookmark(item) },
                         onStartQuiz = onStartQuiz?.let { cb -> { cb(item) } },
                         initialExpanded = item.quizId == focusQuizId,

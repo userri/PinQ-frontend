@@ -15,6 +15,7 @@ import com.finq.app.data.model.AttemptItem
 import com.finq.app.data.model.Category
 import com.finq.app.data.model.QuizOption
 import com.finq.app.data.model.ReviewStatus
+import com.finq.app.ui.library.AttemptCardEmphasis
 import com.finq.app.ui.library.AttemptItemCard
 import com.finq.app.data.model.Quiz
 import com.finq.app.data.model.RelatedArticle
@@ -364,11 +365,21 @@ class ShowcaseActivity : ComponentActivity() {
                         emptyIconRes = com.finq.app.R.drawable.ic_bookmark_star,
                         onRetry = {},
                         onToggleBookmark = {},
+                        // 오답노트 화면 — 강조는 카테고리, "오답"은 메타로도 안 나온다.
+                        cardEmphasis = AttemptCardEmphasis.CATEGORY,
                     )
 
                     "wrongnote" -> Column(
                         Modifier.fillMaxSize().verticalScroll(rememberScrollState())
                     ) {
+                        // 오답노트 배지 위계 — 강조=카테고리, 메타는 "물 1/3" 만
+                        AttemptItemCard(
+                            item = sampleAttempt(correct = false).copy(
+                                review = ReviewStatus(stage = 1, waterCount = 1, absorbedCount = 1, graduated = false, dueDateIso = null),
+                            ),
+                            emphasis = AttemptCardEmphasis.CATEGORY,
+                            onToggleBookmark = {},
+                        )
                         // 복습 나무 완성 뱃지 (graduated=true)
                         AttemptItemCard(
                             item = sampleAttempt(correct = true).copy(
