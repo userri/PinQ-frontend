@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.painter.Painter
@@ -88,6 +89,13 @@ private val HorizonGlow = lerp(BgBase, Grass1, 0.35f)
 
 /** 언덕 하단의 짙은 그린. */
 private val GrassDeep = lerp(Grass1, Color.Black, 0.45f)
+
+/**
+ * 언덕 상단(능선) 색. Grass2 그대로 쓰면 단계 아이콘 줄기 색(#1E7A42 = Grass2)과
+ * 정확히 겹치는 밴드가 생겨 줄기가 언덕에 보호색으로 사라진다(잎만 떠 보이는 버그).
+ * Grass1 쪽으로 절반 넘게 내려 아이콘의 어떤 색과도 겹치지 않게 한다.
+ */
+private val HillTopColor = lerp(Grass2, Grass1, 0.55f)
 
 /** 뒷줄 실루엣 숲 — 언덕보다 한 톤 어두운 단색. */
 private val ForestSilhouette = lerp(Grass1, Color.Black, 0.25f)
@@ -362,7 +370,8 @@ private fun NightSceneBackground(
         drawPath(
             path = hillPath,
             brush = Brush.verticalGradient(
-                colors = listOf(Grass2, Grass1, GrassDeep),
+                // Grass2 시작 금지 — 아이콘 줄기 색과 동일해 보호색 밴드가 생긴다. HillTopColor 참고.
+                colors = listOf(HillTopColor, Grass1, GrassDeep),
                 startY = hillTop,
                 endY = size.height,
             ),
@@ -442,10 +451,18 @@ private fun DrawScope.drawGardenItem(
         topLeft = Offset(cx - side * 0.30f, groundY - side * 0.055f),
         size = Size(side * 0.60f, side * 0.11f),
     )
+    // ⚠️ 같은 VectorPainter 를 한 프레임에 서로 다른 size 로 여러 번 draw 하면
+    // 내부 캐시 비트맵이 꼬여 큰 아이템의 중심부가 잘려 그려진다(잎 조각만 남는 버그).
+    // 그래서 painter 는 항상 고유 크기(intrinsicSize) 한 가지로만 그리고,
+    // 확대·축소는 캔버스 transform(scale)으로 처리한다.
     // 벡터 콘텐츠는 뷰포트의 ~0.875 지점에서 끝난다(24 중 21) — top 을 0.85·side 로 잡아
     // 밑동을 지면에 살짝(-0.025·side) 심는다. 예전 0.9 는 밑동이 지면 위에 떠 끊겨 보였다.
+    val intrinsic = painter.intrinsicSize
+    val factor = side / intrinsic.width
     translate(left = cx - side / 2f, top = groundY - side * 0.85f) {
-        with(painter) { draw(size = Size(side, side)) }
+        scale(scaleX = factor, scaleY = factor, pivot = Offset.Zero) {
+            with(painter) { draw(size = intrinsic) }
+        }
     }
 }
 
