@@ -1,7 +1,6 @@
 package com.finq.app.ui.components
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -31,12 +30,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.finq.app.R
 import com.finq.app.data.repository.GrassCalendar
+import com.finq.app.ui.components.garden.RecordBandColor
 import com.finq.app.data.repository.GrassDay
 import com.finq.app.ui.theme.BgElevated
 import com.finq.app.ui.theme.BgSurface
@@ -67,13 +65,14 @@ private val DAY_LABELS = listOf("월", "", "수", "", "금", "", "일")
  * 최초 컴포지션 시 오늘(맨 오른쪽)로 스크롤한다.
  *
  * 색은 [streakColor] 만 사용한다 — 잔디 램프 외의 초록/파랑을 새로 만들지 않는다.
+ *
+ * 나무 카운터는 여기 헤더가 아니라 마이페이지 카드 하단의 기록 밴드가 맡는다
+ * (com.finq.app.ui.components.garden.TreeRecordBlock).
  */
 @Composable
 fun GrassCalendarCard(
     grass: GrassCalendar,
     modifier: Modifier = Modifier,
-    /** "🌳 키운 나무 N그루" 헤더 탭 → 정원 화면. null 이면 탭 불가(기존 동작). */
-    onTreesClick: (() -> Unit)? = null,
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -83,38 +82,12 @@ fun GrassCalendarCard(
         border = BorderStroke(1.dp, Outline),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = "잔디밭",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary,
-                )
-                // 복습으로 졸업한 문제 = 키운 나무.
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.then(
-                        if (onTreesClick != null) Modifier.clickable(onClick = onTreesClick) else Modifier
-                    ),
-                ) {
-                    Image(
-                        painter = painterResource(R.drawable.ic_stage_tree),
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp),
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = "키운 나무 ${grass.graduatedTrees}그루" + if (onTreesClick != null) " →" else "",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = TextSecondary,
-                    )
-                }
-            }
+            Text(
+                text = "잔디밭",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary,
+            )
             Spacer(Modifier.height(12.dp))
 
             GrassCalendarBody(grass = grass)
@@ -355,14 +328,28 @@ fun GrassCalendarSkeleton(modifier: Modifier = Modifier) {
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         border = BorderStroke(1.dp, Outline),
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            SkeletonBlock(width = 64.dp, height = 18.dp)
-            Spacer(Modifier.height(14.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                repeat(4) { SkeletonBlock(modifier = Modifier.weight(1f), height = 52.dp) }
+        Column {
+            Column(modifier = Modifier.padding(16.dp)) {
+                SkeletonBlock(width = 64.dp, height = 18.dp)
+                Spacer(Modifier.height(14.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    repeat(4) { SkeletonBlock(modifier = Modifier.weight(1f), height = 52.dp) }
+                }
+                Spacer(Modifier.height(14.dp))
+                SkeletonBlock(modifier = Modifier.fillMaxWidth(), height = 128.dp)
             }
-            Spacer(Modifier.height(14.dp))
-            SkeletonBlock(modifier = Modifier.fillMaxWidth(), height = 128.dp)
+            // 하단 기록 밴드 자리 — 실제 카드와 높이를 맞춰 레이아웃 점프를 줄인다.
+            Column(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp))
+                    .background(RecordBandColor)
+                    .fillMaxWidth()
+                    .padding(16.dp),
+            ) {
+                SkeletonBlock(width = 88.dp, height = 14.dp)
+                Spacer(Modifier.height(16.dp))
+                SkeletonBlock(width = 120.dp, height = 32.dp)
+            }
         }
     }
 }

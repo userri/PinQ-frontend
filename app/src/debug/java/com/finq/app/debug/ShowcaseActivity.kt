@@ -59,7 +59,7 @@ import java.time.LocalDate
  *
  *   adb shell am start -n com.finq.app/com.finq.app.debug.ShowcaseActivity --es screen home
  *
- * screen: home | home_pending | home_zero | home_done_water | home_done | quiz | answer | solo_quiz | solo_answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | filters | wrongnote | lazyload | grass | review | review_graduated | review_next | garden | garden_empty | garden_growing_many | garden_trees_few | garden_trees_many | garden_canvas | concept | concept_sheet | concept_sheet_intro
+ * screen: home | home_pending | home_zero | home_done_water | home_done | quiz | answer | solo_quiz | solo_answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | mypage_trees_none | mypage_trees_zero | mypage_trees_few | mypage_trees_many | filters | wrongnote | lazyload | grass | review | review_graduated | review_next | garden | garden_empty | garden_growing_many | garden_trees_few | garden_trees_many | garden_canvas | concept | concept_sheet | concept_sheet_intro
  * 릴리즈 빌드에는 포함되지 않는다(app/src/debug 소스셋).
  */
 class ShowcaseActivity : ComponentActivity() {
@@ -337,6 +337,7 @@ class ShowcaseActivity : ComponentActivity() {
 
                     "mypage" -> MyPageContent(
                         grass = sampleGrass,
+                        garden = sampleGardenGrowing,
                         conceptStats = sampleConcepts,
                         nickname = "유리",
                         streak = 7,
@@ -346,6 +347,64 @@ class ShowcaseActivity : ComponentActivity() {
                         appVersion = "1.1.3",
                         notificationsEnabled = true,   // 알림 토글 ON = 라임
                         notificationTime = "06:00",
+                    )
+
+                    // 복습 나무 기록 밴드 — 0그루. 이 상태가 초라해 보이면 실패다.
+                    "mypage_trees_zero" -> MyPageContent(
+                        grass = sampleGrass.copy(graduatedTrees = 0),
+                        garden = ReviewGarden(
+                            growing = listOf(
+                                gardenSample(1, ReviewStage.SPROUT),
+                                gardenSample(2, ReviewStage.GRASS),
+                                gardenSample(3, ReviewStage.SPROUT),
+                            ),
+                            graduated = emptyList(),
+                            graduatedTrees = 0,
+                        ),
+                        conceptStats = sampleConcepts,
+                        nickname = "유리",
+                        streak = 0, maxStreak = 0, totalSolved = 3, correctRate = 0.33f,
+                        appVersion = "1.1.3",
+                    )
+
+                    // 0그루 + 자라는 것도 없음(완전 신규) — 유도 카피만 남는 최소 상태.
+                    "mypage_trees_none" -> MyPageContent(
+                        grass = sampleGrass.copy(graduatedTrees = 0),
+                        garden = ReviewGarden.EMPTY,
+                        conceptStats = null,
+                        nickname = "유리",
+                        streak = 0, maxStreak = 0, totalSolved = 0, correctRate = 0f,
+                        appVersion = "1.1.3",
+                    )
+
+                    // 소수(2그루) — 아이콘 스트립이 짧을 때 균형.
+                    "mypage_trees_few" -> MyPageContent(
+                        grass = sampleGrass.copy(graduatedTrees = 2),
+                        garden = ReviewGarden(
+                            growing = listOf(gardenSample(1, ReviewStage.ALMOST_TREE)),
+                            graduated = emptyList(),
+                            graduatedTrees = 2,
+                        ),
+                        conceptStats = sampleConcepts,
+                        nickname = "유리",
+                        streak = 3, maxStreak = 5, totalSolved = 12, correctRate = 0.6f,
+                        appVersion = "1.1.3",
+                    )
+
+                    // 다수(137그루) — 스트립 상한(5개)과 세 자리 숫자 폭 확인.
+                    "mypage_trees_many" -> MyPageContent(
+                        grass = sampleGrass.copy(graduatedTrees = 137),
+                        garden = ReviewGarden(
+                            growing = List(9) { i ->
+                                gardenSample(100L + i, ReviewStage.entries[i % ReviewStage.entries.size])
+                            },
+                            graduated = emptyList(),
+                            graduatedTrees = 137,
+                        ),
+                        conceptStats = sampleConcepts,
+                        nickname = "유리",
+                        streak = 40, maxStreak = 88, totalSolved = 412, correctRate = 0.81f,
+                        appVersion = "1.1.3",
                     )
 
                     // 카테고리 필터 칩 — enum 동적 생성 확인 (물가 포함 5개 + 전체)
@@ -682,6 +741,21 @@ class ShowcaseActivity : ComponentActivity() {
             maxStreak = 15,
             graduatedTrees = 4,
             dayByDate = dayMap,
+        )
+    }
+
+    /** 마이페이지 기록 밴드용 — 자라는 중 5, 그중 곧 나무 1. */
+    private val sampleGardenGrowing: ReviewGarden by lazy {
+        ReviewGarden(
+            growing = listOf(
+                gardenSample(1, ReviewStage.SPROUT),
+                gardenSample(2, ReviewStage.GRASS),
+                gardenSample(3, ReviewStage.ALMOST_TREE),
+                gardenSample(4, ReviewStage.SPROUT),
+                gardenSample(5, ReviewStage.GRASS),
+            ),
+            graduated = emptyList(),
+            graduatedTrees = 4,
         )
     }
 
