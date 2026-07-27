@@ -1,0 +1,12 @@
+<!-- 활성 탭용 솔리드 책 — ic_tab_book 과 같은 실루엣, 본문 줄은 네거티브 스페이스로 파냄. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="?attr/colorControlNormal">
+    <path
+        android:fillColor="@color/text_muted"
+        android:fillType="evenOdd"
+        android:pathData="M6,3 H18 V20 H6 a2,2 0 0,1 -2,-2 V5 a2,2 0 0,1 2,-2 Z M8,6.2 H14 V7.8 H8 Z M8,10.2 H14 V11.8 H8 Z" />
+</vector>

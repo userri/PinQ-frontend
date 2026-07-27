@@ -4,19 +4,32 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarDuration
@@ -32,8 +45,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
@@ -87,8 +106,8 @@ import com.finq.app.ui.login.LoginEvent
 import com.finq.app.ui.login.LoginViewModel
 import com.finq.app.ui.screen.LoginScreen
 import com.finq.app.ui.theme.BgBase
-import com.finq.app.ui.theme.BgSubtle
 import com.finq.app.ui.theme.Lime
+import com.finq.app.ui.theme.Outline
 import com.finq.app.ui.theme.TextMuted
 
 /**
@@ -176,13 +195,25 @@ private val darkSessionRoutes = setOf(
 data class BottomNavItem(
     val route: String,
     val label: String,
+    /** 비활성 — 아웃라인. */
     val iconRes: Int,
+    /** 활성 — 같은 실루엣의 솔리드. fill/line 혼용 금지. */
+    val filledIconRes: Int,
 )
 
 private val bottomNavItems = listOf(
-    BottomNavItem(FinQRoutes.HOME, "홈", com.finq.app.R.drawable.ic_tab_home),
-    BottomNavItem(FinQRoutes.LIBRARY_TAB, "내 공부", com.finq.app.R.drawable.ic_tab_book),
-    BottomNavItem(FinQRoutes.MY_PAGE, "마이", com.finq.app.R.drawable.ic_tab_user),
+    BottomNavItem(
+        FinQRoutes.HOME, "홈",
+        com.finq.app.R.drawable.ic_tab_home, com.finq.app.R.drawable.ic_tab_home_filled,
+    ),
+    BottomNavItem(
+        FinQRoutes.LIBRARY_TAB, "내 공부",
+        com.finq.app.R.drawable.ic_tab_book, com.finq.app.R.drawable.ic_tab_book_filled,
+    ),
+    BottomNavItem(
+        FinQRoutes.MY_PAGE, "마이",
+        com.finq.app.R.drawable.ic_tab_user, com.finq.app.R.drawable.ic_tab_user_filled,
+    ),
 )
 
 /**
@@ -767,50 +798,147 @@ private fun ReviewErrorBox(message: String, onRetry: () -> Unit) {
 // 하단 내비게이션 바
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * 하단 탭 바 — "지평선" 인디케이터.
+ *
+ * M3 NavigationBar 의 알약 인디케이터·80dp 슬래브를 버리고 직접 그린다.
+ *   · 배경은 BgBase — 화면과 같은 색이라 바가 판처럼 떠 보이지 않고 화면이 그대로 이어진다.
+ *   · 바 상단 1dp Outline 헤어라인이 곧 인디케이터다. 활성 탭 구간만 Lime 으로 굵고 밝게
+ *     칠하고, 탭 전환 시 그 구간이 옆으로 미끄러진다. 라벨 아래에 요소를 더 쌓지 않는다.
+ *   · 활성 표시는 4중(지평선 + 솔리드 아이콘 + Lime + 라벨 볼드) — 색만으로 정보를
+ *     전달하지 않는다(WCAG 1.4.1).
+ *   · windowInsetsPadding 을 배경 뒤에 둬서 시스템 내비 영역까지 BgBase 로 깔리되
+ *     터치 타깃은 인셋 위로 올라온다(edge-to-edge).
+ */
 @Composable
 private fun FinQBottomBar(
     currentRoute: String?,
     onNavigate: (String) -> Unit,
 ) {
-    NavigationBar(
-        containerColor = MaterialTheme.colorScheme.surface,
-        tonalElevation = 0.dp,
-        // windowInsets 를 기본값으로 두어 기기 하단 시스템 바(제스처/3버튼)와 겹치지 않게 한다.
+    // 보관함은 optional 인자 라우트(library_tab?focusQuizId=…)로 도착할 수 있어
+    // 쿼리 부분을 떼고 base 라우트로 비교한다 — 딥링크 진입 시에도 탭 하이라이트 유지.
+    val baseRoute = currentRoute?.substringBefore("?")
+    val selectedIndex = bottomNavItems.indexOfFirst { it.route == baseRoute }
+    val tabCount = bottomNavItems.size
+
+    // 활성 구간의 위치(탭 인덱스 단위) — 탭 전환 시 지평선이 옆으로 미끄러진다.
+    val position by animateFloatAsState(
+        targetValue = selectedIndex.coerceAtLeast(0).toFloat(),
+        animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
+        label = "horizon",
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(BgBase)
+            .windowInsetsPadding(WindowInsets.navigationBars),
     ) {
-        bottomNavItems.forEach { item ->
-            // 보관함은 optional 인자 라우트(library_tab?focusQuizId=…)로 도착할 수 있어
-            // 쿼리 부분을 떼고 base 라우트로 비교한다 — 딥링크 진입 시에도 탭 하이라이트 유지.
-            val selected = currentRoute?.substringBefore("?") == item.route
-            NavigationBarItem(
-                selected = selected,
-                onClick = { onNavigate(item.route) },
-                icon = {
-                    androidx.compose.foundation.Image(
-                        painter = androidx.compose.ui.res.painterResource(item.iconRes),
-                        contentDescription = item.label,
-                        colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(
-                            if (selected) Lime
-                            else TextMuted
+        HorizonIndicator(
+            position = position,
+            tabCount = tabCount,
+            visible = selectedIndex >= 0,
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(BottomBarContentHeight)
+                // 홈 네온 물주기 버튼과 같은 언어 — 라임이 바 안쪽으로만 은은하게 번진다.
+                .clipToBounds()
+                .drawBehind {
+                    if (selectedIndex < 0) return@drawBehind
+                    val centerX = size.width / tabCount * (position + 0.5f)
+                    val radius = 46.dp.toPx()
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            0f to Lime.copy(alpha = 0.13f),
+                            0.4f to Lime.copy(alpha = 0.05f),
+                            1f to Color.Transparent,
+                            center = Offset(centerX, 0f),
+                            radius = radius,
                         ),
-                        modifier = Modifier.size(22.dp),
+                        radius = radius,
+                        center = Offset(centerX, 0f),
                     )
                 },
-                label = {
+        ) {
+            bottomNavItems.forEachIndexed { index, item ->
+                val selected = index == selectedIndex
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .selectable(
+                            selected = selected,
+                            onClick = { onNavigate(item.route) },
+                            role = Role.Tab,
+                        )
+                        // 아이콘이 지평선에 붙어 답답해 보이지 않도록 상단 여백을 준다.
+                        .padding(top = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    androidx.compose.foundation.Image(
+                        painter = androidx.compose.ui.res.painterResource(
+                            if (selected) item.filledIconRes else item.iconRes
+                        ),
+                        contentDescription = item.label,
+                        colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(
+                            if (selected) Lime else TextMuted
+                        ),
+                        modifier = Modifier.size(24.dp),
+                    )
+                    Spacer(Modifier.height(4.dp))
                     Text(
                         text = item.label,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                        color = if (selected) Lime else TextMuted,
                     )
-                },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedTextColor = Lime,
-                    unselectedTextColor = TextMuted,
-                    indicatorColor = BgSubtle,
-                ),
+                }
+            }
+        }
+    }
+}
+
+/** 탭 바 콘텐츠 높이 — M3 Expressive 기준 64dp (구형 80dp 슬래브를 쓰지 않는다). */
+private val BottomBarContentHeight = 64.dp
+
+/**
+ * 지평선 — 평소엔 Outline 1dp 헤어라인, 활성 탭 구간만 Lime 2.5dp.
+ * 탭 전환 시 라임 구간이 220ms 동안 옆으로 미끄러진다(유휴 모션 없음).
+ */
+@Composable
+private fun HorizonIndicator(position: Float, tabCount: Int, visible: Boolean) {
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(HorizonHeight),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(Outline),
+        )
+        if (visible) {
+            val tabWidth = maxWidth / tabCount
+            val segmentWidth = tabWidth * 0.45f
+            val offsetX = tabWidth * position + (tabWidth - segmentWidth) / 2
+            Box(
+                modifier = Modifier
+                    .offset(x = offsetX)
+                    .width(segmentWidth)
+                    .height(HorizonHeight)
+                    .clip(RoundedCornerShape(bottomStart = 2.dp, bottomEnd = 2.dp))
+                    .background(Lime),
             )
         }
     }
 }
+
+/** 지평선 두께 — 헤어라인 위에 얹히는 라임 구간의 높이. */
+private val HorizonHeight = 2.5.dp
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 세션 ViewModel 공유 헬퍼

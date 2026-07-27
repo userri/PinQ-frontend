@@ -1,0 +1,12 @@
+<!-- 활성 탭용 솔리드 홈 — ic_tab_home 과 같은 실루엣, 문은 네거티브 스페이스로 파냄. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="?attr/colorControlNormal">
+    <path
+        android:fillColor="@color/text_muted"
+        android:fillType="evenOdd"
+        android:pathData="M12,3.4 L21.4,11.2 L18.8,11.2 L18.8,19.6 L5.2,19.6 L5.2,11.2 L2.6,11.2 Z M10.1,19.6 L10.1,14.4 L13.9,14.4 L13.9,19.6 Z" />
+</vector>

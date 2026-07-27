@@ -1,0 +1,14 @@
+<!-- 활성 탭용 솔리드 사람 — ic_tab_user 와 같은 실루엣, 머리·어깨 사이 간격 유지. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="?attr/colorControlNormal">
+    <path
+        android:fillColor="@color/text_muted"
+        android:pathData="M12,9 m-3.6,0 a3.6,3.6 0 1,0 7.2,0 a3.6,3.6 0 1,0 -7.2,0" />
+    <path
+        android:fillColor="@color/text_muted"
+        android:pathData="M4.6,20.4 C5.7,16.6 8.8,14.5 12,14.5 C15.2,14.5 18.3,16.6 19.4,20.4 Z" />
+</vector>
