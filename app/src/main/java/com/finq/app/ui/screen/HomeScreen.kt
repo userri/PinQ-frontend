@@ -488,14 +488,8 @@ private fun GardenLabel(
             .padding(horizontal = 14.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        androidx.compose.foundation.Image(
-            painter = painterResource(
-                if (treeCount > 0) R.drawable.ic_stage_tree else R.drawable.ic_stage_sprout
-            ),
-            contentDescription = null,
-            modifier = Modifier.size(15.dp),
-        )
-        Spacer(Modifier.width(6.dp))
+        // 아이콘 없음 — 바로 아래 잔디밭 씬이 실제 식물을 크게 렌더하고 있어
+        // 라벨 속 15dp 아이콘은 중복이자 정보량 0인 장식이 된다(Material 광학 최소 20dp).
         Text(
             text = when {
                 treeCount == 0 && growingCount == 0 -> "오답을 복습하면 숲이 자라요 →"

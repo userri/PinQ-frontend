@@ -115,22 +115,12 @@ private fun ReviewFilterRow(selected: ReviewFilter, onSelect: (ReviewFilter) -> 
                     .clickable { onSelect(filter) }
                     .padding(horizontal = 12.dp, vertical = 5.dp),
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = filter.label,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = if (isSelected) OnLime else TextSecondary,
-                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                    )
-                    filter.iconRes?.let { icon ->
-                        Spacer(Modifier.width(3.dp))
-                        Image(
-                            painter = painterResource(icon),
-                            contentDescription = null,
-                            modifier = Modifier.size(12.dp),
-                        )
-                    }
-                }
+                Text(
+                    text = filter.label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (isSelected) OnLime else TextSecondary,
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                )
             }
         }
     }
