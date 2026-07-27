@@ -20,6 +20,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import com.finq.app.R
+import com.finq.app.data.model.AttemptItem
 import kotlinx.coroutines.launch
 import com.finq.app.ui.theme.Lime
 
@@ -35,8 +36,8 @@ fun LibraryTabScreen(
     bookmarkViewModel: LibraryViewModel,
     historyViewModel: LibraryViewModel,
     snackbarHostState: SnackbarHostState? = null,
-    /** 미풀이 북마크 탭 → 풀이 화면 진입. */
-    onStartQuiz: (() -> Unit)? = null,
+    /** 미풀이 북마크 탭 → 그 문제의 단건 풀이 화면 진입. */
+    onStartQuiz: ((AttemptItem) -> Unit)? = null,
     /** 정원 나무 딥링크 — 오답노트에서 해당 문제로 스크롤·펼침. */
     focusQuizId: Long? = null,
     modifier: Modifier = Modifier,

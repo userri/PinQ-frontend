@@ -46,7 +46,7 @@ import java.time.LocalDate
  *
  *   adb shell am start -n com.finq.app/com.finq.app.debug.ShowcaseActivity --es screen home
  *
- * screen: home | home_pending | home_zero | home_done_water | home_done | quiz | answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | filters | wrongnote | lazyload | grass | review | review_graduated | review_next | garden | garden_canvas | concept
+ * screen: home | home_pending | home_zero | home_done_water | home_done | quiz | answer | solo_quiz | solo_answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | filters | wrongnote | lazyload | grass | review | review_graduated | review_next | garden | garden_canvas | concept
  * 릴리즈 빌드에는 포함되지 않는다(app/src/debug 소스셋).
  */
 class ShowcaseActivity : ComponentActivity() {
@@ -421,6 +421,44 @@ class ShowcaseActivity : ComponentActivity() {
                         onArticleClick = {},
                     )
 
+                    // 단건 풀이 (미풀이 북마크 → 풀러 가기) — 진행도 1/1 + 헤더 안내 한 줄
+                    "solo_quiz" -> QuizScreen(
+                        quizIndex = 0,
+                        totalCount = 1,
+                        quiz = sampleQuiz,
+                        selectedOptionId = 2L,
+                        onSelectOption = {},
+                        onSubmit = {},
+                        headerNote = "북마크한 문제 — 지금 풀면 오늘 기록으로 반영돼요",
+                    )
+
+                    // 단건 풀이 채점 후 — 해설 화면, CTA "완료" (북마크 목록 복귀)
+                    "solo_answer" -> QuizAnswerScreen(
+                        quiz = sampleQuiz,
+                        answer = AnswerResult(
+                            quizId = sampleQuiz.id,
+                            selectedOptionId = 1L,
+                            isCorrect = true,
+                            correctOptionId = 1L,
+                            explanation = "기준금리가 오르면 시중 금리가 따라 올라 예금 금리도 상승합니다.",
+                            keyword = "기준금리",
+                            relatedArticle = RelatedArticle(
+                                title = "한은, 기준금리 0.25%p 인상",
+                                url = "https://example.com",
+                                source = "경제일보",
+                            ),
+                        ),
+                        isLast = true,
+                        quizIndex = 0,
+                        totalCount = 1,
+                        onNext = {},
+                        onBack = {},
+                        onArticleClick = {},
+                        libraryRepository = stubLibraryRepository,
+                        initialBookmarked = true,
+                        nextLabel = "완료",
+                    )
+
                     // 스트릭 문구 분기: 오늘 미풀이 + streak>0 → "오늘 풀면 N+1일 연속!"
                     "home_pending" -> HomeScreen(
                         quizCount = 3,
@@ -609,6 +647,16 @@ class ShowcaseActivity : ComponentActivity() {
             QuizOption(4, 4, "환율이 급락한다"),
         ),
     )
+
+    /** 네트워크 없는 북마크 토글 스텁 — solo_answer 케이스에서 ⭐ 아이콘 렌더 확인용. */
+    private val stubLibraryRepository = object : com.finq.app.data.repository.LibraryRepository {
+        override suspend fun getAttempts() = emptyList<AttemptItem>()
+        override suspend fun getWrongNotes() = emptyList<AttemptItem>()
+        override suspend fun getBookmarks() = emptyList<AttemptItem>()
+        override suspend fun getAttemptDetail(quizId: Long) = sampleAttempt(correct = true)
+        override suspend fun addBookmark(quizId: Long) = true
+        override suspend fun removeBookmark(quizId: Long) = false
+    }
 
     private fun sampleAttempt(correct: Boolean) = AttemptItem(
         quizId = if (correct) 1L else 2L,

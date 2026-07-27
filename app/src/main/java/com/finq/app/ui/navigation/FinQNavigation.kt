@@ -67,6 +67,8 @@ import com.finq.app.ui.library.LibraryTabScreen
 import com.finq.app.ui.library.LibraryViewModel
 import com.finq.app.ui.mypage.MyPageViewModel
 import com.finq.app.ui.quiz.QuizSessionViewModel
+import com.finq.app.ui.quiz.SoloQuizViewModel
+import com.finq.app.ui.quiz.toSoloQuiz
 import com.finq.app.ui.review.ReviewSessionViewModel
 import com.finq.app.ui.review.toAnswerResult
 import com.finq.app.ui.review.toQuiz
@@ -132,6 +134,13 @@ object FinQRoutes {
 
     /** 복습 나무 정원 (마이페이지 잔디 카드에서 진입). */
     const val GARDEN = "garden"
+    /**
+     * 단건 풀이 — 미풀이 북마크 "풀러 가기" 진입 경로.
+     * 오늘 세트가 아닌 지난 문제도 quizId 만으로 풀고 채점까지 마칠 수 있다.
+     */
+    const val SOLO_QUIZ_PATTERN = "solo_quiz/{quizId}"
+    fun soloQuiz(quizId: Long) = "solo_quiz/$quizId"
+
     const val SESSION_GRAPH = "session"
     const val QUIZ = "session/quiz"
     const val ANSWER = "session/answer"
@@ -158,6 +167,7 @@ private val bottomNavRoutes = setOf(
 private val darkSessionRoutes = setOf(
     FinQRoutes.QUIZ,
     FinQRoutes.ANSWER,
+    FinQRoutes.SOLO_QUIZ_PATTERN,
     FinQRoutes.REVIEW_QUIZ,
     FinQRoutes.REVIEW_ANSWER,
     FinQRoutes.REVIEW_DONE,
@@ -372,8 +382,11 @@ fun FinQNavHost(
                     bookmarkViewModel  = libraryVm,
                     historyViewModel   = libraryVm,
                     snackbarHostState  = snackbarHostState,
-                    // 미풀이 북마크(오늘 세트) → 오늘 풀이 세션으로 진입.
-                    onStartQuiz = { navController.resumeOrStartSession() },
+                    // 미풀이 북마크 → 그 문제의 단건 풀이 화면으로 진입.
+                    // (예전엔 오늘 세트로만 보내 익일 북마크가 죽은 링크가 됐다.)
+                    onStartQuiz = { item ->
+                        navController.navigate(FinQRoutes.soloQuiz(item.quizId))
+                    },
                     focusQuizId = focusQuizId,
                 )
             }
@@ -483,6 +496,24 @@ fun FinQNavHost(
                             launchSingleTop = true
                         }
                     },
+                )
+            }
+
+            // ── 단건 풀이 (미풀이 북마크 "풀러 가기") ──────────────────
+            composable(
+                route = FinQRoutes.SOLO_QUIZ_PATTERN,
+                arguments = listOf(navArgument("quizId") { type = NavType.LongType }),
+            ) { entry ->
+                val quizId = entry.arguments?.getLong("quizId") ?: return@composable
+                val vm: SoloQuizViewModel = viewModel(
+                    factory = SoloQuizViewModel.factory(quizId, libraryRepository, repository),
+                )
+                SoloQuizRoute(
+                    viewModel = vm,
+                    libraryRepository = libraryRepository,
+                    // 북마크 목록으로 복귀 — BookmarkTabRoute 는 재진입 시
+                    // LaunchedEffect(Unit) 로 목록을 다시 불러 solved 뱃지가 갱신된다.
+                    onExit = { navController.popBackStack() },
                 )
             }
 
@@ -803,6 +834,82 @@ private fun libraryViewModel(repository: LibraryRepository): LibraryViewModel {
 // ─────────────────────────────────────────────────────────────────────────────
 // Route 래퍼
 // ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * 단건 풀이 라우트 — 풀이(QuizScreen) → 채점 후 해설(QuizAnswerScreen)을 한 라우트에서 전환한다.
+ * 1문제짜리라 진행도는 1/1 로 표시된다.
+ */
+@Composable
+private fun SoloQuizRoute(
+    viewModel: SoloQuizViewModel,
+    libraryRepository: LibraryRepository,
+    onExit: () -> Unit,
+) {
+    val state by viewModel.uiState.collectAsState()
+    val localContext = LocalContext.current
+    val item = state.item
+
+    // 삭제된 문제(404) 또는 이미 푼 문제(낡은 목록) — 안내 후 목록으로 복귀.
+    // Toast 사용: 스낵바는 화면 이탈 시 코루틴이 취소돼 안내가 사라질 수 있다.
+    LaunchedEffect(state.notFound, state.alreadySolved) {
+        if (state.notFound) {
+            Toast.makeText(localContext, "문제를 찾을 수 없어요 — 북마크를 정리해 주세요", Toast.LENGTH_SHORT).show()
+            onExit()
+        } else if (state.alreadySolved) {
+            Toast.makeText(localContext, "이미 푼 문제예요 — 카드를 눌러 해설을 확인해 보세요", Toast.LENGTH_SHORT).show()
+            onExit()
+        }
+    }
+
+    when {
+        state.isLoading -> {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Lime)
+            }
+        }
+        state.error != null && state.lastAnswer == null -> {
+            ReviewErrorBox(message = state.error!!, onRetry = viewModel::load)
+        }
+        item == null || state.alreadySolved || state.notFound -> {
+            // 복귀 대기 (LaunchedEffect 가 곧 onExit)
+        }
+        state.lastAnswer != null -> {
+            QuizAnswerScreen(
+                quiz = item.toSoloQuiz(),
+                answer = state.lastAnswer!!,
+                isLast = true,
+                quizIndex = 0,
+                totalCount = 1,
+                onNext = onExit,
+                onBack = onExit,
+                onArticleClick = { article ->
+                    val intent = Intent(Intent.ACTION_VIEW, article.url.toUri())
+                    try {
+                        localContext.startActivity(intent)
+                    } catch (e: ActivityNotFoundException) {
+                        Toast.makeText(localContext, "기사를 열 수 있는 앱이 없어요", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                libraryRepository = libraryRepository,
+                initialBookmarked = item.bookmarked,
+                nextLabel = "완료",
+            )
+        }
+        else -> {
+            QuizScreen(
+                quizIndex = 0,
+                totalCount = 1,
+                quiz = item.toSoloQuiz(),
+                selectedOptionId = state.selectedOptionId,
+                onSelectOption = viewModel::selectOption,
+                onSubmit = viewModel::submitAnswer,
+                onClose = onExit,
+                isSubmitting = state.isSubmitting,
+                headerNote = "북마크한 문제 — 지금 풀면 오늘 기록으로 반영돼요",
+            )
+        }
+    }
+}
 
 @Composable
 private fun QuizRoute(

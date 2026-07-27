@@ -7,6 +7,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import com.finq.app.R
+import com.finq.app.data.model.AttemptItem
 
 /**
  * 하단 네비게이션 "북마크" 탭 진입 화면.
@@ -20,8 +21,8 @@ import com.finq.app.R
 fun BookmarkTabRoute(
     viewModel: LibraryViewModel,
     snackbarHostState: SnackbarHostState? = null,
-    /** 미풀이 북마크 탭 → 풀이 화면(오늘 세션) 진입. */
-    onStartQuiz: (() -> Unit)? = null,
+    /** 미풀이 북마크 탭 → 그 문제의 단건 풀이 화면 진입. */
+    onStartQuiz: ((AttemptItem) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsState()
@@ -46,7 +47,7 @@ fun BookmarkTabRoute(
         emptyIconRes = R.drawable.ic_bookmark_star_filled,
         onRetry = viewModel::loadBookmarks,
         onToggleBookmark = { item -> viewModel.toggleBookmark(item.quizId, item.bookmarked) },
-        onStartQuiz = onStartQuiz?.let { cb -> { _ -> cb() } },
+        onStartQuiz = onStartQuiz,
         onLoadDetail = viewModel::fetchDetail,
         showTitle = false,
         modifier = modifier,
