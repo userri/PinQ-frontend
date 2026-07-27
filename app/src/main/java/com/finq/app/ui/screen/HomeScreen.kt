@@ -309,9 +309,13 @@ private fun NightSceneBackground(
         )
 
         // ② 별 — 하늘 밴드 안에서만.
+        // 상단 ~55% 는 인사말·카드 텍스트가 사는 영역이라 별을 크게 감쇠해
+        // 글자와 겹쳐도 가독성을 해치지 않게 한다(빈 하늘 밴드에서만 온전한 밝기).
+        // 하드 컷 대신 0.45→0.75 구간 램프로 밴드 경계가 티 나지 않게.
         stars.forEach { s ->
+            val readabilityDim = 0.25f + 0.75f * ((s.yFrac - 0.45f) / 0.30f).coerceIn(0f, 1f)
             drawCircle(
-                color = (if (s.lime) Lime else Color.White).copy(alpha = s.alpha),
+                color = (if (s.lime) Lime else Color.White).copy(alpha = s.alpha * readabilityDim),
                 radius = s.radiusDp.dp.toPx() / 2f,
                 center = Offset(s.xFrac * size.width, s.yFrac * hillTop * 0.92f),
             )
