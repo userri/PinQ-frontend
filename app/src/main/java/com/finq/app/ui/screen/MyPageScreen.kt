@@ -55,31 +55,33 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.times
 import androidx.compose.material3.ButtonDefaults
 import com.finq.app.ui.theme.FinQTheme
-import java.util.Calendar
 import com.finq.app.data.repository.ConceptStats
 import com.finq.app.data.repository.GrassCalendar
 import com.finq.app.data.repository.ReviewGarden
-import com.finq.app.ui.components.ConceptStatsCard
+import com.finq.app.ui.components.ConceptStatsSection
 import com.finq.app.ui.components.garden.GardenSection
-import com.finq.app.ui.theme.BgElevated
 import com.finq.app.ui.theme.BgSubtle
 import com.finq.app.ui.theme.Error
 import com.finq.app.ui.theme.Lime
 import com.finq.app.ui.theme.OnLime
+import com.finq.app.ui.theme.TextMuted
 import com.finq.app.ui.theme.TextPrimary
-import com.finq.app.ui.theme.streakColor
+import kotlin.math.roundToInt
 
 /**
  * 마이페이지 — Stateless View.
  *
- * @param streak          연속 학습 일수
- * @param totalSolved     누적 풀이 수
- * @param correctRate     정답률 0.0~1.0
+ * 연속/최고 스트릭은 일부러 받지 않는다. 통계 API 와 잔디밭 API 가 같은 개념을
+ * 각각 들고 오던 탓에 화면에 같은 값이 두 벌 떠 있었고 서로 어긋날 수도 있었다.
+ * 지금은 [grass] 만 그 값의 소유자다.
+ *
+ * @param totalSolved     누적 풀이 수 — 프로필 헤더가 소유
+ * @param correctRate     정답률 0.0~1.0 — 프로필 헤더가 소유
  * @param appVersion      BuildConfig.VERSION_NAME
  * @param isLoading         통계 로딩 중 여부
  * @param error             통계 로드 실패 메시지 (null이면 정상)
@@ -90,8 +92,6 @@ import com.finq.app.ui.theme.streakColor
 @Composable
 fun MyPageScreen(
     nickname: String,
-    streak: Int,
-    maxStreak: Int,
     totalSolved: Int,
     correctRate: Float,
     /** 연간 잔디밭. null 이면 아직 로딩 전 — 스켈레톤을 그린다. */
@@ -150,8 +150,6 @@ fun MyPageScreen(
         else -> {
             MyPageContent(
                 nickname = nickname,
-                streak = streak,
-                maxStreak = maxStreak,
                 totalSolved = totalSolved,
                 correctRate = correctRate,
                 grass = grass,
@@ -186,8 +184,6 @@ fun MyPageScreen(
 @Composable
 fun MyPageContent(
     nickname: String,
-    streak: Int,
-    maxStreak: Int,
     totalSolved: Int,
     correctRate: Float,
     /** 연간 잔디밭. null 이면 아직 로딩 전 — 스켈레톤을 그린다. */
@@ -256,44 +252,18 @@ fun MyPageContent(
             color = MaterialTheme.colorScheme.onSurface,
         )
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(24.dp))
 
-        // ── 프로필 카드 ───────────────────────────────────────────
-        ProfileCard(
+        // ── 프로필 헤더 ───────────────────────────────────────────
+        // 총 풀이·정답률은 여기서만 말한다. 연속/최고는 잔디밭 섹션이 단독으로 소유한다.
+        ProfileHeader(
             nickname = nickname,
+            totalSolved = totalSolved,
+            correctRate = correctRate,
             onEditClick = { showNicknameDialog = true },
         )
 
-        Spacer(Modifier.height(20.dp))
-
-        // ── 통계 카드 ──────────────────────────────────────────
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            StatCard(
-                label = "연속 학습",
-                value = "${streak}일",
-                modifier = Modifier.weight(1f),
-            )
-            StatCard(
-                label = "최고 기록",
-                value = if (maxStreak > 0) "${maxStreak}일" else "-",
-                modifier = Modifier.weight(1f),
-            )
-            StatCard(
-                label = "총 풀이",
-                value = "${totalSolved}회",
-                modifier = Modifier.weight(1f),
-            )
-            StatCard(
-                label = "정답률",
-                value = "${(correctRate * 100).toInt()}%",
-                modifier = Modifier.weight(1f),
-            )
-        }
-
-        Spacer(Modifier.height(20.dp))
+        SectionDivider()
 
         // ── 잔디밭 (연간) ─────────────────────────────────────────
         // fetch 완료 전에는 스켈레톤 — 옛 데이터(구 8주 그리드)를 첫 프레임에 그리지 않는다.
@@ -309,11 +279,11 @@ fun MyPageContent(
         // ── 개념별 정답률 / 취약 개념 ─────────────────────────────
         // 표본이 아예 없으면(카테고리 비었음) 섹션 자체를 숨긴다.
         if (conceptStats != null && conceptStats.categories.isNotEmpty()) {
-            Spacer(Modifier.height(16.dp))
-            ConceptStatsCard(stats = conceptStats)
+            SectionDivider()
+            ConceptStatsSection(stats = conceptStats)
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(24.dp))
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         Spacer(Modifier.height(16.dp))
 
@@ -641,29 +611,46 @@ fun MyPageContent(
 // 서브 컴포넌트
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * 프로필 헤더 — 정체성(아바타·이름)과 누적 성취(정답률·풀이 수)를 한 줄로 읽는 자리.
+ *
+ * 예전엔 카드 안에 「아바타 + 이름 + "닉네임을 변경할 수 있어요" + [변경]」 뿐이었다.
+ * 페이지 최상단이라는 가장 좋은 자리를 저가치 액션 안내가 차지하고 있었던 셈이라,
+ * 이름 변경은 조용한 어포던스(이름 옆 `›` + 영역 탭)로 내리고 성취 요약을 올렸다.
+ *
+ * 이 화면에서 라임을 크게 쓰는 곳은 여기 정답률 하나뿐이다 — 잔디밭 통계는 전부 중립.
+ * (아래 [TreeRecordBlock] 의 라임은 별도 톤 밴드 안이라 구역이 다르다.)
+ *
+ * 아직 한 문제도 안 푼 사용자에겐 큰 `0%` 를 띄우지 않는다. 음수 정보를 주역으로
+ * 세우는 대신 다음 행동을 말한다 — [TreeRecordBlock] 의 0그루 처리와 같은 규칙.
+ */
 @Composable
-private fun ProfileCard(
+private fun ProfileHeader(
     nickname: String,
+    totalSolved: Int,
+    correctRate: Float,
     onEditClick: () -> Unit,
 ) {
     val initial = nickname.firstOrNull()?.toString() ?: "?"
-    Card(
+    val hasRecord = totalSolved > 0
+
+    Row(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+                .weight(1f)
+                .clip(RoundedCornerShape(14.dp))
+                // 어포던스는 작지만 탭 영역은 아바타~이름 전체다.
+                .clickable(onClickLabel = "닉네임 변경", onClick = onEditClick)
+                .heightIn(min = 48.dp)
+                .padding(vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
                 modifier = Modifier
-                    .size(52.dp)
+                    .size(56.dp)
                     .clip(CircleShape)
                     .background(Lime),
                 contentAlignment = Alignment.Center,
@@ -677,60 +664,46 @@ private fun ProfileCard(
             }
             Spacer(Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "${nickname}님",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        text = "›",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = TextMuted,
+                    )
+                }
                 Text(
-                    text = "${nickname}님",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = "닉네임을 변경할 수 있어요",
+                    text = if (hasRecord) "${totalSolved}문제 풀이" else "첫 문제를 풀어보세요",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            TextButton(onClick = onEditClick) {
-                Text(
-                    text = "변경",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Lime,
+                    color = TextMuted,
                 )
             }
         }
-    }
-}
 
-@Composable
-private fun StatCard(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier,
-) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 14.dp, horizontal = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(
-                text = value,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.ExtraBold,
-                color = TextPrimary,
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        if (hasRecord) {
+            Spacer(Modifier.width(12.dp))
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = "${(correctRate * 100).roundToInt()}%",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Lime,
+                )
+                Text(
+                    text = "정답률",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextMuted,
+                )
+            }
         }
     }
 }
@@ -803,6 +776,17 @@ private fun NotificationTimePickerDialog(
     )
 }
 
+/**
+ * 섹션 사이 구분 — 카드 테두리 대신 여백+선으로만 나눈다.
+ * 페이지 하단(앱 정보·알림·계정)이 원래 쓰던 리듬을 상단에도 그대로 적용한 것.
+ */
+@Composable
+private fun SectionDivider() {
+    Spacer(Modifier.height(24.dp))
+    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+    Spacer(Modifier.height(20.dp))
+}
+
 @Composable
 private fun InfoRow(label: String, value: String) {
     Row(
@@ -833,8 +817,6 @@ private fun MyPageScreenPreview() {
     FinQTheme {
         MyPageContent(
             nickname = "유리",
-            streak = 7,
-            maxStreak = 14,
             totalSolved = 28,
             correctRate = 0.75f,
             appVersion = "1.0",
@@ -848,8 +830,6 @@ private fun MyPageEmptyPreview() {
     FinQTheme {
         MyPageContent(
             nickname = "유저123456",
-            streak = 0,
-            maxStreak = 0,
             totalSolved = 0,
             correctRate = 0f,
             appVersion = "1.0",

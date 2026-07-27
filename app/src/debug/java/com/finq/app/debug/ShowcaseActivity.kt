@@ -26,7 +26,7 @@ import com.finq.app.data.repository.ConceptStats
 import com.finq.app.data.repository.GardenItem
 import com.finq.app.data.repository.ReviewGarden
 import com.finq.app.data.repository.ReviewStage
-import com.finq.app.ui.components.ConceptStatsCard
+import com.finq.app.ui.components.ConceptStatsSection
 import com.finq.app.ui.components.ReviewTreeConceptSheet
 import com.finq.app.ui.components.ReviewTreeConceptVariant
 import com.finq.app.ui.components.garden.GardenCanvas
@@ -303,9 +303,9 @@ class ShowcaseActivity : ComponentActivity() {
                     "concept" -> Column(
                         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)
                     ) {
-                        ConceptStatsCard(sampleConcepts)
+                        ConceptStatsSection(sampleConcepts)
                         Spacer(Modifier.height(16.dp))
-                        ConceptStatsCard(sampleConcepts.copy(weakest = null))
+                        ConceptStatsSection(sampleConcepts.copy(weakest = null))
                     }
 
                     // 잔디밭 로딩 스켈레톤 (grass=null) — stale flash 수정 확인용
@@ -313,8 +313,6 @@ class ShowcaseActivity : ComponentActivity() {
                         grass = null,
                         conceptStats = null,
                         nickname = "유리",
-                        streak = 7,
-                        maxStreak = 15,
                         totalSolved = 28,
                         correctRate = 0.75f,
                         appVersion = "1.1.3",
@@ -326,8 +324,6 @@ class ShowcaseActivity : ComponentActivity() {
                         grassFailed = true,
                         conceptStats = null,
                         nickname = "유리",
-                        streak = 7,
-                        maxStreak = 15,
                         totalSolved = 28,
                         correctRate = 0.75f,
                         appVersion = "1.1.3",
@@ -338,8 +334,6 @@ class ShowcaseActivity : ComponentActivity() {
                         garden = sampleGardenGrowing,
                         conceptStats = sampleConcepts,
                         nickname = "유리",
-                        streak = 7,
-                        maxStreak = 15,
                         totalSolved = 28,
                         correctRate = 0.75f,
                         appVersion = "1.1.3",
@@ -361,7 +355,7 @@ class ShowcaseActivity : ComponentActivity() {
                         ),
                         conceptStats = sampleConcepts,
                         nickname = "유리",
-                        streak = 0, maxStreak = 0, totalSolved = 3, correctRate = 0.33f,
+                        totalSolved = 3, correctRate = 0.33f,
                         appVersion = "1.1.3",
                     )
 
@@ -371,7 +365,7 @@ class ShowcaseActivity : ComponentActivity() {
                         garden = ReviewGarden.EMPTY,
                         conceptStats = null,
                         nickname = "유리",
-                        streak = 0, maxStreak = 0, totalSolved = 0, correctRate = 0f,
+                        totalSolved = 0, correctRate = 0f,
                         appVersion = "1.1.3",
                     )
 
@@ -385,7 +379,7 @@ class ShowcaseActivity : ComponentActivity() {
                         ),
                         conceptStats = sampleConcepts,
                         nickname = "유리",
-                        streak = 3, maxStreak = 5, totalSolved = 12, correctRate = 0.6f,
+                        totalSolved = 12, correctRate = 0.6f,
                         appVersion = "1.1.3",
                     )
 
@@ -401,7 +395,7 @@ class ShowcaseActivity : ComponentActivity() {
                         ),
                         conceptStats = sampleConcepts,
                         nickname = "유리",
-                        streak = 40, maxStreak = 88, totalSolved = 412, correctRate = 0.81f,
+                        totalSolved = 412, correctRate = 0.81f,
                         appVersion = "1.1.3",
                     )
 

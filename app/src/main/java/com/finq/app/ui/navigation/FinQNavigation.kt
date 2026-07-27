@@ -428,8 +428,6 @@ fun FinQNavHost(
 
                 MyPageScreen(
                     nickname = state.nickname,
-                    streak = state.streak,
-                    maxStreak = state.maxStreak,
                     totalSolved = state.totalSolved,
                     correctRate = state.correctRate,
                     grass = state.grass,
