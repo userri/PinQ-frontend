@@ -5,6 +5,7 @@ import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -51,10 +53,15 @@ import com.finq.app.ui.theme.FinQTheme
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import com.finq.app.ui.theme.BgElevated
 import com.finq.app.ui.theme.BgSubtle
+import com.finq.app.ui.theme.Error
 import com.finq.app.ui.theme.Grass1
 import com.finq.app.ui.theme.Lime
+import com.finq.app.ui.theme.OnLime
+import com.finq.app.ui.theme.Outline
 import com.finq.app.ui.theme.TextMuted
+import com.finq.app.ui.theme.TextPrimary
 import com.finq.app.ui.theme.TextSecondary
 
 /**
@@ -71,8 +78,38 @@ enum class AttemptCardEmphasis {
     CATEGORY,
 }
 
-/** 메타 한 줄의 조각. [accent] 인 조각만 Lime 포인트를 받는다(카드당 최대 1개). */
-private data class MetaPart(val text: String, val accent: Boolean = false)
+// ─────────────────────────────────────────────────────────────────────────────
+// 이 카드의 시각 언어 (채점 화면 QuizAnswerScreen 과 같은 규칙, 밀도만 낮춤)
+//
+// ── 라임의 용도 ──────────────────────────────────────────────────────────────
+//   ① 배경 없는 라임 '글자' = 누를 수 있는 것.  (자세히 보기 / 미리 연습 / 다시 연습 / 다시 시도)
+//   ② 라임 글자 + Grass1 틴트 면 또는 ✓ 글리프 = 정답. 면·글리프가 늘 같이 온다.
+//   상태 정보("오늘 물 줄 수 있어요")는 라임 글자를 쓰지 않는다 → 라임 점(형태) + 중립 글자.
+//   즉 "배경 없는 라임 글자"를 보면 언제나 누를 수 있다.
+//
+// ── 면(surface) 위계 — 펼친 카드 안에서 최대 2종 ─────────────────────────────
+//   L1 Grass1 틴트 (카드당 1개, 정답에만)  ·  L2 BgSubtle 중립 (내 답·연습 선지·기사)
+//   L3 면 없음, 타이포만 (해설 · 알아두면 좋아요 — 둘은 완전히 같은 모양이어야 한다)
+//   오답에는 면을 주지 않는다. 오답 신호는 ✗ 글리프 + "오답" 글자 + Error 색 3중 인코딩.
+//
+// ── "내 답 / 정답 / 오답" 낱말의 자리와 뜻 (같은 말이 두 번 나오지 않게) ──────
+//   왼쪽 소제목   = 이 값이 무엇인가        "내 답" · "정답"
+//   오른쪽 마커   = 내 답이 맞았는가        ✓ "정답" · ✗ "오답"  → "내 답" 블록에만 붙는다
+//   연습 선지 라벨 = 네 선지 중 무엇인가     "정답" · "내 선택"   (채점 결과가 아니라 지목)
+//   따라서 ✓/✗ 글리프는 카드 안에서 언제나 "내 답 채점 결과" 하나만 뜻한다.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * 펼친 상세의 단일 좌측선.
+ *
+ * 소제목 / 값 카드 안의 글자 / 해설 / 키워드 / 기사 제목이 모두 이 x 에서 시작한다.
+ * 값 카드·기사 카드는 면을 카드 폭 끝까지 깔고 안쪽 패딩을 같은 값으로 줘서
+ * "면의 왼쪽"이 아니라 "글자의 왼쪽"이 맞도록 한다.
+ */
+private val DetailInset = 12.dp
+
+/** 메타 한 줄의 조각. [strong] 인 조각만 밝기·굵기를 올린다(색은 쓰지 않는다). */
+private data class MetaPart(val text: String, val strong: Boolean = false)
 
 /**
  * 오답노트 / 북마크 / 전체이력 화면이 공통으로 사용하는 항목 카드.
@@ -173,16 +210,13 @@ fun AttemptItemCard(
                             fontWeight = FontWeight.SemiBold,
                         )
                     }
-                    // 전체이력·북마크 — 정답/오답이 항목을 가르는 정보. 상태이므로 유채색 배지.
+                    // 전체이력·북마크 — 정답/오답이 항목을 가르는 정보.
+                    // 강조(틴트 면)는 정답만 갖는다. 오답은 중립 면 + Error 글자 — 면으로 때리지 않는다.
                     AttemptCardEmphasis.STATUS -> {
                         val (badgeText, badgeBg, badgeFg) = when {
                             item.unsolved -> Triple("아직 안 푼 문제", BgSubtle, TextSecondary)
                             item.correct -> Triple("정답", Grass1, Lime)
-                            else -> Triple(
-                                "오답",
-                                MaterialTheme.colorScheme.errorContainer,
-                                MaterialTheme.colorScheme.onErrorContainer,
-                            )
+                            else -> Triple("오답", BgSubtle, Error)
                         }
                         Surface(shape = RoundedCornerShape(50), color = badgeBg) {
                             Text(
@@ -260,7 +294,7 @@ fun AttemptItemCard(
                         // "물 N번"은 진행감이 없다(좋은 건지 나쁜 건지 모름) → 분모로 목표를 보여준다.
                         // 3번 맞히면 졸업(ReviewRepository) — WaterGrassCard 문구와 같은 3.
                         add(
-                            if (review.graduated) MetaPart("나무 완성", accent = true)
+                            if (review.graduated) MetaPart("나무 완성", strong = true)
                             else MetaPart("물 ${review.waterCount.coerceAtMost(3)}/3"),
                         )
                     }
@@ -281,8 +315,9 @@ fun AttemptItemCard(
                         Text(
                             text = part.text,
                             style = MaterialTheme.typography.labelSmall,
-                            color = if (part.accent) Lime else TextSecondary,
-                            fontWeight = if (part.accent) FontWeight.SemiBold else FontWeight.Medium,
+                            // 라임은 '누를 수 있는 것' 전용 — 상태는 밝기·굵기로만 올린다.
+                            color = if (part.strong) TextPrimary else TextSecondary,
+                            fontWeight = if (part.strong) FontWeight.Bold else FontWeight.Medium,
                         )
                     }
                 }
@@ -291,21 +326,23 @@ fun AttemptItemCard(
             if (strip != null) {
                 Spacer(Modifier.height(6.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = strip.stageText,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        // 마지막 단계만 Lime 포인트, 그 외 중립.
-                        color = if (strip.finalStage) Lime else TextSecondary,
-                    )
-                    if (strip.dueText != null) {
-                        Text(
-                            text = "  ·  ${strip.dueText}",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = if (strip.dueToday) Lime else TextMuted,
-                            fontWeight = if (strip.dueToday) FontWeight.SemiBold else FontWeight.Normal,
+                    // "지금 할 수 있다"는 상태 신호 — 라임 '점'(형태)으로 말하고 글자는 중립으로 둔다.
+                    // 라임 글자로 쓰면 바로 아래 "자세히 보기"(액션)와 같은 종류로 읽힌다.
+                    if (strip.dueToday) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(Lime),
                         )
+                        Spacer(Modifier.width(6.dp))
                     }
+                    Text(
+                        text = listOfNotNull(strip.stageText, strip.dueText).joinToString("  ·  "),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (strip.dueToday || strip.finalStage) TextPrimary else TextSecondary,
+                        fontWeight = if (strip.dueToday) FontWeight.Bold else FontWeight.SemiBold,
+                    )
                 }
             }
 
@@ -335,13 +372,14 @@ fun AttemptItemCard(
                 Spacer(Modifier.height(10.dp))
                 Text(
                     text = "자세히 불러오지 못했어요",
+                    modifier = Modifier.padding(start = DetailInset),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
                     text = "다시 시도",
                     modifier = Modifier
-                        .padding(top = 6.dp)
+                        .padding(start = DetailInset, top = 6.dp)
                         .clickable { retryTick++ },
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.SemiBold,
@@ -352,57 +390,51 @@ fun AttemptItemCard(
             if (expanded && !showDetailLoading && detailError == null) {
                 Spacer(Modifier.height(12.dp))
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(12.dp))
 
-                AnswerRow(
-                    label = if (effective.correct) "내 답 (정답)" else "내 답",
-                    text = effective.myAnswerText,
-                    isCorrect = effective.correct,
+                // 정답이면 "내 답"이 곧 정답이라 블록 하나로 끝난다 → L1(틴트)은 언제나 카드에 1개.
+                // 채점 마커(✓/✗)는 "내 답" 블록에만 — 아래 "정답" 블록은 소제목이 이미 정답이라 말한다.
+                AnswerBlock(
+                    label = "내 답",
+                    value = effective.myAnswerText,
+                    correct = effective.correct,
+                    verdict = effective.correct,
                 )
 
                 if (!effective.correct) {
-                    Spacer(Modifier.height(6.dp))
-                    AnswerRow(label = "정답", text = effective.correctAnswerText, isCorrect = true)
+                    Spacer(Modifier.height(8.dp))
+                    AnswerBlock(label = "정답", value = effective.correctAnswerText, correct = true)
                 }
 
                 if (effective.explanation.isNotBlank()) {
-                    Spacer(Modifier.height(10.dp))
-                    Text(
-                        text = "해설",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Spacer(Modifier.height(12.dp))
+                    SectionLabel("해설")
                     Spacer(Modifier.height(4.dp))
+                    // L3 — 면 없이 타이포만. 좌측선은 값 카드 글자와 같다.
                     Text(
                         text = effective.explanation,
+                        modifier = Modifier.padding(horizontal = DetailInset),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
 
                 if (!effective.keyword.isNullOrBlank()) {
-                    Spacer(Modifier.height(8.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "키워드  ",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = BgSubtle,
-                        ) {
-                            Text(
-                                text = effective.keyword,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Lime,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                        }
-                    }
+                    // 서버 keyword 는 "용어 — 설명" 한 필드다. 용어는 소제목 줄에 얹고 설명만
+                    // 본문으로 내려서, 해설과 완전히 같은 "소제목 한 줄 + 본문" 모양을 만든다.
+                    // (용어를 본문 앞에 붙이면 설명과 뭉쳐서 어디까지가 용어인지 안 보인다.)
+                    val (term, description) = splitKeyword(effective.keyword)
+                    Spacer(Modifier.height(12.dp))
+                    // 채점 화면과 같은 낱말을 쓴다 — 같은 필드를 거기선 "알아두면 좋아요"로 부른다.
+                    SectionLabel("알아두면 좋아요", term = term.takeIf { description != null })
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        // 설명이 없으면(짧은 용어만 온 데이터) 용어 자체가 본문이 된다.
+                        text = description ?: term ?: effective.keyword,
+                        modifier = Modifier.padding(horizontal = DetailInset),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
                 }
 
                 // ── 미리 연습 (순수 연습 · 물주기와 무관) ──────────────────
@@ -412,76 +444,57 @@ fun AttemptItemCard(
                     Spacer(Modifier.height(10.dp))
 
                     if (!practiceOpen) {
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = BgSubtle,
-                            modifier = Modifier.clickable {
-                                practiceOpen = true
-                                practicePick = null
-                            },
-                        ) {
-                            Text(
-                                text = "미리 연습 (물주기 아님)",
-                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Lime,
-                            )
-                        }
+                        // 진입은 배경 없는 라임 글자 = 누를 수 있는 것. 괄호 부연은 연 뒤에 한 줄로.
+                        Text(
+                            text = "미리 연습",
+                            modifier = Modifier
+                                .padding(start = DetailInset)
+                                .clickable {
+                                    practiceOpen = true
+                                    practicePick = null
+                                },
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Lime,
+                        )
                     } else {
                         Text(
-                            text = "연습은 나무 성장에 반영되지 않아요. 물은 예정일에 복습으로 줄 수 있어요.",
+                            text = "연습은 나무 성장에 반영되지 않아요",
+                            modifier = Modifier.padding(start = DetailInset),
                             style = MaterialTheme.typography.labelSmall,
                             color = TextMuted,
                         )
                         Spacer(Modifier.height(8.dp))
                         effective.choices.forEach { option ->
-                            val picked = practicePick == option.id
-                            val isAnswer = option.id == effective.correctChoiceId
-                            // 선택 후에만 정답/오답 색을 드러낸다.
-                            val bg = when {
-                                practicePick == null -> BgSubtle
-                                isAnswer -> Grass1
-                                picked -> MaterialTheme.colorScheme.errorContainer
-                                else -> BgSubtle
-                            }
-                            val fg = when {
-                                practicePick == null -> MaterialTheme.colorScheme.onSurface
-                                isAnswer -> Lime
-                                picked -> MaterialTheme.colorScheme.onErrorContainer
-                                else -> TextMuted
-                            }
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = bg,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 6.dp)
-                                    .clickable(enabled = practicePick == null) { practicePick = option.id },
-                            ) {
-                                Text(
-                                    text = option.text,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = fg,
-                                    fontWeight = FontWeight.Medium,
-                                )
-                            }
+                            PracticeOptionRow(
+                                option = option,
+                                revealed = practicePick != null,
+                                isAnswer = option.id == effective.correctChoiceId,
+                                picked = practicePick == option.id,
+                                onClick = { practicePick = option.id },
+                            )
+                            Spacer(Modifier.height(6.dp))
                         }
                         if (practicePick != null) {
                             val correct = isPracticeCorrect(practicePick!!, effective.correctChoiceId)
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                text = if (correct) "정답이에요 (연습이라 물은 안 줬어요)"
-                                       else "오답이에요 · 예정일에 복습으로 다시 만나요",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = if (correct) Lime else MaterialTheme.colorScheme.error,
-                            )
+                            Spacer(Modifier.height(2.dp))
+                            Row(
+                                modifier = Modifier.padding(start = DetailInset),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                ResultGlyph(correct)
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    text = if (correct) "정답이에요" else "오답이에요",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (correct) Lime else Error,
+                                )
+                            }
                             Text(
                                 text = "다시 연습",
                                 modifier = Modifier
-                                    .padding(top = 8.dp)
+                                    .padding(start = DetailInset, top = 8.dp)
                                     .clickable { practicePick = null },
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.SemiBold,
@@ -496,6 +509,9 @@ fun AttemptItemCard(
                     Spacer(Modifier.height(12.dp))
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     Spacer(Modifier.height(10.dp))
+                    // 라벨은 소제목 아래 패턴으로 통일 — 면 밖에 둔다.
+                    SectionLabel("관련 기사")
+                    Spacer(Modifier.height(4.dp))
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -513,30 +529,39 @@ fun AttemptItemCard(
                                 }
                             },
                         shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        // L2 중립 면 — 값 카드와 같은 한 종류.
+                        color = BgSubtle,
                     ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Text(
-                                text = "관련 기사",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = Lime,
-                            )
-                            Spacer(Modifier.height(4.dp))
+                        Column(
+                            modifier = Modifier.padding(
+                                horizontal = DetailInset,
+                                vertical = 10.dp,
+                            ),
+                        ) {
                             Text(
                                 text = article.title,
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface,
+                                color = TextPrimary,
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
                             )
-                            if (article.source.isNotBlank()) {
-                                Spacer(Modifier.height(3.dp))
+                            Spacer(Modifier.height(4.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (article.source.isNotBlank()) {
+                                    Text(
+                                        text = article.source,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = TextMuted,
+                                    )
+                                }
+                                Spacer(Modifier.weight(1f))
+                                // 외부 브라우저로 나가는 동작 — 라임 글자로 "누를 수 있음"을 말한다.
                                 Text(
-                                    text = article.source,
+                                    text = "기사 열기",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Lime,
                                 )
                             }
                         }
@@ -547,42 +572,217 @@ fun AttemptItemCard(
     }
 }
 
-@Composable
-private fun AnswerRow(label: String, text: String, isCorrect: Boolean) {
-    val bgColor = if (isCorrect) Grass1 else MaterialTheme.colorScheme.errorContainer
-    val textColor = if (isCorrect) Lime else MaterialTheme.colorScheme.onErrorContainer
+// ─────────────────────────────────────────────────────────────────────────────
+// 펼친 상세의 조각들 — 모두 [DetailInset] 좌측선을 공유한다.
+// ─────────────────────────────────────────────────────────────────────────────
 
-    Row(verticalAlignment = Alignment.Top) {
-        Image(
-            painter = painterResource(
-                if (isCorrect) R.drawable.ic_check_circle else R.drawable.ic_x_circle,
-            ),
-            contentDescription = null,
-            modifier = Modifier
-                .padding(top = 1.dp, end = 6.dp)
-                .size(16.dp),
-        )
+/**
+ * 소제목. 값·해설·알아두면 좋아요·기사 라벨이 전부 이 하나의 패턴(소제목 → 아래에 내용)을 쓴다.
+ *
+ * [term] 은 소제목이 가리키는 대상(예: 알아두면 좋아요 · **기준금리**). 밝기 한 단만 올리고
+ * 색은 쓰지 않는다 — 여전히 라벨 줄이지 내용이 아니다.
+ */
+@Composable
+private fun SectionLabel(text: String, term: String? = null) {
+    Row(
+        modifier = Modifier.padding(start = DetailInset),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Text(
-            text = "$label  ",
+            text = text,
             style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 3.dp),
+            fontWeight = FontWeight.Bold,
+            color = TextMuted,
         )
-        Surface(
-            shape = RoundedCornerShape(8.dp),
-            color = bgColor,
-            modifier = Modifier.weight(1f),
+        if (term != null) {
+            Text(
+                text = "  ·  ",
+                style = MaterialTheme.typography.labelSmall,
+                color = TextMuted,
+            )
+            Text(
+                text = term,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = TextSecondary,
+            )
+        }
+    }
+}
+
+/**
+ * 채점 글리프 — 색 + 모양 2중. 항상 "정답"/"오답" 글자와 함께 쓴다(색 단독 금지).
+ * 뜻은 하나뿐이다: **내가 낸 답이 맞았는가.** 정답을 '지목'하는 자리엔 쓰지 않는다.
+ */
+@Composable
+private fun ResultGlyph(correct: Boolean) {
+    Image(
+        painter = painterResource(
+            if (correct) R.drawable.ic_check_circle else R.drawable.ic_x_circle,
+        ),
+        contentDescription = null,
+        modifier = Modifier.size(16.dp),
+    )
+}
+
+/**
+ * 값 블록 — 소제목 줄(왼쪽) + 채점 마커(오른쪽), 그 아래 값 면.
+ *
+ * 왼쪽 소제목과 오른쪽 마커는 서로 다른 축이라 같은 낱말이 두 번 나오면 안 된다:
+ *   · 왼쪽 소제목 = 이 값이 **무엇인가** ("내 답" / "정답")
+ *   · 오른쪽 마커 = 내 답이 **맞았는가** (✓ 정답 / ✗ 오답)
+ * "정답" 블록은 정의상 맞은 값이라 마커를 달면 같은 말을 두 번 하는 꼴 →
+ * [verdict] 를 null 로 줘서 마커를 생략한다. 그래서 ✓/✗ 글리프는 카드 안에서
+ * 언제나 "내 답 채점 결과" 한 가지만 뜻한다.
+ *
+ * 좌측선: 소제목과 값 글자가 같은 x. 마커는 오른쪽 끝의 별도 열이라 좌측선을 밀지 않는다
+ * (채점 화면 보기 행의 "정답"/"내 선택" 배지가 앉는 자리와 같다).
+ * 강조([correct] 틴트)는 정답만 가져간다 — 오답은 중립 면에 사실만 적는다.
+ */
+@Composable
+private fun AnswerBlock(label: String, value: String, correct: Boolean, verdict: Boolean? = null) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = DetailInset),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = text,
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = TextMuted,
+            )
+            if (verdict != null) {
+                Spacer(Modifier.weight(1f))
+                ResultGlyph(verdict)
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    text = if (verdict) "정답" else "오답",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = if (verdict) Lime else Error,
+                )
+            }
+        }
+        Spacer(Modifier.height(4.dp))
+        Surface(
+            shape = RoundedCornerShape(10.dp),
+            // L1 = 정답만 틴트. 오답은 L2 중립 — 빨강 면을 쓰지 않는다.
+            color = if (correct) Grass1 else BgSubtle,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(
+                text = value,
+                modifier = Modifier.padding(horizontal = DetailInset, vertical = 8.dp),
                 style = MaterialTheme.typography.bodySmall,
-                color = textColor,
+                color = if (correct) Lime else TextPrimary,
                 fontWeight = FontWeight.Medium,
             )
         }
     }
+}
+
+/** 연습 선지 — 채점 화면 보기 행과 같은 언어(번호 원 + 테두리 + 오른쪽 마커), 밀도만 낮춤. */
+@Composable
+private fun PracticeOptionRow(
+    option: QuizOption,
+    revealed: Boolean,
+    isAnswer: Boolean,
+    picked: Boolean,
+    onClick: () -> Unit,
+) {
+    val showCorrect = revealed && isAnswer
+    val showPicked = revealed && picked && !isAnswer
+    val accent = when {
+        showCorrect -> Lime
+        showPicked -> Error
+        else -> Outline
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            // 채점 화면과 달리 오답 선지에 면을 깔지 않는다 — 틴트는 정답 하나만.
+            .background(if (showCorrect) Grass1 else BgSubtle)
+            .border(
+                width = if (showCorrect || showPicked) 1.5.dp else 1.dp,
+                color = accent,
+                shape = RoundedCornerShape(12.dp),
+            )
+            .clickable(enabled = !revealed, onClick = onClick)
+            .padding(horizontal = DetailInset, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(22.dp)
+                .clip(CircleShape)
+                .background(if (showCorrect || showPicked) accent else BgElevated),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = "${option.optionNumber}",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = if (showCorrect || showPicked) OnLime else TextMuted,
+            )
+        }
+        Spacer(Modifier.width(10.dp))
+        Text(
+            text = option.text,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodySmall,
+            color = when {
+                showCorrect -> Lime
+                revealed && !picked -> TextMuted
+                else -> TextPrimary
+            },
+            fontWeight = if (showCorrect || showPicked) FontWeight.SemiBold else FontWeight.Normal,
+        )
+        if (showCorrect || showPicked) {
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = if (showCorrect) "정답" else "내 선택",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = accent,
+            )
+        }
+    }
+}
+
+/**
+ * 태그로 두를 만한 '용어'의 최대 길이. 이보다 길면 문장으로 보고 본문으로 흘린다.
+ * (실제 데이터의 용어는 "금융통화위원회"(7) · "LTV"(3) 처럼 짧다 — 넉넉히 잡되
+ * "환율이 오르면 수입 물가가 함께 오른다"(23) 같은 절이 태그가 되지 않을 만큼만.)
+ */
+private const val KEYWORD_TERM_MAX = 16
+
+/**
+ * 서버 keyword("용어 — 설명")를 (용어, 설명) 로 가른다.
+ *
+ *  - 대시(— – -) 첫 개를 구분자로 본다. 앞이 짧으면 용어, 나머지는 설명.
+ *  - 구분자가 없으면 짧을 땐 용어만, 길면 설명만(문장을 태그로 두르지 않는다).
+ *  - 앞이 길면 가르지 않고 통째로 설명 — "용어"라 부르기 어려운 문장이라서.
+ */
+internal fun splitKeyword(keyword: String): Pair<String?, String?> {
+    val raw = keyword.trim()
+    if (raw.isEmpty()) return null to null
+
+    val cut = raw.indexOfFirst { it == '—' || it == '–' }
+        .takeIf { it > 0 }
+        ?: raw.indexOf(" - ").takeIf { it > 0 }
+    if (cut != null) {
+        val term = raw.take(cut).trim()
+        val desc = raw.drop(cut + 1).trimStart(' ', '-').trim()
+        if (term.isNotEmpty() && term.length <= KEYWORD_TERM_MAX) {
+            return term to desc.ifEmpty { null }
+        }
+        return null to raw
+    }
+    return if (raw.length <= KEYWORD_TERM_MAX) raw to null else null to raw
 }
 
 /**

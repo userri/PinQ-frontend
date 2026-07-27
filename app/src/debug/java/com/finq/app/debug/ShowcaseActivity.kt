@@ -423,6 +423,43 @@ class ShowcaseActivity : ComponentActivity() {
                     "wrongnote" -> Column(
                         Modifier.fillMaxSize().verticalScroll(rememberScrollState())
                     ) {
+                        // 성장 스트립 · 오늘 물 주기 — 라임 '점' + 중립 글자로 나와야 한다.
+                        // (라임 '글자'는 아래 "자세히 보기"처럼 누를 수 있는 것 전용)
+                        AttemptItemCard(
+                            item = sampleAttempt(correct = false).copy(
+                                review = ReviewStatus(
+                                    stage = 1, waterCount = 1, absorbedCount = 1, graduated = false,
+                                    dueDateIso = java.time.LocalDate.now().toString(),
+                                ),
+                            ),
+                            emphasis = AttemptCardEmphasis.CATEGORY,
+                            onToggleBookmark = {},
+                        )
+                        // 성장 스트립 · 마지막 단계인데 예정일은 미래 — 점 없이 중립 글자만.
+                        AttemptItemCard(
+                            item = sampleAttempt(correct = false).copy(
+                                review = ReviewStatus(
+                                    stage = 2, waterCount = 2, absorbedCount = 2, graduated = false,
+                                    dueDateIso = java.time.LocalDate.now().plusDays(3).toString(),
+                                ),
+                            ),
+                            emphasis = AttemptCardEmphasis.CATEGORY,
+                            onToggleBookmark = {},
+                        )
+                        // 정답 카드를 펼친 모양 + 관련 기사.
+                        //  · 정답이면 "내 답" 블록 하나로 끝 → ✓ 정답 마커가 거기 하나만 붙는다.
+                        //  · 기사 카드는 값 카드와 같은 중립 면(면 종류를 늘리지 않는다).
+                        AttemptItemCard(
+                            item = sampleAttempt(correct = true).copy(
+                                article = com.finq.app.data.model.RelatedArticle(
+                                    title = "한국은행, 기준금리 3.00%로 동결… \"물가 둔화 흐름 확인\"",
+                                    url = "https://example.com/news/1",
+                                    source = "연합뉴스",
+                                ),
+                            ),
+                            initialExpanded = true,
+                            onToggleBookmark = {},
+                        )
                         // 오답노트 배지 위계 — 강조=카테고리, 메타는 "물 1/3" 만
                         AttemptItemCard(
                             item = sampleAttempt(correct = false).copy(
@@ -837,7 +874,9 @@ class ShowcaseActivity : ComponentActivity() {
         correctChoiceId = 1L,
         correct = correct,
         explanation = "기준금리가 오르면 시중 금리가 따라 올라 예금 금리도 상승합니다.",
-        keyword = "기준금리",
+        // 서버 keyword 는 "용어 — 설명" 한 필드로 온다(Quiz.keyword, 최대 500자).
+        // 예전 샘플이 단어만 담고 있어서 설명 줄이 안 보였다 → 실제 모양으로 맞춘다.
+        keyword = "기준금리 — 한국은행이 정하는 정책금리. 시중 예금·대출 금리의 기준이 된다.",
         article = null,
         bookmarked = correct,
         solvedAtIso = "2026-07-08T09:00:00",
