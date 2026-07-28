@@ -38,7 +38,6 @@ import com.finq.app.ui.theme.BgBase
 import com.finq.app.ui.theme.FinQTheme
 import com.finq.app.ui.theme.Lime
 import com.finq.app.ui.theme.TextPrimary
-import com.finq.app.ui.theme.TextSecondary
 
 /**
  * 보관함 항목 상세 — 채점 화면([QuizAnswerBody])과 같은 본문을 전체화면으로 보여준다.
@@ -81,7 +80,8 @@ fun AttemptDetailScreen(
         Spacer(Modifier.height(18.dp))
 
         when {
-            error != null && !isLoading -> DetailError(message = error, onRetry = onRetry)
+            // 목록과 같은 컴포저블 — 실패 화면이 화면마다 달라 보이지 않게.
+            error != null && !isLoading -> AttemptLoadErrorState(onRetry = onRetry)
 
             item != null && detailReady && !isLoading -> Column(
                 modifier = Modifier
@@ -155,35 +155,6 @@ private fun DetailHeader(
                 ),
                 contentDescription = if (bookmarked) "북마크 해제" else "북마크",
                 modifier = Modifier.size(22.dp),
-            )
-        }
-    }
-}
-
-@Composable
-private fun DetailError(message: String, onRetry: () -> Unit) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = "불러오지 못했어요",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary,
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary,
-            )
-            Spacer(Modifier.height(12.dp))
-            // 배경 없는 라임 글자 = 누를 수 있는 것.
-            Text(
-                text = "다시 시도",
-                modifier = Modifier.clickable(onClick = onRetry),
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = Lime,
             )
         }
     }

@@ -59,7 +59,7 @@ import java.time.LocalDate
  *
  *   adb shell am start -n com.finq.app/com.finq.app.debug.ShowcaseActivity --es screen home
  *
- * screen: home | home_pending | home_zero | home_done_water | home_done | quiz | answer | solo_quiz | solo_answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | mypage_trees_none | mypage_trees_zero | mypage_trees_few | mypage_trees_many | filters | wrongnote | history | detail_wrong | detail_correct | detail_graduated | detail_loading | detail_error | grass | review | review_graduated | review_next | garden | garden_empty | garden_growing_many | garden_trees_few | garden_trees_many | garden_canvas | concept | concept_sheet | concept_sheet_intro
+ * screen: home | home_pending | home_zero | home_done_water | home_done | quiz | answer | solo_quiz | solo_answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | mypage_trees_none | mypage_trees_zero | mypage_trees_few | mypage_trees_many | filters | wrongnote | history | detail_wrong | detail_correct | detail_graduated | detail_loading | detail_error | list_error | grass | review | review_graduated | review_next | garden | garden_empty | garden_growing_many | garden_trees_few | garden_trees_many | garden_canvas | concept | concept_sheet | concept_sheet_intro
  * 릴리즈 빌드에는 포함되지 않는다(app/src/debug 소스셋).
  */
 class ShowcaseActivity : ComponentActivity() {
@@ -502,6 +502,22 @@ class ShowcaseActivity : ComponentActivity() {
                         onToggleBookmark = {},
                         onOpenDetail = {},
                         onStartQuiz = {},
+                        showTitle = false,
+                    )
+
+                    // 로드 실패 — 목록과 상세가 같은 화면을 쓴다(예외 메시지 노출 없음).
+                    "list_error" -> com.finq.app.ui.library.LibraryListScreen(
+                        title = "오답노트",
+                        subtitle = "",
+                        items = emptyList(),
+                        isLoading = false,
+                        error = "Unable to resolve host \"yuri-hub.com\"",
+                        emptyMessage = "",
+                        emptyIconRes = com.finq.app.R.drawable.ic_trophy,
+                        onRetry = {},
+                        onToggleBookmark = {},
+                        onOpenDetail = {},
+                        cardEmphasis = AttemptCardEmphasis.CATEGORY,
                         showTitle = false,
                     )
 

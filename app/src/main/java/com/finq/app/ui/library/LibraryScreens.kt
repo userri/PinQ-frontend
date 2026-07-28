@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -42,6 +43,7 @@ import com.finq.app.data.model.Category
 import com.finq.app.ui.theme.Lime
 import com.finq.app.ui.theme.Outline
 import com.finq.app.ui.theme.OnLime
+import com.finq.app.ui.theme.TextPrimary
 
 /**
  * 오답노트 / 북마크 화면 공용 본문.
@@ -156,7 +158,7 @@ fun LibraryListScreen(
 
         when {
             isLoading -> LoadingState()
-            error != null -> ErrorState(message = error, onRetry = onRetry)
+            error != null -> AttemptLoadErrorState(onRetry = onRetry)
             // 원본은 있는데 필터 결과만 빈 경우 — 일반 빈 상태와 구분해 안내
             filtered.isEmpty() && items.isNotEmpty() -> EmptyState(
                 iconRes = emptyIconRes,
@@ -261,23 +263,31 @@ private fun LoadingState() {
     }
 }
 
+/**
+ * 목록·상세가 공유하는 로드 실패 화면.
+ *
+ * 예외 메시지(`Unable to resolve host "…"`)는 싣지 않는다 — 영어 스택 문구를 읽어도
+ * 사용자가 할 수 있는 일은 "다시 시도" 하나뿐이라 정보가 아니라 소음이다.
+ * 두 화면이 같은 컴포저블을 쓰므로 문구도 버튼 모양도 갈라지지 않는다.
+ */
 @Composable
-private fun ErrorState(message: String, onRetry: () -> Unit) {
+internal fun AttemptLoadErrorState(onRetry: () -> Unit) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = "불러오지 못했어요",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = TextPrimary,
             )
             Spacer(Modifier.height(12.dp))
-            Button(onClick = onRetry) { Text("다시 시도") }
+            Button(
+                onClick = onRetry,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Lime,
+                    contentColor = OnLime,
+                ),
+            ) { Text("다시 시도", fontWeight = FontWeight.Bold) }
         }
     }
 }
