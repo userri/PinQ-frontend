@@ -24,7 +24,7 @@ data class GrassApiResponse(
 /**
  * 하루치 잔디.
  *
- * @param level    0=활동 없음, 1~3=농도 단계, 4=만점.
+ * @param level    0=활동 없음, 1~3=농도 단계(0~1개/2개/3개 정답), 4=라임(4개 이상 정답).
  *                 [com.finq.app.ui.theme.streakColor] 의 강도 규약과 1:1 로 매칭된다.
  * @param reviewed 그날 복습한 문제 수. 복습만 한 날은 solved=0, reviewed>0, level=1.
  */

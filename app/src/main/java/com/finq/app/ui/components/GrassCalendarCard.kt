@@ -231,7 +231,9 @@ private fun GrassSummaryRow(grass: GrassCalendar) {
     // 같은 만큼 들여써야 섹션 안에 왼쪽 기준선이 두 개 생기지 않는다.
     Row(modifier = Modifier.fillMaxWidth().padding(start = DAY_LABEL_WIDTH)) {
         SummaryStat(value = "${grass.totalActiveDays}일", label = "활동", modifier = Modifier.weight(1f))
-        SummaryStat(value = "${grass.perfectDays}일", label = "만점", modifier = Modifier.weight(1f))
+        // "만점" 금지 — 잔디 규칙(grass-and-streak.md)은 하루 4개 이상 정답 = 라임이고
+        // 오답이 등급을 깎지 않는다. 6문제 풀어 4개 맞힌 날도 여기 세므로 만점이 아니다.
+        SummaryStat(value = "${grass.perfectDays}일", label = "라임", modifier = Modifier.weight(1f))
         SummaryStat(value = "${grass.currentStreak}일", label = "연속", modifier = Modifier.weight(1f))
         SummaryStat(value = "${grass.maxStreak}일", label = "최고", modifier = Modifier.weight(1f))
     }
