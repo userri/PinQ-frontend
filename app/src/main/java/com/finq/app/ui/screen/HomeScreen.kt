@@ -689,7 +689,11 @@ private fun TodayQuizCard(
             Spacer(Modifier.height(2.dp))
             Text(
                 text = when {
-                    hasQuiz -> "예상 소요 3분 · 매일 오전 6시 발송"
+                    // "예상 소요 3분"은 제목이 남은 개수를 보여주는 구조라 부분 풀이 상태에서
+                    // 틀린 정보가 된다(2문제 남아도 3분). "매일 오전 6시 발송"은 이미 도착한
+                    // 퀴즈를 보는 시점에 아무도 묻지 않는 질문이고, 둘을 붙여 줄바꿈까지 났다.
+                    // 개수는 제목이 말하므로 여기선 행동→보상 연결만 한 줄로.
+                    hasQuiz -> "풀면 오늘 잔디가 심어져요"
                     todayTotal > 0 -> "${todayCorrect}/${todayTotal} 정답 · 내일 오전 6시 새 퀴즈"
                     else -> "내일 오전 6시에 새 퀴즈가 도착해요"
                 },

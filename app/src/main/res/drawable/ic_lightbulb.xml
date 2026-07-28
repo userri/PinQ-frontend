@@ -3,15 +3,19 @@
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
+    <!--
+      다크 배경 전용이라 외곽 스트로크를 두지 않는다.
+      예전엔 bg_surface(짙은 네이비)로 1.6 테두리를 둘렀는데, 어두운 배경에서는
+      그 테두리가 라임 형태를 바깥에서 깎아 작아 보이고 가장자리가 탁해졌다.
+      밑동 선도 같은 어두운 색이라 배경에 묻혀 전구로 읽히지 않았다.
+      (북마크 채운 별에서 겪은 것과 같은 문제 — 커밋 8a0f12b 참고)
+    -->
     <path
-        android:pathData="M12,3 a6,6 0 0,0 -3.5,10.9 c0.8,0.6 1,1.4 1,2.1 V16.5 h5 V16 c0,-0.7 0.2,-1.5 1,-2.1 A6,6 0 0,0 12,3 Z"
-        android:fillColor="@color/lime"
-        android:strokeColor="@color/bg_surface"
-        android:strokeWidth="1.6"
-        android:strokeLineJoin="round" />
+        android:pathData="M12,2.4A6.6,6.6 0 0,0 8.2,14.4c0.85,0.62 1.1,1.5 1.1,2.25V17.4h5.4V16.65c0,-0.75 0.25,-1.63 1.1,-2.25A6.6,6.6 0 0,0 12,2.4Z"
+        android:fillColor="@color/lime" />
     <path
-        android:pathData="M9,18 H15 M10,21 H14"
-        android:strokeColor="@color/bg_surface"
-        android:strokeWidth="1.6"
+        android:pathData="M9.5,19.4H14.5 M10.6,21.9H13.4"
+        android:strokeColor="@color/lime"
+        android:strokeWidth="1.9"
         android:strokeLineCap="round" />
 </vector>
