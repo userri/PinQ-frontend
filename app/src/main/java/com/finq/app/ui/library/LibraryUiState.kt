@@ -26,4 +26,16 @@ data class LibraryUiState(
     val attemptsError: String? = null,
     /** 북마크 토글 도중 발생한 일시 에러 (Snackbar 등으로 노출). */
     val toggleError: String? = null,
-)
+) {
+    /**
+     * 이미 받아둔 목록에서 [quizId] 항목을 찾는다 — 상세 화면이 로딩 전에도 헤더
+     * (카테고리·날짜·북마크)를 그릴 수 있게 하는 요약 출처.
+     *
+     * 정원 딥링크처럼 목록을 거치지 않고 상세로 바로 들어오면 null 이다 →
+     * 그 경우 상세 응답이 도착해야 헤더도 채워진다.
+     */
+    fun findItem(quizId: Long): AttemptItem? =
+        wrongNotes.firstOrNull { it.quizId == quizId }
+            ?: bookmarks.firstOrNull { it.quizId == quizId }
+            ?: attempts.firstOrNull { it.quizId == quizId }
+}

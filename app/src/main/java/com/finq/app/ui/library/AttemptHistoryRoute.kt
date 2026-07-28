@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.finq.app.R
+import com.finq.app.data.model.AttemptItem
 
 /**
  * 마이페이지에서 진입하는 "전체 풀이 이력" 화면.
@@ -31,6 +32,8 @@ import com.finq.app.R
 fun AttemptHistoryRoute(
     viewModel: LibraryViewModel,
     onBack: () -> Unit,
+    /** 행 탭 → 상세 화면. */
+    onOpenDetail: (AttemptItem) -> Unit,
     snackbarHostState: SnackbarHostState? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -77,7 +80,7 @@ fun AttemptHistoryRoute(
             onToggleBookmark = { item ->
                 viewModel.toggleBookmark(item.quizId, item.bookmarked)
             },
-            onLoadDetail = viewModel::fetchDetail,
+            onOpenDetail = onOpenDetail,
             modifier = Modifier.weight(1f),
         )
     }

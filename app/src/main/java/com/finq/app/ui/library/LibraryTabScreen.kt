@@ -36,10 +36,10 @@ fun LibraryTabScreen(
     bookmarkViewModel: LibraryViewModel,
     historyViewModel: LibraryViewModel,
     snackbarHostState: SnackbarHostState? = null,
+    /** 행 탭 → 상세 화면. */
+    onOpenDetail: (AttemptItem) -> Unit,
     /** 미풀이 북마크 탭 → 그 문제의 단건 풀이 화면 진입. */
     onStartQuiz: ((AttemptItem) -> Unit)? = null,
-    /** 정원 나무 딥링크 — 오답노트에서 해당 문제로 스크롤·펼침. */
-    focusQuizId: Long? = null,
     modifier: Modifier = Modifier,
 ) {
     val tabs = listOf("오답노트", "북마크", "전체이력")
@@ -94,18 +94,20 @@ fun LibraryTabScreen(
                 0 -> WrongNoteTabRoute(
                     viewModel = wrongNoteViewModel,
                     snackbarHostState = snackbarHostState,
-                    focusQuizId = focusQuizId,
+                    onOpenDetail = onOpenDetail,
                     modifier = Modifier.fillMaxSize(),
                 )
                 1 -> BookmarkTabRoute(
                     viewModel = bookmarkViewModel,
                     snackbarHostState = snackbarHostState,
+                    onOpenDetail = onOpenDetail,
                     onStartQuiz = onStartQuiz,
                     modifier = Modifier.fillMaxSize(),
                 )
                 2 -> AttemptHistoryTabContent(
                     viewModel = historyViewModel,
                     snackbarHostState = snackbarHostState,
+                    onOpenDetail = onOpenDetail,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -119,6 +121,7 @@ fun LibraryTabScreen(
 @Composable
 private fun AttemptHistoryTabContent(
     viewModel: LibraryViewModel,
+    onOpenDetail: (AttemptItem) -> Unit,
     snackbarHostState: SnackbarHostState? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -144,7 +147,7 @@ private fun AttemptHistoryTabContent(
         emptyIconRes = R.drawable.ic_tab_book,
         onRetry = viewModel::loadAttempts,
         onToggleBookmark = { item -> viewModel.toggleBookmark(item.quizId, item.bookmarked) },
-        onLoadDetail = viewModel::fetchDetail,
+        onOpenDetail = onOpenDetail,
         showTitle = false,
         modifier = modifier,
     )

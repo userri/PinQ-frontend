@@ -21,6 +21,8 @@ import com.finq.app.data.model.AttemptItem
 fun BookmarkTabRoute(
     viewModel: LibraryViewModel,
     snackbarHostState: SnackbarHostState? = null,
+    /** 행 탭 → 상세 화면. */
+    onOpenDetail: (AttemptItem) -> Unit,
     /** 미풀이 북마크 탭 → 그 문제의 단건 풀이 화면 진입. */
     onStartQuiz: ((AttemptItem) -> Unit)? = null,
     modifier: Modifier = Modifier,
@@ -47,8 +49,8 @@ fun BookmarkTabRoute(
         emptyIconRes = R.drawable.ic_bookmark_star_filled,
         onRetry = viewModel::loadBookmarks,
         onToggleBookmark = { item -> viewModel.toggleBookmark(item.quizId, item.bookmarked) },
+        onOpenDetail = onOpenDetail,
         onStartQuiz = onStartQuiz,
-        onLoadDetail = viewModel::fetchDetail,
         showTitle = false,
         modifier = modifier,
     )

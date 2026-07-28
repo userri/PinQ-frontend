@@ -35,7 +35,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -54,8 +53,6 @@ import com.finq.app.ui.theme.BgBase
 import com.finq.app.ui.theme.BgElevated
 import com.finq.app.ui.theme.BgSubtle
 import com.finq.app.ui.theme.BgSurface
-import com.finq.app.ui.theme.Error
-import com.finq.app.ui.theme.ErrorFaint
 import com.finq.app.ui.theme.Grass1
 import com.finq.app.ui.theme.Lime
 import com.finq.app.ui.theme.OnLime
@@ -69,11 +66,10 @@ import com.finq.app.ui.theme.TextSecondary
  *
  * QuizScreen 과 동일한 풀블리드 네이비 톤으로 통일.
  *  - 상단: 닫기/뒤로 + 진행도 도트 + 카테고리
- *  - 정답/오답 칩 (블루 또는 레드 채움)
- *  - 보기 4개 (흰 카드, 정답은 블루, 사용자 오답은 레드)
- *  - 해설 카드 (흰 배경)
- *  - 알아두면 좋아요 (옐로우 콜아웃)
- *  - 하단 다음/결과 보기 (흰 풀블리드 — 퀴즈 화면 CTA 와 동일)
+ *  - 본문은 [QuizAnswerBody] — 세션 밖(오답노트 상세)에서도 같은 모양으로 재사용한다.
+ *  - 하단 다음/결과 보기 (라임 풀블리드 — 퀴즈 화면 CTA 와 동일)
+ *
+ * 세션 전용 chrome(진행도 도트 · 하단 CTA)은 이 컴포저블에만 있다.
  */
 @Composable
 fun QuizAnswerScreen(
@@ -190,64 +186,14 @@ fun QuizAnswerScreen(
                 .weight(1f)
                 .verticalScroll(rememberScrollState()),
         ) {
-            // ── 정답/오답 칩 ─────────────────────────────────────
-            ResultChip(isCorrect = answer.isCorrect)
-
-            // ── 복습 보상: 졸업(나무) 또는 다음 물 주기 안내 ──────────
-            if (graduated) {
-                Spacer(Modifier.height(12.dp))
-                GraduatedBanner(message = graduatedMessage)
-            } else if (nextReviewText != null) {
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    text = nextReviewText,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = TextSecondary,
-                )
-            }
-            Spacer(Modifier.height(18.dp))
-
-            // ── 문제 (다크 배경 위 흰 텍스트) ────────────────────
-            Text(
-                text = "Q. ${quiz.question}",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary,
+            QuizAnswerBody(
+                quiz = quiz,
+                answer = answer,
+                onArticleClick = onArticleClick,
+                graduated = graduated,
+                graduatedMessage = graduatedMessage,
+                nextReviewText = nextReviewText,
             )
-            Spacer(Modifier.height(14.dp))
-
-            // ── 보기 4개 ─────────────────────────────────────────
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                quiz.options.forEach { option ->
-                    AnswerOptionRow(
-                        option = option,
-                        isCorrect = option.id == answer.correctOptionId,
-                        isUserSelected = option.id == answer.selectedOptionId,
-                    )
-                }
-            }
-            Spacer(Modifier.height(20.dp))
-
-            // ── 해설 카드 (흰 풀블리드) ─────────────────────────
-            ExplanationCard(explanation = answer.explanation)
-
-            // ── 알아두면 좋아요 (옐로우) ────────────────────────
-            if (!answer.keyword.isNullOrBlank()) {
-                Spacer(Modifier.height(12.dp))
-                KeywordCard(keyword = answer.keyword)
-            }
-
-            // ── 관련 기사 ────────────────────────────────────────
-            if (answer.relatedArticle != RelatedArticle.EMPTY &&
-                answer.relatedArticle.title.isNotBlank()
-            ) {
-                Spacer(Modifier.height(12.dp))
-                RelatedArticleCard(
-                    article = answer.relatedArticle,
-                    onClick = { onArticleClick(answer.relatedArticle) },
-                )
-            }
 
             // ── 배너 광고 (스크롤 콘텐츠 맨 아래 — CTA 를 가리지 않는 자리) ──
             Spacer(Modifier.height(16.dp))
@@ -277,6 +223,87 @@ fun QuizAnswerScreen(
             )
         }
         Spacer(Modifier.height(4.dp))
+    }
+}
+
+/**
+ * 채점 결과 본문 — 세션 chrome 없이 "무엇을 틀렸고 왜 그런가"만 담는다.
+ *
+ * 퀴즈 세션의 [QuizAnswerScreen] 과 보관함의 오답노트 상세가 이걸 공유한다.
+ * 같은 내용을 두 레이아웃으로 각각 유지하지 않기 위한 유일한 본문이다 —
+ * 스크롤은 호출자가 감싼다(세션은 CTA 위에서, 상세는 화면 전체에서).
+ */
+@Composable
+fun QuizAnswerBody(
+    quiz: Quiz,
+    answer: AnswerResult,
+    onArticleClick: (RelatedArticle) -> Unit,
+    modifier: Modifier = Modifier,
+    /** 복습에서 이 문제를 완전히 익혔을 때 축하 배너. */
+    graduated: Boolean = false,
+    graduatedMessage: String? = null,
+    /** 졸업하지 않은 복습의 "다음 물 주기" 안내. [graduated] 면 무시. */
+    nextReviewText: String? = null,
+) {
+    Column(modifier = modifier) {
+        // ── 정답/오답 줄 ─────────────────────────────────────
+        ResultChip(isCorrect = answer.isCorrect)
+
+        // ── 복습 보상: 졸업(나무) 또는 다음 물 주기 안내 ──────────
+        if (graduated) {
+            Spacer(Modifier.height(12.dp))
+            GraduatedBanner(message = graduatedMessage)
+        } else if (nextReviewText != null) {
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = nextReviewText,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = TextSecondary,
+            )
+        }
+        Spacer(Modifier.height(18.dp))
+
+        // ── 문제 (다크 배경 위 흰 텍스트) ────────────────────
+        Text(
+            text = "Q. ${quiz.question}",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = TextPrimary,
+        )
+        Spacer(Modifier.height(14.dp))
+
+        // ── 보기 4개 ─────────────────────────────────────────
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            quiz.options.forEach { option ->
+                AnswerOptionRow(
+                    option = option,
+                    isCorrect = option.id == answer.correctOptionId,
+                    isUserSelected = option.id == answer.selectedOptionId,
+                )
+            }
+        }
+        Spacer(Modifier.height(20.dp))
+
+        // ── 해설 카드 ───────────────────────────────────────
+        ExplanationCard(explanation = answer.explanation)
+
+        // ── 알아두면 좋아요 ──────────────────────────────────
+        if (!answer.keyword.isNullOrBlank()) {
+            Spacer(Modifier.height(12.dp))
+            KeywordCard(keyword = answer.keyword)
+        }
+
+        // ── 관련 기사 ────────────────────────────────────────
+        if (answer.relatedArticle != RelatedArticle.EMPTY &&
+            answer.relatedArticle.title.isNotBlank()
+        ) {
+            Spacer(Modifier.height(12.dp))
+            RelatedArticleCard(
+                article = answer.relatedArticle,
+                onClick = { onArticleClick(answer.relatedArticle) },
+            )
+        }
     }
 }
 
@@ -336,13 +363,28 @@ private fun GraduatedBanner(message: String? = null) {
     }
 }
 
+/**
+ * 채점 결과 한 줄.
+ *
+ * 강조는 정답만 가져간다 — 오답에 Error 채움을 주면 화면에서 가장 센 신호가
+ * "틀렸다"가 되고, 정작 봐야 할 정답 보기와 세기가 맞붙는다(강조 셋이 붙으면
+ * 어느 쪽이 정답인지 오해가 는다). 오답은 면 없이 중립 글자로만 사실을 적는다.
+ */
 @Composable
 private fun ResultChip(isCorrect: Boolean) {
-    val accent = if (isCorrect) Lime else Error
+    if (!isCorrect) {
+        Text(
+            text = "아쉬워요, 다음에 맞혀봐요",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = TextSecondary,
+        )
+        return
+    }
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(50))
-            .background(accent)
+            .background(Lime)
             .padding(start = 6.dp, end = 14.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -357,12 +399,12 @@ private fun ResultChip(isCorrect: Boolean) {
                 text = "Q",
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.ExtraBold,
-                color = accent,
+                color = Lime,
             )
         }
         Spacer(Modifier.size(8.dp))
         Text(
-            text = if (isCorrect) "정답이에요!" else "아쉬워요, 다음에 맞혀봐요",
+            text = "정답이에요!",
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = OnLime,
@@ -371,30 +413,33 @@ private fun ResultChip(isCorrect: Boolean) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 보기 행 — 흰 카드, 정답/오답에 따라 컬러 보더
+// 보기 행 — 정답 하나만 강조, 내 답은 중립 라벨
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * 보기 한 줄.
+ *
+ * 강조(틴트 면 + 라임 테두리 + 라임 라벨)는 정답 보기 하나만 가져간다.
+ * 내가 고른 오답은 **숨기지 않되**(내 답과 정답의 차이를 봐야 교정이 된다)
+ * 색 면을 주지 않고 "내 답" 라벨 + 두꺼운 중립 테두리로만 지목한다 — 색이 아니라
+ * 형태로 구별되므로 정답과 세기가 붙지 않는다.
+ * 맞힌 경우엔 두 라벨이 같은 줄을 가리키므로 "내 답 · 정답" 하나로 합친다.
+ */
 @Composable
 private fun AnswerOptionRow(
     option: QuizOption,
     isCorrect: Boolean,
     isUserSelected: Boolean,
 ) {
-    // 보기 카드 4상태 — 기본: BgSurface+Outline
-    //   정답 공개: Grass1 배경 + Lime 테두리 / 오답 공개: ErrorFaint 배경 + Error 테두리
-    val (background, border, accent) = when {
-        isCorrect -> Triple(Grass1, Lime, Lime)
-        isUserSelected -> Triple(ErrorFaint, Error, Error)
-        else -> Triple(BgSurface, Outline, TextMuted)
-    }
+    val marked = isCorrect || isUserSelected
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(background)
+            .background(if (isCorrect) Grass1 else BgSurface)
             .border(
-                width = if (isCorrect || isUserSelected) 2.dp else 1.dp,
-                color = border,
+                width = if (marked) 2.dp else 1.dp,
+                color = if (isCorrect) Lime else Outline,
                 shape = RoundedCornerShape(14.dp),
             )
             .padding(horizontal = 14.dp, vertical = 14.dp),
@@ -404,17 +449,18 @@ private fun AnswerOptionRow(
             modifier = Modifier
                 .size(26.dp)
                 .clip(CircleShape)
-                .background(
-                    if (isCorrect || isUserSelected) accent
-                    else BgElevated
-                ),
+                .background(if (isCorrect) Lime else BgElevated),
             contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = "${option.optionNumber}",
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
-                color = if (isCorrect || isUserSelected) OnLime else TextMuted,
+                color = when {
+                    isCorrect -> OnLime
+                    isUserSelected -> TextPrimary
+                    else -> TextMuted
+                },
             )
         }
         Spacer(Modifier.size(12.dp))
@@ -422,7 +468,7 @@ private fun AnswerOptionRow(
             text = option.text,
             style = MaterialTheme.typography.bodyLarge,
             color = TextPrimary,
-            fontWeight = if (isCorrect || isUserSelected) FontWeight.SemiBold else FontWeight.Normal,
+            fontWeight = if (marked) FontWeight.SemiBold else FontWeight.Normal,
             modifier = Modifier.weight(1f),
         )
         if (isCorrect) {
@@ -434,7 +480,8 @@ private fun AnswerOptionRow(
                     .padding(horizontal = 10.dp, vertical = 4.dp),
             ) {
                 Text(
-                    text = "정답",
+                    // 맞힌 문제에선 색 블록이 하나로 유지되도록 라벨을 병합한다.
+                    text = if (isUserSelected) "내 답 · 정답" else "정답",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = OnLime,
@@ -442,19 +489,12 @@ private fun AnswerOptionRow(
             }
         } else if (isUserSelected) {
             Spacer(Modifier.size(8.dp))
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(50))
-                    .background(Error)
-                    .padding(horizontal = 10.dp, vertical = 4.dp),
-            ) {
-                Text(
-                    text = "내 선택",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = OnLime,
-                )
-            }
+            Text(
+                text = "내 답",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = TextSecondary,
+            )
         }
     }
 }

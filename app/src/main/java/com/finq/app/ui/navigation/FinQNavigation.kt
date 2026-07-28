@@ -81,6 +81,7 @@ import com.finq.app.data.repository.QuizRepository
 import com.finq.app.data.repository.ReviewRepository
 import com.finq.app.data.repository.UserStatsRepository
 import com.finq.app.ui.home.HomeViewModel
+import com.finq.app.ui.library.AttemptDetailRoute
 import com.finq.app.ui.library.AttemptHistoryRoute
 import com.finq.app.ui.library.LibraryTabScreen
 import com.finq.app.ui.library.LibraryViewModel
@@ -145,11 +146,15 @@ object FinQRoutes {
     const val WRONG_NOTE_TAB = "wrongnote_tab"
     const val BOOKMARK_TAB = "bookmark_tab"
     const val LIBRARY_TAB = "library_tab"
-
-    /** 보관함 탭 optional 인자 — 정원 나무 탭 딥링크용. */
-    const val LIBRARY_TAB_PATTERN = "library_tab?focusQuizId={focusQuizId}"
     const val MY_PAGE = "mypage"
     const val ATTEMPT_HISTORY = "attempt_history"
+
+    /**
+     * 보관함 항목 상세 — 목록 행 탭과 정원 나무 탭이 모두 여기로 온다.
+     * 요약만 있는 목록과 달리 상세는 quizId 로 단건 조회한다.
+     */
+    const val ATTEMPT_DETAIL_PATTERN = "attempt_detail/{quizId}"
+    fun attemptDetail(quizId: Long) = "attempt_detail/$quizId"
 
     /** 복습 나무 정원 (마이페이지 잔디 카드에서 진입). */
     const val GARDEN = "garden"
@@ -174,8 +179,7 @@ object FinQRoutes {
 
 private val bottomNavRoutes = setOf(
     FinQRoutes.HOME,
-    // currentRoute 는 등록된 라우트 패턴 문자열로 도착하므로 패턴을 담는다.
-    FinQRoutes.LIBRARY_TAB_PATTERN,
+    FinQRoutes.LIBRARY_TAB,
     FinQRoutes.MY_PAGE,
 )
 
@@ -190,6 +194,8 @@ private val darkSessionRoutes = setOf(
     FinQRoutes.REVIEW_QUIZ,
     FinQRoutes.REVIEW_ANSWER,
     FinQRoutes.REVIEW_DONE,
+    // 상세는 채점 화면과 같은 본문을 쓰므로 같은 풀블리드 네이비 톤으로 깐다.
+    FinQRoutes.ATTEMPT_DETAIL_PATTERN,
 )
 
 data class BottomNavItem(
@@ -270,6 +276,9 @@ fun FinQNavHost(
     val notificationRepository: NotificationRepository = remember { NotificationRepository(NetworkModule.userApi) }
     val reviewRepository: ReviewRepository = remember { ApiReviewRepository(NetworkModule.reviewApi) }
     val context = LocalContext.current
+    // 보관함(목록 3탭 + 상세 + 전체이력)이 한 ViewModel 을 공유한다 — 상세에서 켠 북마크가
+    // 목록에 바로 반영되고, 상세가 목록 요약으로 헤더를 먼저 그릴 수 있다.
+    val libraryVm = libraryViewModel(libraryRepository)
 
     val startDestination = if (SessionManager.isLoggedIn) FinQRoutes.HOME else FinQRoutes.LOGIN
 
@@ -398,27 +407,42 @@ fun FinQNavHost(
             }
 
             // ── 보관함 탭 ─────────────────────────────────────────────
-            composable(
-                route = FinQRoutes.LIBRARY_TAB_PATTERN,
-                arguments = listOf(navArgument("focusQuizId") {
-                    type = NavType.LongType
-                    defaultValue = -1L
-                }),
-            ) { entry ->
-                val focusQuizId = entry.arguments?.getLong("focusQuizId")
-                    ?.takeIf { it > 0 }
-                val libraryVm = libraryViewModel(libraryRepository)
+            composable(FinQRoutes.LIBRARY_TAB) {
                 LibraryTabScreen(
                     wrongNoteViewModel = libraryVm,
                     bookmarkViewModel  = libraryVm,
                     historyViewModel   = libraryVm,
                     snackbarHostState  = snackbarHostState,
+                    onOpenDetail = { item ->
+                        navController.navigate(FinQRoutes.attemptDetail(item.quizId))
+                    },
                     // 미풀이 북마크 → 그 문제의 단건 풀이 화면으로 진입.
                     // (예전엔 오늘 세트로만 보내 익일 북마크가 죽은 링크가 됐다.)
                     onStartQuiz = { item ->
                         navController.navigate(FinQRoutes.soloQuiz(item.quizId))
                     },
-                    focusQuizId = focusQuizId,
+                )
+            }
+
+            // ── 보관함 항목 상세 ──────────────────────────────────────
+            composable(
+                route = FinQRoutes.ATTEMPT_DETAIL_PATTERN,
+                arguments = listOf(navArgument("quizId") { type = NavType.LongType }),
+            ) { entry ->
+                val quizId = entry.arguments?.getLong("quizId") ?: return@composable
+                AttemptDetailRoute(
+                    quizId = quizId,
+                    viewModel = libraryVm,
+                    onBack = { navController.popBackStack() },
+                    snackbarHostState = snackbarHostState,
+                    onArticleClick = { article ->
+                        val intent = Intent(Intent.ACTION_VIEW, article.url.toUri())
+                        try {
+                            context.startActivity(intent)
+                        } catch (e: ActivityNotFoundException) {
+                            Toast.makeText(context, "기사를 열 수 있는 앱이 없어요", Toast.LENGTH_SHORT).show()
+                        }
+                    },
                 )
             }
 
@@ -492,10 +516,12 @@ fun FinQNavHost(
 
             // ── 전체 풀이 이력 ────────────────────────────────────────
             composable(FinQRoutes.ATTEMPT_HISTORY) {
-                val libraryVm = libraryViewModel(libraryRepository)
                 AttemptHistoryRoute(
                     viewModel = libraryVm,
                     onBack = { navController.popBackStack() },
+                    onOpenDetail = { item ->
+                        navController.navigate(FinQRoutes.attemptDetail(item.quizId))
+                    },
                     snackbarHostState = snackbarHostState,
                 )
             }
@@ -513,17 +539,9 @@ fun FinQNavHost(
                     onRetry = gardenVm::load,
                     onBack = { navController.popBackStack() },
                     onOpenQuiz = { quizId ->
-                        // 하단 탭 진입 규약과 동일하게 HOME 위 스택을 정리해 최상위 탭으로 도착시킨다.
-                        // 이렇게 해야 이후 마이/홈 탭 전환의 saveState/restoreState 부기가 깨지지 않는다
-                        // (기존엔 library_tab 이 GARDEN·MYPAGE 위에 쌓여 마이 탭 이동이 no-op 이 됐다).
-                        // restoreState 는 생략 — 새 focusQuizId 로 새로 진입해야 스크롤·펼침이 동작한다.
-                        // 정원은 저장 스택에 남기지 않는다 — 홈이 정원 진입점이 된 뒤로,
-                        // 마이 탭 복원 시 정원이 되살아나는 어색함을 막기 위해 먼저 걷어낸다.
-                        navController.popBackStack()
-                        navController.navigate("library_tab?focusQuizId=$quizId") {
-                            popUpTo(FinQRoutes.HOME) { saveState = true }
-                            launchSingleTop = true
-                        }
+                        // 나무를 탭하면 곧장 그 문제의 상세로 — 목록을 거쳐 스크롤·펼침으로
+                        // 찾아가게 하지 않는다. 뒤로가면 보던 정원으로 돌아온다.
+                        navController.navigate(FinQRoutes.attemptDetail(quizId))
                     },
                     onOpenAll = {
                         // "전체 N개 보기" — 특정 문제 포커스 없이 오답노트 탭으로(같은 스택 규약).

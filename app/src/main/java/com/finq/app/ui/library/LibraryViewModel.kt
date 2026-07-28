@@ -99,19 +99,28 @@ class LibraryViewModel(
      * "전체 이력"이나 "오답노트" 의 같은 quizId 항목 bookmarked 도 함께 갱신된다.
      */
     fun toggleBookmark(quizId: Long, currentlyBookmarked: Boolean) {
-        val nextBookmarked = !currentlyBookmarked
-        applyBookmarkSync(quizId, nextBookmarked, removeFromBookmarksIfFalse = true)
+        viewModelScope.launch { setBookmark(quizId, !currentlyBookmarked) }
+    }
 
-        viewModelScope.launch {
-            runCatching {
-                if (nextBookmarked) repository.addBookmark(quizId)
-                else repository.removeBookmark(quizId)
-            }.onFailure { e ->
-                // 실패 시 롤백
-                applyBookmarkSync(quizId, currentlyBookmarked, removeFromBookmarksIfFalse = false)
+    /**
+     * 북마크를 [bookmarked] 로 맞춘다. 낙관적 업데이트 후 실패하면 되돌리고 false 를 준다.
+     *
+     * 상세 화면처럼 목록 밖에서 토글하는 화면이 성공 여부를 알아야 자기 로컬 상태를
+     * 같이 롤백할 수 있어 결과를 반환한다(목록은 여기서 이미 동기화된다).
+     */
+    suspend fun setBookmark(quizId: Long, bookmarked: Boolean): Boolean {
+        applyBookmarkSync(quizId, bookmarked, removeFromBookmarksIfFalse = true)
+        return runCatching {
+            if (bookmarked) repository.addBookmark(quizId)
+            else repository.removeBookmark(quizId)
+        }.fold(
+            onSuccess = { true },
+            onFailure = { e ->
+                applyBookmarkSync(quizId, !bookmarked, removeFromBookmarksIfFalse = false)
                 _state.update { it.copy(toggleError = e.message ?: "북마크 처리에 실패했어요") }
-            }
-        }
+                false
+            },
+        )
     }
 
     fun clearToggleError() {

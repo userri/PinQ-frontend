@@ -23,10 +23,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import com.finq.app.data.model.AttemptItem
 import com.finq.app.data.model.Category
 import com.finq.app.ui.theme.Lime
+import com.finq.app.ui.theme.Outline
 import com.finq.app.ui.theme.OnLime
 
 /**
@@ -62,6 +63,8 @@ fun LibraryListScreen(
     emptyIconRes: Int,
     onRetry: () -> Unit,
     onToggleBookmark: (AttemptItem) -> Unit,
+    /** 행 탭 → 상세 화면 진입. */
+    onOpenDetail: (AttemptItem) -> Unit,
     /** 미풀이 북마크 탭 → 풀이 화면 진입. null 이면 비활성. */
     onStartQuiz: ((AttemptItem) -> Unit)? = null,
     /** 카운트 줄 우측에 붙는 추가 필터(오답노트의 복습 필터칩). null 이면 없음. */
@@ -71,12 +74,8 @@ fun LibraryListScreen(
      * 카운트만 얇은 줄로 보여준다. 독립 화면(뒤로가기 있는 전체이력)에선 true.
      */
     showTitle: Boolean = true,
-    /** 정원 나무 딥링크 — 진입 시 이 문제로 스크롤하고 카드를 펼친다. */
-    focusQuizId: Long? = null,
-    /** 카드 펼침 시 상세(선택지·해설·기사) 지연 로드. null 이면 items 가 이미 전체. */
-    onLoadDetail: (suspend (Long) -> AttemptItem)? = null,
     /**
-     * 카드 상단 배지로 무엇을 강조할지. 기본은 상태(정답/오답) — 정답·오답이 섞인 화면 기준.
+     * 행 첫 줄에 무엇을 세울지. 기본은 상태(정답/오답) — 정답·오답이 섞인 화면 기준.
      * 오답노트처럼 모든 항목이 오답인 화면은 [AttemptCardEmphasis.CATEGORY] 를 넘긴다.
      */
     cardEmphasis: AttemptCardEmphasis = AttemptCardEmphasis.STATUS,
@@ -90,12 +89,8 @@ fun LibraryListScreen(
         else items.filter { it.category in selectedCategories }
     }
 
+    // rememberLazyListState 는 saveable — 상세를 보고 돌아와도 보던 자리로 복귀한다.
     val listState = rememberLazyListState()
-    // 정원 딥링크 — 목록이 준비되면 해당 문제로 1회 스크롤. 목록에 없으면 조용히 무시.
-    LaunchedEffect(focusQuizId, items) {
-        val index = focusQuizId?.let { id -> filtered.indexOfFirst { it.quizId == id } } ?: -1
-        if (index >= 0) listState.animateScrollToItem(index)
-    }
 
     Column(
         modifier = modifier
@@ -168,22 +163,25 @@ fun LibraryListScreen(
                 message = "선택한 카테고리에는 문제가 없어요",
             )
             filtered.isEmpty() -> EmptyState(iconRes = emptyIconRes, message = emptyMessage)
+            // 목록은 색인 — 카드가 아니라 구분선으로 가른 얇은 행을 촘촘히 쌓는다.
             else -> LazyColumn(
                 state = listState,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(vertical = 16.dp),
+                contentPadding = PaddingValues(vertical = 4.dp),
             ) {
                 items(filtered, key = { it.quizId }) { item ->
-                    AttemptItemCard(
+                    AttemptItemRow(
                         item = item,
                         emphasis = cardEmphasis,
                         onToggleBookmark = { onToggleBookmark(item) },
+                        onOpenDetail = { onOpenDetail(item) },
                         onStartQuiz = onStartQuiz?.let { cb -> { cb(item) } },
-                        initialExpanded = item.quizId == focusQuizId,
-                        onLoadDetail = onLoadDetail,
+                    )
+                    HorizontalDivider(
+                        thickness = 1.dp,
+                        color = Outline,
                     )
                 }
             }

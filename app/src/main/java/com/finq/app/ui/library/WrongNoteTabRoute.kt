@@ -29,6 +29,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.finq.app.R
+import com.finq.app.data.model.AttemptItem
 import com.finq.app.ui.theme.BgSubtle
 import com.finq.app.ui.theme.Lime
 import com.finq.app.ui.theme.OnLime
@@ -45,8 +46,8 @@ import com.finq.app.ui.theme.TextSecondary
 fun WrongNoteTabRoute(
     viewModel: LibraryViewModel,
     snackbarHostState: SnackbarHostState? = null,
-    /** 정원 나무 딥링크 — 해당 문제로 스크롤·펼침. 필터는 기본값(전체)이라 졸업 항목도 보인다. */
-    focusQuizId: Long? = null,
+    /** 행 탭 → 상세 화면. */
+    onOpenDetail: (AttemptItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsState()
@@ -81,8 +82,7 @@ fun WrongNoteTabRoute(
         emptyIconRes = R.drawable.ic_trophy,
         onRetry = viewModel::loadWrongNotes,
         onToggleBookmark = { item -> viewModel.toggleBookmark(item.quizId, item.bookmarked) },
-        focusQuizId = focusQuizId,
-        onLoadDetail = viewModel::fetchDetail,
+        onOpenDetail = onOpenDetail,
         // 이 화면은 전부 오답 — "오답" 배지는 정보량 0이므로 카테고리를 강조한다.
         cardEmphasis = AttemptCardEmphasis.CATEGORY,
         showTitle = false,

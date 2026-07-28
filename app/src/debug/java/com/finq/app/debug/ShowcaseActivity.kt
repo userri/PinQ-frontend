@@ -16,7 +16,7 @@ import com.finq.app.data.model.Category
 import com.finq.app.data.model.QuizOption
 import com.finq.app.data.model.ReviewStatus
 import com.finq.app.ui.library.AttemptCardEmphasis
-import com.finq.app.ui.library.AttemptItemCard
+import com.finq.app.ui.library.AttemptDetailScreen
 import com.finq.app.data.model.Quiz
 import com.finq.app.data.model.RelatedArticle
 import com.finq.app.data.repository.AnswerResult
@@ -59,7 +59,7 @@ import java.time.LocalDate
  *
  *   adb shell am start -n com.finq.app/com.finq.app.debug.ShowcaseActivity --es screen home
  *
- * screen: home | home_pending | home_zero | home_done_water | home_done | quiz | answer | solo_quiz | solo_answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | mypage_trees_none | mypage_trees_zero | mypage_trees_few | mypage_trees_many | filters | wrongnote | lazyload | grass | review | review_graduated | review_next | garden | garden_empty | garden_growing_many | garden_trees_few | garden_trees_many | garden_canvas | concept | concept_sheet | concept_sheet_intro
+ * screen: home | home_pending | home_zero | home_done_water | home_done | quiz | answer | solo_quiz | solo_answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | mypage_trees_none | mypage_trees_zero | mypage_trees_few | mypage_trees_many | filters | wrongnote | history | detail_wrong | detail_correct | detail_graduated | detail_loading | detail_error | grass | review | review_graduated | review_next | garden | garden_empty | garden_growing_many | garden_trees_few | garden_trees_many | garden_canvas | concept | concept_sheet | concept_sheet_intro
  * 릴리즈 빌드에는 포함되지 않는다(app/src/debug 소스셋).
  */
 class ShowcaseActivity : ComponentActivity() {
@@ -416,142 +416,147 @@ class ShowcaseActivity : ComponentActivity() {
                         emptyIconRes = com.finq.app.R.drawable.ic_bookmark_star,
                         onRetry = {},
                         onToggleBookmark = {},
-                        // 오답노트 화면 — 강조는 카테고리, "오답"은 메타로도 안 나온다.
+                        onOpenDetail = {},
+                        // 오답노트 화면 — 앞에 세우는 건 카테고리, "오답"은 나오지 않는다.
                         cardEmphasis = AttemptCardEmphasis.CATEGORY,
                     )
 
-                    "wrongnote" -> Column(
-                        Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-                    ) {
-                        // 성장 스트립 · 오늘 물 주기 — 라임 '점' + 중립 글자로 나와야 한다.
-                        // (라임 '글자'는 아래 "자세히 보기"처럼 누를 수 있는 것 전용)
-                        AttemptItemCard(
-                            item = sampleAttempt(correct = false).copy(
-                                review = ReviewStatus(
-                                    stage = 1, waterCount = 1, absorbedCount = 1, graduated = false,
-                                    dueDateIso = java.time.LocalDate.now().toString(),
-                                ),
+                    // 목록 밀도 — 한 화면에 6개 이상 들어와야 한다.
+                    // 카드가 아니라 구분선 행이고, 진척(물 N/3·단계·예정일)은 나오지 않는다.
+                    // 졸업 항목만 나무 아이콘으로 구분된다.
+                    "wrongnote" -> com.finq.app.ui.library.LibraryListScreen(
+                        title = "오답노트",
+                        subtitle = "8문제",
+                        items = listOf(
+                            sampleAttempt(correct = false),
+                            sampleAttempt(correct = false).copy(
+                                quizId = 11L,
+                                question = "정부가 재개발·재건축 이주비 대출 한도를 신축기준으로 바꾸면 조합원 부담은 어떻게 달라지는가?",
+                                review = ReviewStatus(1, 1, 1, false, LocalDate.now().toString()),
                             ),
-                            emphasis = AttemptCardEmphasis.CATEGORY,
-                            onToggleBookmark = {},
-                        )
-                        // 성장 스트립 · 마지막 단계인데 예정일은 미래 — 점 없이 중립 글자만.
-                        AttemptItemCard(
-                            item = sampleAttempt(correct = false).copy(
-                                review = ReviewStatus(
-                                    stage = 2, waterCount = 2, absorbedCount = 2, graduated = false,
-                                    dueDateIso = java.time.LocalDate.now().plusDays(3).toString(),
-                                ),
+                            // 졸업 — 유일한 진척 표시(나무 아이콘)
+                            sampleAttempt(correct = false).copy(
+                                quizId = 12L,
+                                question = "환율이 오르면 수입 물가는 어떻게 되는가?",
+                                review = ReviewStatus(2, 7, 4, true, null),
                             ),
-                            emphasis = AttemptCardEmphasis.CATEGORY,
-                            onToggleBookmark = {},
-                        )
-                        // 정답 카드를 펼친 모양 + 관련 기사.
-                        //  · 정답이면 "내 답" 블록 하나로 끝 → ✓ 정답 마커가 거기 하나만 붙는다.
-                        //  · 기사 카드는 값 카드와 같은 중립 면(면 종류를 늘리지 않는다).
-                        AttemptItemCard(
-                            item = sampleAttempt(correct = true).copy(
-                                article = com.finq.app.data.model.RelatedArticle(
-                                    title = "한국은행, 기준금리 3.00%로 동결… \"물가 둔화 흐름 확인\"",
-                                    url = "https://example.com/news/1",
-                                    source = "연합뉴스",
-                                ),
-                            ),
-                            initialExpanded = true,
-                            onToggleBookmark = {},
-                        )
-                        // 오답노트 배지 위계 — 강조=카테고리, 메타는 "물 1/3" 만
-                        AttemptItemCard(
-                            item = sampleAttempt(correct = false).copy(
-                                review = ReviewStatus(stage = 1, waterCount = 1, absorbedCount = 1, graduated = false, dueDateIso = null),
-                            ),
-                            emphasis = AttemptCardEmphasis.CATEGORY,
-                            onToggleBookmark = {},
-                        )
-                        // 복습 나무 완성 뱃지 (graduated=true)
-                        AttemptItemCard(
-                            item = sampleAttempt(correct = true).copy(
-                                review = ReviewStatus(stage = 2, waterCount = 7, absorbedCount = 4, graduated = true, dueDateIso = null),
-                            ),
-                            onToggleBookmark = {},
-                        )
-                        // 복습 자라는 중 뱃지 (graduated=false)
-                        AttemptItemCard(
-                            item = sampleAttempt(correct = false).copy(
-                                review = ReviewStatus(stage = 1, waterCount = 2, absorbedCount = 1, graduated = false, dueDateIso = null),
-                            ),
-                            onToggleBookmark = {},
-                        )
-                        // 세션 직후 오답노트와 동일한 형태(solvedAtIso=null, 정답정보 있음).
-                        // 예전엔 이게 "아직 안 푼 문제"로 오판돼 카드가 안 펼쳐졌다 → 이제 정상.
-                        AttemptItemCard(
-                            item = sampleAttempt(correct = false).copy(solvedAtIso = null),
-                            onToggleBookmark = {},
-                        )
-                        // 신규 카테고리 INFLATION("물가") 표시 확인
-                        AttemptItemCard(
-                            item = sampleAttempt(correct = true).copy(
-                                category = com.finq.app.data.model.Category.fromServer("INFLATION"),
+                            sampleAttempt(correct = false).copy(
+                                quizId = 13L,
+                                category = Category.fromServer("INFLATION"),
                                 question = "소비자물가지수(CPI)가 상승하면 실질 구매력은 어떻게 되는가?",
                             ),
-                            onToggleBookmark = {},
-                        )
-                        // 클라이언트가 모르는 카테고리 → UNKNOWN("기타") 폴백, 크래시 없어야 함
-                        AttemptItemCard(
-                            item = sampleAttempt(correct = true).copy(
-                                category = com.finq.app.data.model.Category.fromServer("CRYPTO_FUTURE"),
+                            // 클라이언트가 모르는 카테고리 → "기타" 폴백, 크래시 없어야 함
+                            sampleAttempt(correct = false).copy(
+                                quizId = 14L,
+                                category = Category.fromServer("CRYPTO_FUTURE"),
                                 question = "미지 카테고리 방어 파싱 확인용 문제",
                             ),
-                            onToggleBookmark = {},
-                        )
-                        // 진짜 미풀이(마스킹): correctChoiceId=null → "아직 안 푼 문제" 표시돼야 함
-                        AttemptItemCard(
-                            item = sampleAttempt(correct = false).copy(
+                            // 세션 직후 오답노트와 같은 형태 (solvedAtIso=null) — 날짜 자리가 빈다
+                            sampleAttempt(correct = false).copy(quizId = 15L, solvedAtIso = null),
+                            sampleAttempt(correct = false).copy(
+                                quizId = 16L,
+                                question = "기준금리 인하기에 채권 가격은 일반적으로 어떻게 움직이는가?",
+                            ),
+                            sampleAttempt(correct = false).copy(
+                                quizId = 17L,
+                                question = "총부채원리금상환비율(DSR) 규제가 강화되면 대출 한도는?",
+                            ),
+                        ),
+                        isLoading = false,
+                        error = null,
+                        emptyMessage = "",
+                        emptyIconRes = com.finq.app.R.drawable.ic_trophy,
+                        onRetry = {},
+                        onToggleBookmark = {},
+                        onOpenDetail = {},
+                        cardEmphasis = AttemptCardEmphasis.CATEGORY,
+                        showTitle = false,
+                    )
+
+                    // 전체이력 밀도 — 앞에 세우는 건 정답/오답 상태, 뒤에 카테고리.
+                    // 미풀이 북마크는 행을 탭하면 상세가 아니라 풀이로 간다.
+                    "history" -> com.finq.app.ui.library.LibraryListScreen(
+                        title = "전체 풀이 이력",
+                        subtitle = "5문제 풀어봤어요",
+                        items = listOf(
+                            sampleAttempt(correct = true),
+                            sampleAttempt(correct = false),
+                            sampleAttempt(correct = true).copy(
+                                quizId = 21L,
+                                question = "환율이 오르면 수입 물가는 어떻게 되는가?",
+                                review = ReviewStatus(2, 7, 4, true, null),
+                            ),
+                            sampleAttempt(correct = false).copy(quizId = 22L, solvedAtIso = null),
+                            // 미풀이(마스킹) — "아직 안 푼 문제"
+                            sampleAttempt(correct = false).copy(
+                                quizId = 23L,
                                 selectedChoiceId = null, correctChoiceId = null,
                                 explanation = "", keyword = null, solvedAtIso = null,
                             ),
-                            onToggleBookmark = {},
-                        )
-                    }
+                        ),
+                        isLoading = false,
+                        error = null,
+                        emptyMessage = "",
+                        emptyIconRes = com.finq.app.R.drawable.ic_tab_book,
+                        onRetry = {},
+                        onToggleBookmark = {},
+                        onOpenDetail = {},
+                        onStartQuiz = {},
+                        showTitle = false,
+                    )
 
-                    // 상세 지연 로드 — 목록 요약(선택지·해설 없음)을 펼치면 로더로 상세를 가져온다.
-                    "lazyload" -> Column(
-                        Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-                    ) {
-                        // ① 성공: 요약 카드(빈 choices·빈 해설) → 펼치면 0.8초 뒤 상세 채워짐
-                        AttemptItemCard(
-                            item = sampleAttempt(correct = false).copy(
-                                choices = emptyList(),
-                                explanation = "",
-                                keyword = null,
-                                article = null,
-                                solved = true,   // 푼 문제 → 펼침 시 지연 로드
+                    // ── 상세 화면 5케이스 — 채점 화면과 같은 본문이어야 한다 ────────
+                    // 오답: 정답 보기만 강조되고, 내가 고른 보기는 면 없이 "내 답" 라벨.
+                    "detail_wrong" -> AttemptDetailScreen(
+                        item = sampleAttempt(correct = false).copy(
+                            article = RelatedArticle(
+                                title = "한국은행, 기준금리 3.00%로 동결… \"물가 둔화 흐름 확인\"",
+                                url = "https://example.com/news/1",
+                                source = "연합뉴스",
                             ),
-                            onToggleBookmark = {},
-                            initialExpanded = true,
-                            onLoadDetail = { id ->
-                                kotlinx.coroutines.delay(800)
-                                sampleAttempt(correct = false).copy(quizId = id)
-                            },
-                        )
-                        // ② 실패: 로더가 예외 → "자세히 불러오지 못했어요 · 다시 시도"
-                        AttemptItemCard(
-                            item = sampleAttempt(correct = true).copy(
-                                quizId = 77L,
-                                choices = emptyList(),
-                                explanation = "",
-                                keyword = null,
-                                solved = true,
-                                question = "상세 로드 실패 시 재시도 UI 확인용 문제",
-                            ),
-                            onToggleBookmark = {},
-                            initialExpanded = true,
-                            onLoadDetail = {
-                                kotlinx.coroutines.delay(600)
-                                throw RuntimeException("네트워크 오류")
-                            },
-                        )
-                    }
+                        ),
+                        detailReady = true, isLoading = false, error = null,
+                        bookmarked = false,
+                        onToggleBookmark = {}, onRetry = {}, onBack = {}, onArticleClick = {},
+                    )
+
+                    // 정답: 색 블록이 하나로 유지되도록 라벨이 "내 답 · 정답" 으로 합쳐진다.
+                    "detail_correct" -> AttemptDetailScreen(
+                        item = sampleAttempt(correct = true),
+                        detailReady = true, isLoading = false, error = null,
+                        bookmarked = true,
+                        onToggleBookmark = {}, onRetry = {}, onBack = {}, onArticleClick = {},
+                    )
+
+                    // 졸업 항목 — 상세에서도 헤더는 카테고리 · 날짜 그대로다.
+                    "detail_graduated" -> AttemptDetailScreen(
+                        item = sampleAttempt(correct = false).copy(
+                            review = ReviewStatus(2, 7, 4, true, null),
+                        ),
+                        detailReady = true, isLoading = false, error = null,
+                        bookmarked = true,
+                        onToggleBookmark = {}, onRetry = {}, onBack = {}, onArticleClick = {},
+                    )
+
+                    // 지연 로드 중 — 목록 요약으로 헤더만 서고 본문 자리에 스피너.
+                    "detail_loading" -> AttemptDetailScreen(
+                        item = sampleAttempt(correct = false).copy(
+                            choices = emptyList(), explanation = "", keyword = null,
+                        ),
+                        detailReady = false, isLoading = true, error = null,
+                        bookmarked = false,
+                        onToggleBookmark = {}, onRetry = {}, onBack = {}, onArticleClick = {},
+                    )
+
+                    // 로드 실패 — 다시 시도(배경 없는 라임 글자 = 누를 수 있는 것)
+                    "detail_error" -> AttemptDetailScreen(
+                        item = sampleAttempt(correct = false).copy(
+                            choices = emptyList(), explanation = "", keyword = null,
+                        ),
+                        detailReady = false, isLoading = false, error = "네트워크 오류",
+                        bookmarked = false,
+                        onToggleBookmark = {}, onRetry = {}, onBack = {}, onArticleClick = {},
+                    )
 
                     // 재진입 시 결과 보기 모드 — 정답이었던 경우
                     "solved_correct" -> com.finq.app.ui.screen.SolvedQuizReviewScreen(
