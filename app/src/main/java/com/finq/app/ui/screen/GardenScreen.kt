@@ -30,6 +30,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -42,7 +46,6 @@ import com.finq.app.data.repository.ReviewStage
 import com.finq.app.ui.components.ReviewTreeConceptSheet
 import com.finq.app.ui.components.garden.GardenNightScene
 import com.finq.app.ui.theme.BgBase
-import com.finq.app.ui.theme.BgSurface
 import com.finq.app.ui.theme.FinQTheme
 import com.finq.app.ui.theme.Lime
 import com.finq.app.ui.theme.TextMuted
@@ -118,32 +121,40 @@ fun GardenScreen(
                 .statusBarsPadding()
                 .navigationBarsPadding(),
         ) {
+            // ── 헤더 컨트롤 — 좌우 한 쌍. 둘 다 48dp 타깃 안 32dp 원으로 같은 언어를 쓴다.
+            // Row 좌우 6dp + 48dp 타깃 안 20dp 아이콘 여백 14dp = 아이콘 에지 20dp 기준선.
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                    .padding(horizontal = 6.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = "←",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = TextPrimary,
-                    modifier = Modifier
-                        .clickable(onClick = onBack)
-                        .padding(12.dp),
-                )
-                Text(
-                    text = "정원",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary,
-                )
-                Spacer(Modifier.weight(1f))
-                // 복습 나무 개념 설명 — 레이아웃이 아닌 개념을 설명해 UI 변경에 강함.
-                // 헤더가 좁아 아이콘만 두되, 터치 영역은 48dp 를 보장한다.
                 Box(
                     modifier = Modifier
-                        .padding(end = 4.dp)
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .clickable(role = Role.Button, onClick = onBack),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(BgBase.copy(alpha = 0.45f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_chevron_left),
+                            contentDescription = "뒤로",
+                            tint = TextPrimary,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                }
+                Spacer(Modifier.weight(1f))
+                // 복습 나무 개념 설명 — 레이아웃이 아닌 개념을 설명해 UI 변경에 강함.
+                Box(
+                    modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
                         .clickable(role = Role.Button) { showHelp = true },
@@ -153,38 +164,41 @@ fun GardenScreen(
                         modifier = Modifier
                             .size(32.dp)
                             .clip(CircleShape)
-                            .background(BgSurface.copy(alpha = 0.45f)),
+                            .background(BgBase.copy(alpha = 0.45f)),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_help_circle),
                             contentDescription = "복습 나무란?",
                             tint = TextSecondary,
-                            modifier = Modifier.size(19.dp),
+                            // 셰브론과 같은 20dp. stroke 1.6 원형이라 더 무거워 보이면 18dp 까지만.
+                            modifier = Modifier.size(18.dp),
                         )
                     }
                 }
             }
 
+            Spacer(Modifier.height(4.dp))
+
+            // ── 정보 블록 — 제목 + 수치 각주. 누를 수 없으므로 배경을 두르지 않는다.
+            // (알약은 액션 전용 신호로 남긴다.)
+            Text(
+                text = "정원",
+                style = MaterialTheme.typography.titleLarge,
+                color = TextPrimary,
+                modifier = Modifier.padding(horizontal = 20.dp),
+            )
+
+            Spacer(Modifier.height(2.dp))
+
             if (garden != null && !isLoading && error == null) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .padding(horizontal = 20.dp)
-                        .clip(RoundedCornerShape(50))
-                        .background(BgBase.copy(alpha = 0.40f))
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                ) {
-                    // 나무 아이콘 없음 — "키운 나무"라는 텍스트가 이미 같은 말을 하고,
-                    // 15dp 는 Material 광학 최소(20dp) 아래다. 게다가 바로 아래 씬이
-                    // 실제 식물을 크게 렌더하고 있어 두 번 말하는 셈이 된다.
-                    Text(
-                        text = "자라는 중 ${garden.growing.size}  ·  키운 나무 ${garden.graduatedTrees}그루",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = TextSecondary,
-                    )
-                }
+                Text(
+                    text = "자라는 중 ${garden.growing.size}  ·  키운 나무 ${garden.graduatedTrees}그루",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = TextSecondary,
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                )
 
                 // due 안내 — 오늘 물 줄 수 있는 잔디가 있으면 복습 세션 진입 한 줄.
                 val today = remember { LocalDate.now() }
@@ -192,24 +206,64 @@ fun GardenScreen(
                     garden.growing.count { it.dueDate != null && !it.dueDate!!.isAfter(today) }
                 }
                 if (dueCount > 0) {
-                    Spacer(Modifier.height(8.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .padding(horizontal = 20.dp)
-                            .clip(RoundedCornerShape(50))
-                            .background(Lime.copy(alpha = 0.14f))
-                            .clickable(onClick = onStartReview)
-                            .padding(horizontal = 12.dp, vertical = 7.dp),
-                    ) {
-                        Text(
-                            text = "오늘 물 줄 잔디 ${dueCount}개 →",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Lime,
+                    Spacer(Modifier.height(12.dp))
+                    Box(modifier = Modifier.padding(horizontal = 20.dp)) {
+                        // due 식물 후광(GardenNightScene)·홈 물주기 버튼과 같은 라임 번짐.
+                        // "빛나는 것 = 오늘 물 줄 것" 을 세 곳이 공유한다.
+                        //
+                        // 알약 안(clickable 체인)에 그리면 리플용 clip 에 잘려 하드 엣지 띠가
+                        // 생기고 "면이 하나 더" 있는 것처럼 읽힌다 → clip 밖 형제 레이어로 뺀다.
+                        // 원형 그라디언트 대신 캡슐을 그대로 확장해 모서리와 어긋나지 않게 한다.
+                        Spacer(
+                            Modifier
+                                .matchParentSize()
+                                .padding(vertical = 6.dp)
+                                .drawBehind {
+                                    val steps = 14
+                                    val spreadMax = 20.dp.toPx()
+                                    for (i in steps downTo 1) {
+                                        val t = i / steps.toFloat()
+                                        val s = spreadMax * t
+                                        drawRoundRect(
+                                            color = Lime.copy(alpha = 0.028f * (1f - t)),
+                                            topLeft = Offset(-s, -s),
+                                            size = Size(size.width + 2 * s, size.height + 2 * s),
+                                            cornerRadius = CornerRadius(size.height / 2f + s),
+                                        )
+                                    }
+                                },
                         )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            // clickable 뒤의 vertical 6dp 는 터치에 포함되고 배경에는 빠진다
+                            // → 시각 36dp / 터치 48dp.
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(50))
+                                .clickable(role = Role.Button, onClick = onStartReview)
+                                .padding(vertical = 6.dp)
+                                .clip(RoundedCornerShape(50))
+                                .background(Lime.copy(alpha = 0.14f))
+                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                        ) {
+                            Text(
+                                text = "오늘 물 줄 잔디 ${dueCount}개",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Lime,
+                            )
+                            Spacer(Modifier.width(2.dp))
+                            Icon(
+                                painter = painterResource(R.drawable.ic_chevron_right),
+                                contentDescription = null,
+                                tint = Lime,
+                                modifier = Modifier.size(16.dp),
+                            )
+                        }
                     }
                 }
+            } else {
+                // 로딩→로드 전환 시 헤더 높이가 튀지 않도록 서브라인 자리를 미리 확보.
+                Spacer(Modifier.height(16.dp))
             }
 
             Spacer(Modifier.weight(1f))
@@ -218,21 +272,31 @@ fun GardenScreen(
             if (garden != null && !isLoading && error == null) {
                 val total = garden.growing.size + garden.graduatedTrees
                 if (total > 0) {
+                    // 부액션 — 글로우 없음. "오늘 할 일"이 아니므로 라임을 쓰지 않는다.
                     Row(
                         modifier = Modifier
                             .align(Alignment.CenterHorizontally)
-                            .padding(bottom = 20.dp)
+                            .padding(bottom = 14.dp)
+                            .clip(RoundedCornerShape(50))
+                            .clickable(role = Role.Button, onClick = onOpenAll)
+                            .padding(vertical = 6.dp)
                             .clip(RoundedCornerShape(50))
                             .background(BgBase.copy(alpha = 0.45f))
-                            .clickable(onClick = onOpenAll)
-                            .padding(horizontal = 16.dp, vertical = 9.dp),
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = "전체 ${total}개 보기 →",
+                            text = "전체 ${total}개 보기",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
                             color = TextPrimary,
+                        )
+                        Spacer(Modifier.width(2.dp))
+                        Icon(
+                            painter = painterResource(R.drawable.ic_chevron_right),
+                            contentDescription = null,
+                            tint = TextPrimary,
+                            modifier = Modifier.size(16.dp),
                         )
                     }
                 }

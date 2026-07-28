@@ -472,8 +472,10 @@ private fun DrawScope.drawGardenItem(
 
 /**
  * 잔디밭 라벨. 숫자는 graduatedTrees 카운터 신뢰.
- * 나무가 아직 없으면 "0그루의 숲" 같은 초라한 표기 대신
- * 자라는 중인 잔디와 첫 나무 유도를 보여준다(아이콘도 새싹으로).
+ *
+ * 한 줄에 "가장 큰 참말" 하나만 담는다(TreeRecordBlock 과 같은 규칙) —
+ * 수치와 권유를 가운뎃점으로 이어붙이면, 나무 0·자라는 중 49 처럼
+ * 실제 상태를 부정하는 문장이 된다.
  */
 @Composable
 private fun GardenLabel(
@@ -485,20 +487,28 @@ private fun GardenLabel(
         modifier = modifier
             .clip(RoundedCornerShape(50))
             .background(BgBase.copy(alpha = 0.45f))
-            .padding(horizontal = 14.dp, vertical = 7.dp),
+            .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // 아이콘 없음 — 바로 아래 잔디밭 씬이 실제 식물을 크게 렌더하고 있어
         // 라벨 속 15dp 아이콘은 중복이자 정보량 0인 장식이 된다(Material 광학 최소 20dp).
         Text(
             text = when {
-                treeCount == 0 && growingCount == 0 -> "오답을 복습하면 숲이 자라요 →"
-                treeCount == 0 -> "자라는 중 $growingCount · 첫 나무를 키워보세요 →"
-                else -> "${treeCount}그루의 숲 · 자라는 중 $growingCount →"
+                treeCount == 0 && growingCount == 0 -> "오답을 복습하면 숲이 자라요"
+                treeCount == 0 -> "자라는 중 $growingCount"
+                else -> "${treeCount}그루의 숲 · 자라는 중 $growingCount"
             },
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
             color = TextPrimary,
+        )
+        Spacer(Modifier.width(2.dp))
+        Icon(
+            painter = painterResource(R.drawable.ic_chevron_right),
+            contentDescription = null,
+            // 드로어블 기본색이 text_primary 라 tint 생략 시 라벨 색과 어긋난다.
+            tint = TextPrimary,
+            modifier = Modifier.size(16.dp),
         )
     }
 }
