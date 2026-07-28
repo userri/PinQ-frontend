@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!--
+      스트릭 불꽃 — 🔥 이모지 대체. 이모지는 OEM 폰트에 따라 다른 그림이 나온다
+      (삼성 One UI 와 구글 이모지가 달라 같은 앱이 폰마다 다른 얼굴이 된다).
+      색은 새로 만들지 않고 단계 아이콘과 같은 두 톤(중간초록 + 라임)을 쓴다.
+      모양이 "불"을 말하고 색이 "이 앱"을 말한다 — 주황 계열은 Error(오답 전용)와 충돌한다.
+    -->
+    <path
+        android:pathData="M12,21.6C7.9,21.6 4.9,18.7 4.9,15.1 4.9,10.4 9.1,8.9 9.5,3.6 12.5,5.8 13.9,8.8 13.9,11.2 14.6,10.4 15,9.3 15,8 17.9,10.5 19.1,12.8 19.1,15.1 19.1,18.7 16.1,21.6 12,21.6Z"
+        android:fillColor="#FF3ECF63" />
+    <path
+        android:pathData="M12,21.6C10,21.6 8.6,20.2 8.6,18.4 8.6,16 10.8,15.2 11.2,12.2 13,13.7 14.6,15.7 14.6,18.2 14.6,20.2 13.5,21.6 12,21.6Z"
+        android:fillColor="#FFAEF23C" />
+</vector>
