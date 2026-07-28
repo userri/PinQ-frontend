@@ -109,6 +109,8 @@ fun MyPageScreen(
     /** 개념별 정답률. null 이거나 카테고리가 비면 섹션을 숨긴다. */
     conceptStats: ConceptStats? = null,
     appVersion: String,
+    /** 온보딩 3장 다시 보기 — 앱 정보 줄과 같은 부수 정보 톤으로 둔다. */
+    onOpenOnboarding: () -> Unit = {},
     isLoading: Boolean = false,
     error: String? = null,
     onRetry: () -> Unit = {},
@@ -163,6 +165,7 @@ fun MyPageScreen(
                 garden = garden,
                 conceptStats = conceptStats,
                 appVersion = appVersion,
+                onOpenOnboarding = onOpenOnboarding,
                 isWithdrawing = isWithdrawing,
                 onWithdraw = onWithdraw,
                 withdrawError = withdrawError,
@@ -200,6 +203,8 @@ fun MyPageContent(
     /** 개념별 정답률. null 이거나 카테고리가 비면 섹션을 숨긴다. */
     conceptStats: ConceptStats? = null,
     appVersion: String,
+    /** 온보딩 3장 다시 보기. */
+    onOpenOnboarding: () -> Unit = {},
     isWithdrawing: Boolean = false,
     onWithdraw: () -> Unit = {},
     withdrawError: String? = null,
@@ -314,6 +319,9 @@ fun MyPageContent(
         )
         Spacer(Modifier.height(8.dp))
         InfoRow(label = "버전", value = appVersion)
+        // 온보딩 재열람 진입점. 값 대신 셰브론이 들어간 것 말고는 위 줄과 구조가 같다 —
+        // 화면 위계를 흔들지 않도록 부수 정보 톤을 유지한다.
+        NavRow(label = "앱 소개 다시 보기", onClick = onOpenOnboarding)
 
         Spacer(Modifier.height(24.dp))
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -823,6 +831,34 @@ private fun InfoRow(label: String, value: String) {
             text = value,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium,
+        )
+    }
+}
+
+/**
+ * [InfoRow] 와 같은 줄에 값 대신 셰브론이 들어간 형태 — 누르면 다른 화면으로 간다.
+ * 배경·테두리를 두르지 않는다(면을 늘리지 않고 타이포·여백으로만 구분).
+ */
+@Composable
+private fun NavRow(label: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .heightIn(min = 48.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Icon(
+            painter = painterResource(R.drawable.ic_chevron_right),
+            contentDescription = null,
+            tint = TextMuted,
+            modifier = Modifier.size(16.dp),
         )
     }
 }

@@ -34,6 +34,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -59,7 +61,7 @@ import java.time.LocalDate
  *
  *   adb shell am start -n com.finq.app/com.finq.app.debug.ShowcaseActivity --es screen home
  *
- * screen: home | home_pending | home_zero | home_done_water | home_done | quiz | answer | solo_quiz | solo_answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | mypage_trees_none | mypage_trees_zero | mypage_trees_few | mypage_trees_many | filters | wrongnote | history | detail_wrong | detail_correct | detail_graduated | detail_loading | detail_error | list_error | grass | review | review_graduated | review_next | garden | garden_empty | garden_growing_many | garden_trees_few | garden_trees_many | garden_canvas | concept | concept_sheet | concept_sheet_intro
+ * screen: home | home_pending | home_zero | home_done_water | home_done | quiz | answer | solo_quiz | solo_answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | mypage_trees_none | mypage_trees_zero | mypage_trees_few | mypage_trees_many | filters | wrongnote | history | detail_wrong | detail_correct | detail_graduated | detail_loading | detail_error | list_error | grass | review | review_graduated | review_next | garden | garden_empty | garden_growing_many | garden_trees_few | garden_trees_many | garden_canvas | concept | concept_sheet | concept_sheet_intro | onboarding | onboarding_grass | onboarding_tree | onboarding_replay
  * 릴리즈 빌드에는 포함되지 않는다(app/src/debug 소스셋).
  */
 class ShowcaseActivity : ComponentActivity() {
@@ -299,6 +301,23 @@ class ShowcaseActivity : ComponentActivity() {
                             onDismiss = { open = false },
                         )
                     }
+
+                    // 첫 실행 온보딩 — 장별 + 완료 직전(마지막 장) + 마이페이지 재열람.
+                    // onboarding_tree 가 곧 "완료 직전" 상태다(CTA 가 "시작하기").
+                    "onboarding", "onboarding_grass", "onboarding_tree", "onboarding_replay" ->
+                        com.finq.app.ui.onboarding.OnboardingScreen(
+                            onFinish = {},
+                            onSkip = {},
+                            replay = screen == "onboarding_replay",
+                            initialPage = when (screen) {
+                                "onboarding_grass" -> 1
+                                "onboarding_tree", "onboarding_replay" -> 2
+                                else -> 0
+                            },
+                            // 앱에서는 FinQNavHost 의 Scaffold 가 시스템 인셋을 준다.
+                            // 쇼케이스는 Scaffold 없이 바로 띄우므로 여기서 직접 넣는다.
+                            modifier = Modifier.statusBarsPadding().navigationBarsPadding(),
+                        )
 
                     "concept" -> Column(
                         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)

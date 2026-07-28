@@ -105,6 +105,9 @@ import com.finq.app.data.local.SessionManager
 import com.finq.app.data.repository.AuthRepository
 import com.finq.app.ui.login.LoginEvent
 import com.finq.app.ui.login.LoginViewModel
+import com.finq.app.ui.onboarding.OnboardingScreen
+import com.finq.app.ui.onboarding.hasSeenOnboarding
+import com.finq.app.ui.onboarding.markOnboardingSeen
 import com.finq.app.ui.screen.LoginScreen
 import com.finq.app.ui.theme.BgBase
 import com.finq.app.ui.theme.Lime
@@ -116,6 +119,8 @@ import com.finq.app.ui.theme.TextMuted
  *
  * 구조 (Phase 4):
  *   login                   — 미인증 시 시작점 (하단 네비게이션 없음)
+ *   onboarding              — 첫 실행 1회 + 마이페이지 재열람. 홈 "위에" 얹히며,
+ *                             첫 실행 완료 시 홈을 거치지 않고 곧장 첫 문제로 간다.
  *   home                  ─┐
  *   library_tab            ├─ 하단 네비게이션 표시 영역 (3탭)
  *   mypage                ─┘
@@ -142,6 +147,14 @@ private val reviewDueDateFormat: java.time.format.DateTimeFormatter =
 
 object FinQRoutes {
     const val LOGIN = "login"
+
+    /**
+     * 첫 실행 온보딩 — 로그인 직후 1회. 판정 플래그는 로컬(SharedPreferences)에만 있다.
+     * replay=true 는 마이페이지에서 다시 열어본 경우 — 끝나면 첫 문제가 아니라 되돌아간다.
+     */
+    const val ONBOARDING_PATTERN = "onboarding?replay={replay}"
+    fun onboarding(replay: Boolean = false) = "onboarding?replay=$replay"
+
     const val HOME = "home"
     const val WRONG_NOTE_TAB = "wrongnote_tab"
     const val BOOKMARK_TAB = "bookmark_tab"
@@ -188,6 +201,8 @@ private val bottomNavRoutes = setOf(
  * 상태바·하단 인셋 영역도 모두 네이비로 채워져 끊김 없는 다크 톤이 유지된다.
  */
 private val darkSessionRoutes = setOf(
+    // 온보딩도 화면 전체가 밤하늘 한 장면이다 — 상태바·하단 인셋까지 네이비로 이어져야 한다.
+    FinQRoutes.ONBOARDING_PATTERN,
     FinQRoutes.QUIZ,
     FinQRoutes.ANSWER,
     FinQRoutes.SOLO_QUIZ_PATTERN,
@@ -301,6 +316,19 @@ fun FinQNavHost(
 
     val snackbarHostState = remember { SnackbarHostState() }
 
+    // 첫 실행 온보딩 — 홈을 시작 목적지로 두고 그 "위에" 얹는다.
+    // 온보딩을 NavHost 의 시작 목적지로 삼아 나갈 때 popUpTo(inclusive) 로 걷어내면
+    // 그래프의 시작 목적지가 사라져 백스택이 깨진다(세션 그래프가 부모 없이 컴포즈돼
+    // 크래시). 홈 위에 얹으면 나갈 때 popBackStack 한 번이면 되고, 마이페이지
+    // 재열람 경로와도 구조가 같아진다.
+    var onboardingPending by rememberSaveable { mutableStateOf(!hasSeenOnboarding(context)) }
+    LaunchedEffect(currentRoute, onboardingPending) {
+        if (onboardingPending && currentRoute == FinQRoutes.HOME) {
+            onboardingPending = false
+            navController.navigate(FinQRoutes.onboarding())
+        }
+    }
+
     Scaffold(
         modifier = modifier,
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -346,6 +374,7 @@ fun FinQNavHost(
                 LaunchedEffect(Unit) {
                     loginVm.events.collect { event ->
                         if (event is LoginEvent.LoginSuccess) {
+                            // 온보딩은 홈에 도착한 뒤 위에 얹힌다(아래 onboardingPending).
                             navController.navigate(FinQRoutes.HOME) {
                                 popUpTo(FinQRoutes.LOGIN) { inclusive = true }
                             }
@@ -359,6 +388,34 @@ fun FinQNavHost(
                     onKakaoLogin = { loginVm.loginWithKakao(context) },
                     onGoogleLogin = { loginVm.loginWithGoogle(context) },
                     onClearError = loginVm::clearError,
+                )
+            }
+
+            // ── 첫 실행 온보딩 ─────────────────────────────────────────
+            composable(
+                route = FinQRoutes.ONBOARDING_PATTERN,
+                arguments = listOf(
+                    navArgument("replay") { type = NavType.BoolType; defaultValue = false },
+                ),
+            ) { entry ->
+                val replay = entry.arguments?.getBoolean("replay") ?: false
+                // 온보딩을 벗어나면(완료·건너뛰기·재열람 종료) 다시는 자동으로 뜨지 않는다.
+                // 아래는 늘 홈이므로 건너뛰기·재열람 종료는 popBackStack 한 번이면 된다.
+                val leave: (Boolean) -> Unit = { startFirstQuiz ->
+                    markOnboardingSeen(context)
+                    // 설명을 더 쌓지 않고 곧장 첫 문제로. 온보딩만 걷어내 홈 위에 세션을 얹는다.
+                    if (startFirstQuiz && !replay) {
+                        navController.navigate(FinQRoutes.SESSION_GRAPH) {
+                            popUpTo(FinQRoutes.ONBOARDING_PATTERN) { inclusive = true }
+                        }
+                    } else {
+                        navController.popBackStack()
+                    }
+                }
+                OnboardingScreen(
+                    replay = replay,
+                    onFinish = { leave(true) },
+                    onSkip = { leave(false) },
                 )
             }
 
@@ -492,6 +549,10 @@ fun FinQNavHost(
                     garden = state.garden,
                     conceptStats = state.conceptStats,
                     appVersion = BuildConfig.VERSION_NAME,
+                    // 온보딩 재열람 — 캐러셀을 강제로 다시 재생하지 않고 여기서만 부른다.
+                    onOpenOnboarding = {
+                        navController.navigate(FinQRoutes.onboarding(replay = true))
+                    },
                     isLoading = state.isLoading,
                     error = state.error,
                     onRetry = myPageVm::loadStats,
