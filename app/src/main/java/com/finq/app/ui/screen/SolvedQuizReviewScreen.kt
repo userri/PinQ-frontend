@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -154,13 +155,26 @@ fun SolvedQuizReviewScreen(
 
             if (isCorrect == false && onViewWrongNote != null) {
                 Spacer(Modifier.height(16.dp))
-                Text(
-                    text = "자세한 해설은 오답노트에서 확인할 수 있어요 →",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Lime,
+                Row(
                     modifier = Modifier.clickable(onClick = onViewWrongNote),
-                )
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "자세한 해설은 오답노트에서 확인할 수 있어요",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Lime,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    Spacer(Modifier.size(2.dp))
+                    Icon(
+                        painter = painterResource(R.drawable.ic_chevron_right),
+                        contentDescription = null,
+                        // 드로어블 기본색이 text_primary 라 tint 생략 시 라벨 색과 어긋난다.
+                        tint = Lime,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
             }
             Spacer(Modifier.height(4.dp))
         }

@@ -560,16 +560,28 @@ private fun WeekGrassStrip(
 
         // 스트릭 문구 — streak 은 "어제까지" 값일 수 있으므로 미풀이 상태에선 +1 로 보여준다.
         Spacer(Modifier.height(6.dp))
-        Text(
-            text = when {
-                solvedToday -> "🔥 ${streak}일 연속 학습 중!"
-                streak > 0 -> "오늘 풀면 ${streak + 1}일 연속!"
-                else -> "오늘 풀고 연속 학습을 시작해보세요"
-            },
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = if (solvedToday) Lime else TextPrimary,
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            // 불꽃은 실제로 불이 붙은 상태(오늘 풀이 완료)에서만. 자체 2톤을 가진 벡터라
+            // Icon(tint=…) 으로 감싸면 단색으로 뭉개진다 — Image 로 그린다.
+            if (solvedToday) {
+                androidx.compose.foundation.Image(
+                    painter = painterResource(R.drawable.ic_streak_flame),
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.width(5.dp))
+            }
+            Text(
+                text = when {
+                    solvedToday -> "${streak}일 연속 학습 중!"
+                    streak > 0 -> "오늘 풀면 ${streak + 1}일 연속!"
+                    else -> "오늘 풀고 연속 학습을 시작해보세요"
+                },
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = if (solvedToday) Lime else TextPrimary,
+            )
+        }
 
         Spacer(Modifier.height(12.dp))
         Row(
@@ -713,7 +725,7 @@ private fun TodayQuizCard(
         }
         if (hasQuiz) {
             Spacer(Modifier.size(8.dp))
-            NeonCtaPill(text = "풀러 가기 →")
+            NeonCtaPill(text = "풀러 가기")
         }
     }
 }

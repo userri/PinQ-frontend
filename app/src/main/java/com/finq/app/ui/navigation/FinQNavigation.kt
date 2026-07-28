@@ -692,7 +692,7 @@ fun FinQNavHost(
                                 isSubmitting = state.isSubmitting,
                                 categoryLabel = "${item.stage.label} · ${item.categoryLabel}",
                                 headerNote = buildString {
-                                    if (item.waterCount > 0) append("💧 물 ${item.waterCount}번 · 흡수 ${item.absorbedCount}번 · ")
+                                    if (item.waterCount > 0) append("물 ${item.waterCount}번 · 흡수 ${item.absorbedCount}번 · ")
                                     if (item.stage.isFinalStage) append("한 번 더 맞히면 나무가 돼요 · ")
                                     append("복습은 기록에 영향 없어요")
                                 },
@@ -737,7 +737,7 @@ fun FinQNavHost(
                                 "물 ${answer.waterCount}번 준 나무가 완성됐어요 — 당신의 ${answer.totalGraduatedTrees}번째 나무"
                             else null,
                             nextReviewText = answer.nextDueDate?.let {
-                                "다음 물 주기: ${it.format(reviewDueDateFormat)} · 💧 물 ${answer.waterCount}번 · 흡수 ${answer.absorbedCount}번"
+                                "다음 물 주기: ${it.format(reviewDueDateFormat)} · 물 ${answer.waterCount}번 · 흡수 ${answer.absorbedCount}번"
                             },
                             nextLabel = if (state.isLastItem) "복습 완료" else "다음 복습",
                         )
@@ -1124,7 +1124,7 @@ private fun AnswerRoute(
     }
     if (showIntro) {
         com.finq.app.ui.components.ReviewTreeConceptSheet(
-            title = "🌱 첫 복습 나무가 태어났어요",
+            title = "첫 복습 나무가 태어났어요",
             confirmLabel = "키워볼게요",
             // 참조가 아니라 축하 모먼트 — 히어로를 방금 난 새싹 단독으로 바꾼다.
             variant = com.finq.app.ui.components.ReviewTreeConceptVariant.CELEBRATION,

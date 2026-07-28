@@ -79,7 +79,7 @@ fun GardenScreen(
 
     if (showHelp) {
         ReviewTreeConceptSheet(
-            title = "🌳 복습 나무란?",
+            title = "복습 나무란?",
             onDismiss = { showHelp = false },
         )
     }

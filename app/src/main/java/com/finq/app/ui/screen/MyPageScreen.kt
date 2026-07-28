@@ -36,6 +36,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -54,11 +55,13 @@ import androidx.core.content.ContextCompat
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.ButtonDefaults
+import com.finq.app.R
 import com.finq.app.ui.theme.FinQTheme
 import com.finq.app.data.repository.ConceptStats
 import com.finq.app.data.repository.GrassCalendar
@@ -689,11 +692,13 @@ private fun ProfileHeader(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false),
                     )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = "›",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = TextMuted,
+                    Spacer(Modifier.width(2.dp))
+                    Icon(
+                        painter = painterResource(R.drawable.ic_chevron_right),
+                        contentDescription = null,
+                        // 드로어블 기본색이 text_primary 라 tint 생략 시 라벨 색과 어긋난다.
+                        tint = TextMuted,
+                        modifier = Modifier.size(16.dp),
                     )
                 }
                 Text(

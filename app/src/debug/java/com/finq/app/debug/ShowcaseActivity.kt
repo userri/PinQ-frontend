@@ -292,7 +292,7 @@ class ShowcaseActivity : ComponentActivity() {
                             )
                         }
                         if (open) ReviewTreeConceptSheet(
-                            title = if (intro) "🌱 첫 복습 나무가 태어났어요" else "🌳 복습 나무란?",
+                            title = if (intro) "첫 복습 나무가 태어났어요" else "복습 나무란?",
                             confirmLabel = if (intro) "키워볼게요" else "알겠어요",
                             variant = if (intro) ReviewTreeConceptVariant.CELEBRATION
                                       else ReviewTreeConceptVariant.REFERENCE,

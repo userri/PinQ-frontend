@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -112,7 +113,7 @@ fun WaterGrassCard(
             }
             if (hasReviews) {
                 Spacer(Modifier.size(8.dp))
-                NeonCtaPill(text = "물 주러 가기 →")
+                NeonCtaPill(text = "물 주러 가기")
             }
         }
     }
@@ -144,12 +145,22 @@ fun NeonCtaPill(text: String, modifier: Modifier = Modifier) {
             .border(1.dp, Lime, RoundedCornerShape(50))
             .padding(horizontal = 14.dp, vertical = 8.dp),
     ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
-            color = Lime,
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = Lime,
+            )
+            Spacer(Modifier.size(2.dp))
+            Icon(
+                painter = painterResource(R.drawable.ic_chevron_right),
+                contentDescription = null,
+                // 드로어블 기본색이 text_primary 라 tint 생략 시 라임 라벨 옆에서 회백색이 된다.
+                tint = Lime,
+                modifier = Modifier.size(16.dp),
+            )
+        }
     }
 }
 

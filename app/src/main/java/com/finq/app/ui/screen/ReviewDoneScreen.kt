@@ -26,7 +26,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.finq.app.R
 import com.finq.app.ui.theme.BgBase
 import com.finq.app.ui.theme.FinQTheme
@@ -72,7 +71,12 @@ fun ReviewDoneScreen(
                 modifier = Modifier.size(64.dp),
             )
         } else {
-            Text(text = "💧", fontSize = 56.sp)
+            // 이모지는 OEM 폰트마다 다른 그림이 나온다 — 히어로는 커스텀 벡터로.
+            Image(
+                painter = painterResource(R.drawable.ic_water_drop),
+                contentDescription = null,
+                modifier = Modifier.size(56.dp),
+            )
         }
         Spacer(Modifier.height(20.dp))
 
