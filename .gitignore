@@ -23,3 +23,7 @@ keystore.properties
 
 # Firebase (앱별 시크릿 — 로컬 유지, 커밋 금지)
 app/google-services.json
+
+# 포트폴리오 마크다운 초안 (검증용, 커밋 안 함)
+portfolio-drafts/
+.superpowers/
