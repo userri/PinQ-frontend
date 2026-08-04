@@ -267,6 +267,20 @@ private fun SummaryStat(
     }
 }
 
+/**
+ * 잔디 범례 — 색이 **무엇을** 재는지 말한다.
+ *
+ * 종전엔 GitHub 잔디를 그대로 가져와 "적게 ▪▪▪▪▪ 많이"였는데, 무엇이 적고 많은지를
+ * 말하지 않아 매일 색이 달라지는 이유를 알 수 없었다. 규칙(그날 맞힌 문제 수 = 등급,
+ * 4개 이상이면 라임)을 한 줄로 옮긴다.
+ *
+ * **빈 칸(level 0)은 범례에서 뺀다.** 그건 색 단계가 아니라 "안 푼 날"이라,
+ * 맞힌 개수 축에 같이 세우면 왼쪽 끝이 "0개 맞힘"이라는 거짓말이 된다.
+ * 히트맵에는 그대로 남는다 — 거기선 활동 없음을 표시해야 하기 때문.
+ *
+ * 스트릭과 헷갈리지 않게 "4개 이상"을 조건처럼 읽히게 두지 않는다 —
+ * 스트릭은 정답 수와 무관하게 그날 풀기만 하면 이어진다.
+ */
 @Composable
 private fun GrassLegend() {
     Row(
@@ -274,9 +288,15 @@ private fun GrassLegend() {
         horizontalArrangement = Arrangement.End,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(text = "적게", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+        Text(
+            text = "맞힌 문제",
+            style = MaterialTheme.typography.labelSmall,
+            color = TextSecondary,
+        )
         Spacer(Modifier.width(6.dp))
-        (0..4).forEach { level ->
+        Text(text = "1", style = MaterialTheme.typography.labelSmall, color = TextMuted)
+        Spacer(Modifier.width(4.dp))
+        (1..4).forEach { level ->
             Box(
                 modifier = Modifier
                     .padding(horizontal = 2.dp)
@@ -285,8 +305,8 @@ private fun GrassLegend() {
                     .background(streakColor(level)),
             )
         }
-        Spacer(Modifier.width(6.dp))
-        Text(text = "많이", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+        Spacer(Modifier.width(4.dp))
+        Text(text = "4+", style = MaterialTheme.typography.labelSmall, color = TextMuted)
     }
 }
 

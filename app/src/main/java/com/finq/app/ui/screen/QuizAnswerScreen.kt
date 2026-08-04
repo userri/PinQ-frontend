@@ -51,6 +51,7 @@ import com.finq.app.data.model.QuizOption
 import com.finq.app.data.model.RelatedArticle
 import com.finq.app.data.repository.AnswerResult
 import com.finq.app.data.repository.LibraryRepository
+import com.finq.app.data.repository.ReviewStage
 import com.finq.app.ui.components.AdBanner
 import com.finq.app.ui.theme.FinQTheme
 import kotlinx.coroutines.launch
@@ -62,6 +63,7 @@ import com.finq.app.ui.theme.Error
 import com.finq.app.ui.theme.ErrorFaint
 import androidx.compose.ui.graphics.ColorFilter
 import com.finq.app.ui.theme.Grass1
+import com.finq.app.ui.theme.Grass3
 import com.finq.app.ui.theme.Lime
 import com.finq.app.ui.theme.OnLime
 import com.finq.app.ui.theme.Outline
@@ -401,15 +403,29 @@ private fun GraduatedBanner(message: String? = null) {
 /**
  * 복습 성장 밴드 — 맞혀서 한 단계 자란 순간.
  *
- * 게이지는 **2칸 + 나무**다. 3칸이 아닌 이유: 서버 `MAX_STAGE = 2` 라 마지막 단계에서
- * 맞히면 그 즉시 졸업(GraduatedBanner)으로 넘어간다 — 3칸이 다 찬 상태는 화면에
- * 존재하지 않는다. 도달 못 한 나무를 흐리게 함께 두어 "다음은 나무"를 형태로 말한다.
+ * 사다리를 **단계 아이콘 4개**(새싹 · 풀 · 나무 직전 · 나무)로 그린다. 종전엔 추상 도트
+ * 2개 뒤에 나무 하나였는데, 같은 줄에서 추상과 구체가 섞여 셋이 한 종류로 안 읽혔다.
+ * 게다가 복습 세션 헤더는 이미 "새싹 · 증시"처럼 **단계 이름**으로 말하고 있어서,
+ * 같은 개념을 화면마다 다른 언어(동그라미 vs 이름)로 설명하는 상태였다.
+ *
+ * **3개가 아니라 4개인 이유**: 실제 사다리가 넷이다. 오답 등록이 새싹(stage 0)이고
+ * 맞힐 때마다 풀(1) → 나무 직전(2) → 나무(졸업)로 간다 — [ReviewStageTimeline] 이
+ * 그리는 것과 같은 순서다. 셋만 그리면 "나무 직전"이 사라져 개념 시트·타임라인·복습
+ * 헤더가 쓰는 이름 체계와 어긋난다.
+ *
+ * 상태를 색과 모양 **둘 다**로 말한다 — 지나온 단계 Grass3, 현재 Lime, 남은 단계는
+ * 흐린 Lime. 모양(새싹/풀/나무)까지 다르므로 색각 이상이나 저조도에서도 진행이 읽힌다.
+ * 종전 도트는 색에만 의존했고, 안 채운 도트는 Outline(네이비)이라 어두운 밴드 배경에
+ * 아예 묻혔다.
  *
  * 졸업 배너와 같은 자리·같은 밴드 형태를 쓴다("이 자리의 밴드 = 이번 결과").
- * 오답일 땐 호출되지 않는다 — 리셋을 굳이 화면이 말하지 않기 때문이다.
+ * 오답일 땐 호출되지 않는다 — 진척이 오르지 않은 순간에 사다리를 보여줄 이유가 없다.
  */
 @Composable
 private fun ReviewGrowthBand(stage: Int, nextReviewText: String?) {
+    val current = ReviewStage.of(stage)
+    // 마지막 칸(나무)은 졸업이라 ReviewStage 에 없다 — 사다리의 끝점으로만 그린다.
+    val ladder = ReviewStage.entries.map { it.iconRes } + R.drawable.ic_stage_tree
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -418,28 +434,30 @@ private fun ReviewGrowthBand(stage: Int, nextReviewText: String?) {
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // 칸 2개 + 나무 — 채운 칸 수 = 현재 stage.
         Row(verticalAlignment = Alignment.CenterVertically) {
-            repeat(2) { i ->
-                Box(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .clip(CircleShape)
-                        .background(if (i < stage) Lime else Outline),
+            ladder.forEachIndexed { index, iconRes ->
+                if (index > 0) Spacer(Modifier.size(4.dp))
+                Image(
+                    painter = painterResource(iconRes),
+                    contentDescription = null,
+                    colorFilter = ColorFilter.tint(
+                        when {
+                            index < stage -> Grass3   // 지나온 단계
+                            index == stage -> Lime    // 지금 여기
+                            // 아직 남은 단계. 나무만 알파를 더 낮추는 건 광학 보정이다 —
+                            // 면이 꽉 찬 형태라 같은 알파에서 가는 획(나무 직전)보다
+                            // 훨씬 무겁게 보이고, 그러면 "남은 단계" 둘의 무게가 어긋난다.
+                            else -> Lime.copy(alpha = if (iconRes == R.drawable.ic_stage_tree) 0.18f else 0.28f)
+                        },
+                    ),
+                    modifier = Modifier.size(24.dp),
                 )
-                Spacer(Modifier.size(6.dp))
             }
-            Image(
-                painter = painterResource(R.drawable.ic_stage_tree),
-                contentDescription = null,
-                colorFilter = ColorFilter.tint(Outline),
-                modifier = Modifier.size(20.dp),
-            )
         }
         Spacer(Modifier.size(12.dp))
         Column {
             Text(
-                text = "한 단계 자랐어요",
+                text = "${current.label}까지 자랐어요",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = Lime,

@@ -822,13 +822,19 @@ fun FinQNavHost(
                                 onClose = { navController.exitReviewToHome() },
                                 isSubmitting = state.isSubmitting,
                                 categoryLabel = "${item.stage.label} · ${item.categoryLabel}",
-                                // 누적 통계(물 N번 · 흡수 N번)는 빼둔다 — 진척은 stage 가 말하고
-                                // waterCount 는 시도 누계라 진척이 아니다. 결과 화면의 성장 게이지와
-                                // 같은 원칙(QuizAnswerBody.ReviewGrowthBand).
-                                headerNote = buildString {
-                                    if (item.stage.isFinalStage) append("한 번 더 맞히면 나무가 돼요 · ")
-                                    append("복습은 기록에 영향 없어요")
-                                },
+                                // "왜 이걸 하고 있나"에 답하는 한 줄. 답한 직후 성장 게이지가
+                                // 나타나 이 문구를 그 자리에서 증명한다.
+                                //
+                                // 종전의 "복습은 기록에 영향 없어요"를 뺀 이유: 정답률이 안 떨어진다는 건
+                                // 통계 화면을 따로 봐야 아는 사실이라, 여기서 미리 안심시키면 없던 불안만
+                                // 만든다. 안심 문구는 개념 시트와 완료 화면에 이미 있고 거기선 "스트릭·정답률"로
+                                // 범위까지 밝힌다("기록"이라고 뭉뚱그리지 않는다).
+                                //
+                                // buildString 이 아니라 분기인 이유: 이어붙이면 마지막 단계에서
+                                // "한 번 더 맞히면 나무가 돼요 · 맞히면 나무가 자라요"로 같은 말이 두 번 나온다.
+                                // 누적 통계(물 N번 · 흡수 N번)는 진척이 아니므로 여기 없다.
+                                headerNote = if (item.stage.isFinalStage) "한 번 더 맞히면 나무가 돼요"
+                                             else "맞히면 나무가 자라요",
                             )
                         }
                     }
