@@ -78,8 +78,12 @@ enum class AttemptCardEmphasis {
 // 정원이 보여준다. 이 목록엔 "지금 어느 단계"만 있으면 된다.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** 단계 아이콘 크기 — 20dp 미만은 획이 뭉개져 형태를 못 읽는다(Material 광학 최소). */
-private val StageIconSize = 22.dp
+/**
+ * 단계 아이콘 크기. 20dp 는 "이 아래로는 뭉갠다"는 하한이지 적정값이 아니다 —
+ * 이 행은 메타줄 + 문제 2줄로 60dp 를 넘으므로, 하한에 붙여 두면 아이콘이 곁다리로
+ * 밀린다. 행 높이의 절반 가까이 줘야 목록의 왼쪽 열로 읽힌다.
+ */
+private val StageIconSize = 30.dp
 
 /**
  * 오답노트 / 북마크 / 전체이력 목록의 항목 한 줄.
@@ -131,7 +135,7 @@ fun AttemptItemRow(
             } else {
                 Spacer(Modifier.size(StageIconSize))
             }
-            Spacer(Modifier.width(10.dp))
+            Spacer(Modifier.width(12.dp))
         }
 
         Column(modifier = Modifier.weight(1f)) {
