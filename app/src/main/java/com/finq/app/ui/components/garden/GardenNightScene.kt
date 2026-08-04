@@ -263,12 +263,16 @@ fun GardenNightScene(
         )
 
         // ⑤ 풀결 텍스처 — 고정 패턴의 짧은 세로선. 깊이에 따라 살짝 길어진다.
+        //
+        // 배치는 위 식물과 같은 R2 저불일치 수열을 쓴다. 종전엔 `i*17 % 34` 였는데
+        // 17 과 34 가 서로소가 아니라 yf 가 0 과 0.5 **두 값**밖에 안 나왔고, 거기에
+        // 능선 곡선이 더해져 화면에 포물선 두 줄이 그어졌다(실사용 보고).
         run {
             val n = 34
             val band = size.height - hillTop
             repeat(n) { i ->
-                val xf = ((i * 37 % n) + 0.5f) / n
-                val yf = (i * 17 % n).toFloat() / n
+                val xf = (0.5f + i * 0.7548777f) % 1f
+                val yf = (0.5f + i * 0.5698403f) % 1f
                 val x = size.width * xf
                 val y = hillTop + ridgeOffsetAt(xf) * size.height + band * (0.08f + yf * 0.82f)
                 val h = size.height * (0.008f + 0.008f * yf)
