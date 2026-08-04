@@ -346,7 +346,12 @@ private fun DrawScope.drawScenePlant(
         else -> almostTreePainter
     }
     // 멀수록 흐릿·저채도(알파로 근사) — y축이 곧 깊이.
-    val depthAlpha = 0.45f + 0.55f * p.depth
+    //
+    // 하한이 0.45 였을 땐 뒷줄 나무·나무 직전이 언덕에 묻혔다. 공기 원근은 배경과
+    // 대상의 **색이 다를 때** 성립하는데, 여기선 식물도 언덕도 같은 초록 계열이라
+    // 알파만 낮추면 원근이 아니라 그냥 사라진다. 깊이 신호는 크기(plantGeometry)와
+    // 그림자가 이미 담당하므로 알파는 거들기만 하면 된다.
+    val depthAlpha = 0.72f + 0.28f * p.depth
 
     // due 글로우 — 오늘 물 줄 수 있는 식물의 은은한 Lime 라디얼(클릭 유도 신호).
     if (p.due) {
