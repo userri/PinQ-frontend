@@ -44,6 +44,9 @@ data class ReviewItem(
 data class ReviewsToday(
     val items: List<ReviewItem>,
     val nextDueDate: LocalDate?,
+    /** 오늘 물 준 개수. 오답 리셋을 폐기했으므로 [todayCorrect] 는 곧 "자란 개수"다. */
+    val todayReviewed: Int = 0,
+    val todayCorrect: Int = 0,
 ) {
     companion object {
         val EMPTY = ReviewsToday(items = emptyList(), nextDueDate = null)

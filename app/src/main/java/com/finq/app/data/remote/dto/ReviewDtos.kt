@@ -9,6 +9,15 @@ package com.finq.app.data.remote.dto
 data class ReviewsTodayApiResponse(
     val reviews: List<ReviewApiResponse>,
     val nextDueDate: String?,
+    /**
+     * 오늘 물 준 총 개수 / 그중 맞힌(=자란) 개수. `ReviewDailyLog` 집계 그대로다.
+     *
+     * 세션이 아니라 **하루**가 사용자의 단위다 — "오늘 물 줄 잔디 5개"라는 목표를
+     * 하루 단위로 세워놨으므로, 정원에서 1개 + 세션에서 4개를 풀면 사용자 머릿속은
+     * "오늘 5개"다. 구서버엔 없음 → 기본 0.
+     */
+    val todayReviewed: Int = 0,
+    val todayCorrect: Int = 0,
 )
 
 /**

@@ -127,6 +127,9 @@ fun HomeScreen(
     nickname: String = "",
     /** 오늘 복습할 오답 수 — 복습 카드는 항상 노출된다(0이면 안내 상태). */
     reviewCount: Int = 0,
+    /** 오늘 복습으로 물 준 개수 / 자란 개수 — 복습 카드의 완료 상태 표기에 쓴다. */
+    reviewedToday: Int = 0,
+    grownToday: Int = 0,
     nextReviewDate: LocalDate? = null,
     onWaterGrass: () -> Unit = {},
     /** 하단 잔디밭용 정원. null(로드 실패/이전)이면 빈 언덕으로 그린다. */
@@ -218,6 +221,8 @@ fun HomeScreen(
                 reviewCount = reviewCount,
                 nextDueDate = nextReviewDate,
                 onClick = onWaterGrass,
+                reviewedToday = reviewedToday,
+                grownToday = grownToday,
             )
 
             Spacer(Modifier.height(12.dp))

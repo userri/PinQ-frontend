@@ -46,6 +46,7 @@ import java.time.LocalDate
  * 홈의 오답 복습 진입 카드.
  *
  * 복습할 게 있으면 "오늘 물 줄 잔디 N개" (클릭 가능),
+ * 오늘 다 했으면 "오늘 물주기 완료 · N개가 자랐어요",
  * 없으면 [nextDueDate] 로 "다음 물주기 내일" 을 보여주고 클릭을 막는다([nextWateringText]).
  * 둘 다 없으면(복습 큐 자체가 빔) 카드를 그리지 않는다 — 호출부가 판단한다.
  */
@@ -55,6 +56,9 @@ fun WaterGrassCard(
     nextDueDate: LocalDate?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    /** 오늘 복습으로 물 준 개수 / 그중 자란 개수. 큐가 비었을 때 "없어요"와 "다 했어요"를 가른다. */
+    reviewedToday: Int = 0,
+    grownToday: Int = 0,
 ) {
     val hasReviews = reviewCount > 0
 
@@ -90,8 +94,14 @@ fun WaterGrassCard(
             Spacer(Modifier.size(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = if (hasReviews) "오늘 물 줄 잔디 ${reviewCount}개"
-                           else "오늘 물 줄 잔디가 없어요",
+                    text = when {
+                        hasReviews -> "오늘 물 줄 잔디 ${reviewCount}개"
+                        // 오늘 물을 준 적이 있으면 "없어요"가 아니라 "다 했어요"다.
+                        // 두 상태를 한 문구로 뭉치면, 5개를 다 한 사람과 애초에 할 게
+                        // 없던 사람이 같은 말을 듣는다.
+                        reviewedToday > 0 -> "오늘 물주기 완료"
+                        else -> "오늘 물 줄 잔디가 없어요"
+                    },
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = TextPrimary,
@@ -102,6 +112,12 @@ fun WaterGrassCard(
                         // 규칙 설명("3번 맞히면 나무")은 개념 시트가 맡는다. 여기선 한 줄이면 충분하고,
                         // 길면 좁은 카드에서 어색하게 줄바꿈된다(3번 / 맞히면).
                         hasReviews -> "복습할수록 자라요"
+                        // 오늘 물을 줬으면 한 일을 말한다. 데일리 카드는 완주 시 "4/5 정답"
+                        // 이라는 성취를 보여주는데 여기만 "없어요"라는 부정형이면, 방금
+                        // 물 준 사람에게 한 일을 지우는 셈이다.
+                        reviewedToday > 0 && nextDueDate != null ->
+                            "${grownToday}개가 자랐어요 · ${nextWateringText(nextDueDate)}"
+                        reviewedToday > 0 -> "${grownToday}개가 자랐어요"
                         nextDueDate != null -> nextWateringText(nextDueDate)
                         else -> "복습할 오답이 없어요"
                     },

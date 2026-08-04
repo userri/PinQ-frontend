@@ -39,6 +39,12 @@ data class ReviewSessionUiState(
     val nextDueDate: LocalDate? = null,
     /** 일회성 안내(스낵바용). 예: 이미 졸업한 문제 404. */
     val notice: String? = null,
+    /**
+     * **오늘** 물 준 개수 / 그중 자란 개수. 완료 화면은 세션이 아니라 이 값을 쓴다 —
+     * 정원에서 1개 + 세션에서 4개면 사용자 머릿속 단위는 "오늘 5개"다.
+     */
+    val todayReviewed: Int = 0,
+    val todayCorrect: Int = 0,
 ) {
     val currentItem: ReviewItem? get() = items.getOrNull(currentIndex)
     val totalCount: Int get() = items.size
@@ -72,6 +78,8 @@ class ReviewSessionViewModel(
                             // 순서를 건드리지 않고 큐 처음부터 간다.
                             items = today.items.startingWith(startQuizId),
                             nextDueDate = today.nextDueDate,
+                            todayReviewed = today.todayReviewed,
+                            todayCorrect = today.todayCorrect,
                             currentIndex = 0,
                             selectedOptionId = null,
                             lastAnswer = null,
@@ -91,7 +99,7 @@ class ReviewSessionViewModel(
     /**
      * 세션을 마친 뒤 사용자 단위 상태를 다시 받는다.
      *
-     * 세션 시작 때 받은 `nextDueDate` 는 "오늘 몫이 남아 있던" 시점의 값이라,
+     * 세션 시작 때 받은 `nextDueDate` 와 오늘 집계는 "오늘 몫이 남아 있던" 시점의 값이라,
      * 다 풀고 난 지금의 답이 아니다. 캡에 잘린 백로그가 남았으면 서버가 오늘+1 을 준다.
      * 목록(items)은 건드리지 않는다 — 완료 화면이 세션 결과를 계속 보여줘야 한다.
      */
@@ -99,7 +107,13 @@ class ReviewSessionViewModel(
         viewModelScope.launch {
             runCatching { reviewRepository.getTodayReviews() }
                 .onSuccess { today ->
-                    _uiState.update { it.copy(nextDueDate = today.nextDueDate) }
+                    _uiState.update {
+                        it.copy(
+                            nextDueDate = today.nextDueDate,
+                            todayReviewed = today.todayReviewed,
+                            todayCorrect = today.todayCorrect,
+                        )
+                    }
                 }
         }
     }

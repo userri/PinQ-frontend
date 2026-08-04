@@ -80,7 +80,7 @@ fun ReviewDoneScreen(
         Spacer(Modifier.height(20.dp))
 
         Text(
-            text = if (nothingToReview) "오늘 물 줄 잔디가 없어요" else "잔디에 물 줬어요",
+            text = if (nothingToReview) "오늘 물 줄 잔디가 없어요" else "오늘 물주기 완료",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.ExtraBold,
             color = TextPrimary,
@@ -90,7 +90,12 @@ fun ReviewDoneScreen(
         if (!nothingToReview) {
             Spacer(Modifier.height(12.dp))
             Text(
-                text = "$correctCount / $reviewedCount 정답",
+                // 점수판이 아니라 진척으로 말한다. 오답 시 stage 리셋을 폐기했으므로
+                // "맞힌 수"와 "자란 수"는 같은 숫자인데, 후자만 의미를 담는다.
+                // 그리고 복습 정답 수는 잔디·스트릭·정답률 어디에도 반영되지 않는다 —
+                // 아무 데도 안 쓰이는 숫자를 성적처럼 보여주면 오해만 만든다.
+                // 틀린 개수를 분모에 세지 않는 이유: 틀려도 잃는 게 없다.
+                text = "${reviewedCount}개에 물 주고 ${correctCount}개가 자랐어요",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = Lime,

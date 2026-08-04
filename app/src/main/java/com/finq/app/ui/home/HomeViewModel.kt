@@ -78,6 +78,8 @@ class HomeViewModel(
                     maxStreak = stats?.maxStreak ?: 0,
                     weekLevels = grass?.let(::weekLevelsFrom) ?: List(7) { 0 },
                     reviewCount = reviews?.items?.size ?: 0,
+                    reviewedToday = reviews?.todayReviewed ?: 0,
+                    grownToday = reviews?.todayCorrect ?: 0,
                     nextReviewDate = reviews?.nextDueDate,
                     todayTotal = quizzes.size,
                     todayCorrect = quizzes.count { it.correct == true },

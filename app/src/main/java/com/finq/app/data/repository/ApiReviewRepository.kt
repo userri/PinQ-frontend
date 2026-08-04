@@ -27,6 +27,8 @@ class ApiReviewRepository(private val api: ReviewApi) : ReviewRepository {
 private fun ReviewsTodayApiResponse.toDomain(): ReviewsToday = ReviewsToday(
     items = reviews.map { it.toDomain() },
     nextDueDate = nextDueDate?.let(::parseDate),
+    todayReviewed = todayReviewed,
+    todayCorrect = todayCorrect,
 )
 
 private fun ReviewApiResponse.toDomain(): ReviewItem = ReviewItem(

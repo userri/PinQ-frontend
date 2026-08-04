@@ -501,6 +501,8 @@ fun FinQNavHost(
                     error = state.error,
                     nickname = state.nickname,
                     reviewCount = state.reviewCount,
+                    reviewedToday = state.reviewedToday,
+                    grownToday = state.grownToday,
                     nextReviewDate = state.nextReviewDate,
                     garden = state.garden,
                     todayTotal = state.todayTotal,
@@ -954,8 +956,11 @@ fun FinQNavHost(
                     LaunchedEffect(Unit) { vm.refreshNextDueDate() }
 
                     ReviewDoneScreen(
-                        reviewedCount = state.totalCount,
-                        correctCount = state.correctCount,
+                        // 세션이 아니라 오늘 단위 — 정원에서 먼저 푼 것까지 합쳐야
+                        // "오늘 물 줄 잔디 5개"라는 목표와 단위가 맞는다.
+                        reviewedCount = state.todayReviewed.takeIf { it > 0 } ?: state.totalCount,
+                        correctCount = state.todayReviewed.takeIf { it > 0 }
+                            ?.let { state.todayCorrect } ?: state.correctCount,
                         graduatedCount = state.graduatedCount,
                         nextDueDate = state.nextDueDate,
                         onGoHome = { navController.exitReview(from) },

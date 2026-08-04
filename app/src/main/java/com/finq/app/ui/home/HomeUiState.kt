@@ -22,6 +22,13 @@ data class HomeUiState(
     val weekLevels: List<Int> = emptyList(),
     /** 오늘 복습할 오답 수 ("오늘 물 줄 잔디 N개"). */
     val reviewCount: Int = 0,
+    /**
+     * 오늘 **복습으로** 물 준 개수 / 그중 자란 개수. 큐가 비었을 때 "없어요"와
+     * "다 했어요"를 가른다. 아래 [todayCorrect](데일리 퀴즈 정답 수)와 다른 축이라
+     * 이름을 구별한다 — 복습은 잔디·정답률에 반영되지 않는다.
+     */
+    val reviewedToday: Int = 0,
+    val grownToday: Int = 0,
     /** reviewCount == 0 일 때 안내할 다음 물 주기 날짜. */
     val nextReviewDate: LocalDate? = null,
     /** 오늘 세트 전체 문제 수 — 완료 상태 "N/M 정답" 표기용. */
