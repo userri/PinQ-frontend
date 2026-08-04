@@ -465,6 +465,10 @@ private fun StageBand(
  * 상태를 색과 모양 **둘 다**로 말한다 — 지나온 단계 Grass3, 현재 Lime, 남은 단계는
  * 흐린 Lime. 모양(새싹/풀/나무)까지 다르므로 색각 이상이나 저조도에서도 진행이 읽힌다.
  * 종전 도트는 색에만 의존했고 안 채운 도트는 Outline(네이비)이라 밴드 배경에 묻혔다.
+ *
+ * 26dp — 디테일 아이콘 하한(20dp, Material Symbols opsz 최소)보다 넉넉히 위다.
+ * 사다리 폭은 4×26 + 3×9 = 125dp 라, 좁은 기기에서도 문구 쪽 weight 가 먼저 줄면서
+ * 줄바꿈으로 흡수한다(사다리를 밀어내지 않는다).
  */
 @Composable
 private fun StageLadder(stage: Int, graduated: Boolean) {
@@ -486,7 +490,7 @@ private fun StageLadder(stage: Int, graduated: Boolean) {
                         else -> Lime.copy(alpha = 0.30f)
                     },
                 ),
-                modifier = Modifier.size(22.dp),
+                modifier = Modifier.size(26.dp),
             )
         }
     }

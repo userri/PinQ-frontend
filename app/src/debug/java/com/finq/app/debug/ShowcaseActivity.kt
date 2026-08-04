@@ -64,7 +64,7 @@ import java.time.LocalDate
  *
  *   adb shell am start -n com.finq.app/com.finq.app.debug.ShowcaseActivity --es screen home
  *
- * screen: home | home_pending | home_zero | home_done_water | home_done | quiz | answer | solo_quiz | solo_answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | mypage_trees_none | mypage_trees_zero | mypage_trees_few | mypage_trees_many | filters | wrongnote | history | detail_wrong | detail_correct | detail_graduated | detail_loading | detail_error | list_error | grass | review | review_graduated | review_next | garden | garden_empty | garden_growing_many | garden_trees_few | garden_trees_many | garden_canvas | concept | concept_sheet | concept_sheet_intro | onboarding | onboarding_grass | onboarding_tree | onboarding_replay | taste | home_feedback | review_grown | review_wrong | version_gate | notice
+ * screen: home | home_pending | home_zero | home_done_water | home_done | quiz | answer | solo_quiz | solo_answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | mypage_trees_none | mypage_trees_zero | mypage_trees_few | mypage_trees_many | filters | wrongnote | history | detail_wrong | detail_correct | detail_graduated | detail_loading | detail_error | list_error | grass | review | review_graduated | review_next | garden | garden_empty | garden_growing_many | garden_trees_few | garden_trees_many | garden_canvas | concept | concept_sheet | concept_sheet_intro | onboarding | onboarding_grass | onboarding_tree | onboarding_replay | taste | home_feedback | review_grown | review_grown_last | review_wrong | version_gate | notice
  * 릴리즈 빌드에는 포함되지 않는다(app/src/debug 소스셋).
  */
 class ShowcaseActivity : ComponentActivity() {
@@ -142,6 +142,23 @@ class ShowcaseActivity : ComponentActivity() {
                         categoryLabel = "풀 · 금리",
                         nextReviewText = "다음 물주기 8월 10일",
                         reviewStage = 1,
+                        nextLabel = "다음 복습",
+                    )
+
+                    // 마지막 단계(stage 2) — 문구가 가장 길어 사다리와 폭을 다투는 케이스.
+                    "review_grown_last" -> QuizAnswerScreen(
+                        quiz = sampleQuiz,
+                        answer = AnswerResult(
+                            quizId = 1L, selectedOptionId = 1L, isCorrect = true,
+                            correctOptionId = 1L,
+                            explanation = "기준금리가 오르면 시중 금리가 따라 올라 예금 금리도 상승합니다.",
+                            keyword = "기준금리", relatedArticle = RelatedArticle.EMPTY,
+                        ),
+                        isLast = false, quizIndex = 0, totalCount = 3,
+                        onNext = {}, onBack = {}, onArticleClick = {},
+                        categoryLabel = "나무 직전 · 금리",
+                        nextReviewText = "다음 물주기 8월 17일",
+                        reviewStage = 2,
                         nextLabel = "다음 복습",
                     )
 
