@@ -124,7 +124,7 @@ class ShowcaseActivity : ComponentActivity() {
                         onNext = {}, onBack = {}, onArticleClick = {},
                         categoryLabel = "나무 직전 · 금리",
                         graduated = true,
-                        graduatedMessage = "나무가 됐어요 — 당신의 5번째 나무",
+                        graduatedMessage = "당신의 5번째 나무",
                         nextLabel = "복습 완료",
                     )
 

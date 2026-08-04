@@ -872,8 +872,9 @@ fun FinQNavHost(
                             },
                             categoryLabel = "${item.stage.label} · ${item.categoryLabel}",
                             graduated = answer.graduated,
+                            // 제목("나무가 됐어요")은 배너가 고정으로 갖는다 — 여기선 부제만 준다.
                             graduatedMessage = if (answer.graduated && answer.totalGraduatedTrees != null)
-                                "나무가 됐어요 — 당신의 ${answer.totalGraduatedTrees}번째 나무"
+                                "당신의 ${answer.totalGraduatedTrees}번째 나무"
                             else null,
                             // 누적 통계(물 N번 · 흡수 N번)는 뺀다. 진척은 stage 게이지가 전담하고,
                             // waterCount 는 시도 누계라 진척이 아니다 — 나란히 두면 어느 쪽이

@@ -104,7 +104,7 @@ fun QuizAnswerScreen(
     categoryLabel: String? = null,
     /** 복습에서 이 문제를 완전히 익혔을 때 축하 배너를 띄운다. */
     graduated: Boolean = false,
-    /** 졸업 배너 문구 override. null 이면 기본 "이 문제를 완전히 익혔어요! 나무가 됐어요". */
+    /** 졸업 배너 **부제**. 제목("나무가 됐어요")은 배너가 고정으로 갖는다. */
     graduatedMessage: String? = null,
     /** 졸업하지 않은 복습에서 "다음 물 주기: M월 D일" 안내. graduated 면 무시. */
     nextReviewText: String? = null,
@@ -254,6 +254,7 @@ fun QuizAnswerBody(
     modifier: Modifier = Modifier,
     /** 복습에서 이 문제를 완전히 익혔을 때 축하 배너. */
     graduated: Boolean = false,
+    /** 졸업 배너 부제(예: "당신의 5번째 나무"). */
     graduatedMessage: String? = null,
     /** 졸업하지 않은 복습의 "다음 물 주기" 안내. [graduated] 면 무시. */
     nextReviewText: String? = null,
@@ -374,30 +375,22 @@ private fun ProgressDotsHeader(quizIndex: Int, totalCount: Int) {
 // 정답/오답 칩 — 다크 배경 위에 채움형
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** 복습 졸업 — 이 문제를 완전히 익혔을 때. */
+/**
+ * 복습 졸업 — 마지막 물주기를 마친 순간.
+ *
+ * 성장 밴드([ReviewGrowthBand])와 **같은 형태**를 쓴다. 종전엔 졸업만 아이콘 하나짜리
+ * 배너로 형태가 바뀌어서, 사다리가 네 칸을 약속해놓고 마지막 칸이 채워지는 걸
+ * 사용자가 끝내 못 봤다. 같은 자리에서 끝 칸이 라임으로 켜져야 "세 번 물을 주면
+ * 나무"가 눈으로 완결된다.
+ */
 @Composable
 private fun GraduatedBanner(message: String? = null) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(Grass1)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Image(
-            painter = painterResource(R.drawable.ic_stage_tree),
-            contentDescription = null,
-            modifier = Modifier.size(22.dp),
-        )
-        Spacer(Modifier.size(10.dp))
-        Text(
-            text = message ?: "이 문제를 완전히 익혔어요! 나무가 됐어요",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = TextPrimary,
-        )
-    }
+    StageBand(
+        title = "나무가 됐어요",
+        subtitle = message,
+        stage = 0,
+        graduated = true,
+    )
 }
 
 /**
@@ -410,22 +403,34 @@ private fun GraduatedBanner(message: String? = null) {
  *
  * **3개가 아니라 4개인 이유**: 실제 사다리가 넷이다. 오답 등록이 새싹(stage 0)이고
  * 맞힐 때마다 풀(1) → 나무 직전(2) → 나무(졸업)로 간다 — [ReviewStageTimeline] 이
- * 그리는 것과 같은 순서다. 셋만 그리면 "나무 직전"이 사라져 개념 시트·타임라인·복습
- * 헤더가 쓰는 이름 체계와 어긋난다.
- *
- * 상태를 색과 모양 **둘 다**로 말한다 — 지나온 단계 Grass3, 현재 Lime, 남은 단계는
- * 흐린 Lime. 모양(새싹/풀/나무)까지 다르므로 색각 이상이나 저조도에서도 진행이 읽힌다.
- * 종전 도트는 색에만 의존했고, 안 채운 도트는 Outline(네이비)이라 어두운 밴드 배경에
- * 아예 묻혔다.
- *
- * 졸업 배너와 같은 자리·같은 밴드 형태를 쓴다("이 자리의 밴드 = 이번 결과").
- * 오답일 땐 호출되지 않는다 — 진척이 오르지 않은 순간에 사다리를 보여줄 이유가 없다.
+ * 그리는 것과 같은 순서이고, 아이콘도 같은 자산을 쓴다.
  */
 @Composable
 private fun ReviewGrowthBand(stage: Int, nextReviewText: String?) {
-    val current = ReviewStage.of(stage)
-    // 마지막 칸(나무)은 졸업이라 ReviewStage 에 없다 — 사다리의 끝점으로만 그린다.
-    val ladder = ReviewStage.entries.map { it.iconRes } + R.drawable.ic_stage_tree
+    StageBand(
+        title = "${ReviewStage.of(stage).label}까지 자랐어요",
+        subtitle = nextReviewText,
+        stage = stage,
+        graduated = false,
+    )
+}
+
+/**
+ * 복습 결과 밴드 — 문구는 왼쪽, 진행 사다리는 오른쪽 끝.
+ *
+ * 사다리를 문구 **앞**에 두면 문구 시작점이 아이콘 개수에 따라 정해져 화면의 어떤
+ * 기준선에도 안 붙는다(문제·선지·해설은 전부 왼쪽 패딩에서 시작한다). 진행 표시를
+ * 뒤로 보내면 문구가 그 기준선에 붙고, 사다리가 몇 칸이 되든 레이아웃이 안 흔들린다.
+ *
+ * 문구 쪽에 weight 를 줘서, 큰 글꼴에서는 사다리를 밀어내는 대신 문구가 줄바꿈된다.
+ */
+@Composable
+private fun StageBand(
+    title: String,
+    subtitle: String?,
+    stage: Int,
+    graduated: Boolean,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -434,41 +439,55 @@ private fun ReviewGrowthBand(stage: Int, nextReviewText: String?) {
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            ladder.forEachIndexed { index, iconRes ->
-                if (index > 0) Spacer(Modifier.size(4.dp))
-                Image(
-                    painter = painterResource(iconRes),
-                    contentDescription = null,
-                    colorFilter = ColorFilter.tint(
-                        when {
-                            index < stage -> Grass3   // 지나온 단계
-                            index == stage -> Lime    // 지금 여기
-                            // 아직 남은 단계. 나무만 알파를 더 낮추는 건 광학 보정이다 —
-                            // 면이 꽉 찬 형태라 같은 알파에서 가는 획(나무 직전)보다
-                            // 훨씬 무겁게 보이고, 그러면 "남은 단계" 둘의 무게가 어긋난다.
-                            else -> Lime.copy(alpha = if (iconRes == R.drawable.ic_stage_tree) 0.18f else 0.28f)
-                        },
-                    ),
-                    modifier = Modifier.size(24.dp),
-                )
-            }
-        }
-        Spacer(Modifier.size(12.dp))
-        Column {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "${current.label}까지 자랐어요",
+                text = title,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = Lime,
             )
-            if (nextReviewText != null) {
+            if (subtitle != null) {
                 Text(
-                    text = nextReviewText,
+                    text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary,
                 )
             }
+        }
+        Spacer(Modifier.size(10.dp))
+        StageLadder(stage = stage, graduated = graduated)
+    }
+}
+
+/**
+ * 단계 사다리 — 새싹 · 풀 · 나무 직전 · 나무. [ReviewStageTimeline] 과 같은 자산·같은 순서.
+ *
+ * 상태를 색과 모양 **둘 다**로 말한다 — 지나온 단계 Grass3, 현재 Lime, 남은 단계는
+ * 흐린 Lime. 모양(새싹/풀/나무)까지 다르므로 색각 이상이나 저조도에서도 진행이 읽힌다.
+ * 종전 도트는 색에만 의존했고 안 채운 도트는 Outline(네이비)이라 밴드 배경에 묻혔다.
+ */
+@Composable
+private fun StageLadder(stage: Int, graduated: Boolean) {
+    val ladder = ReviewStage.entries.map { it.iconRes } + R.drawable.ic_stage_tree
+    // 졸업이면 끝 칸(나무)이 현재 위치다 — 나머지는 전부 지나온 단계.
+    val currentIndex = if (graduated) ladder.lastIndex else stage
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(9.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        ladder.forEachIndexed { index, iconRes ->
+            Image(
+                painter = painterResource(iconRes),
+                contentDescription = null,
+                colorFilter = ColorFilter.tint(
+                    when {
+                        index < currentIndex -> Grass3
+                        index == currentIndex -> Lime
+                        else -> Lime.copy(alpha = 0.30f)
+                    },
+                ),
+                modifier = Modifier.size(22.dp),
+            )
         }
     }
 }
