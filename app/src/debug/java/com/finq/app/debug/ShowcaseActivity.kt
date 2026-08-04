@@ -64,7 +64,7 @@ import java.time.LocalDate
  *
  *   adb shell am start -n com.finq.app/com.finq.app.debug.ShowcaseActivity --es screen home
  *
- * screen: home | home_pending | home_zero | home_done_water | home_done | quiz | answer | solo_quiz | solo_answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | mypage_trees_none | mypage_trees_zero | mypage_trees_few | mypage_trees_many | filters | wrongnote | history | detail_wrong | detail_correct | detail_graduated | detail_loading | detail_error | list_error | grass | review | review_graduated | review_next | garden | garden_empty | garden_growing_many | garden_trees_few | garden_trees_many | garden_canvas | concept | concept_sheet | concept_sheet_intro | onboarding | onboarding_grass | onboarding_tree | onboarding_replay | taste | home_feedback | review_grown | review_grown_last | review_wrong | version_gate | notice
+ * screen: home | home_pending | home_zero | home_done_water | home_done | quiz | answer | solo_quiz | solo_answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | mypage_trees_none | mypage_trees_zero | mypage_trees_few | mypage_trees_many | filters | wrongnote | history | detail_wrong | detail_correct | detail_graduated | detail_loading | detail_error | list_error | grass | review | review_graduated | review_next | garden | garden_empty | garden_growing_many | garden_trees_few | garden_trees_many | garden_canvas | concept | concept_sheet | concept_sheet_intro | onboarding | onboarding_grass | onboarding_tree | onboarding_replay | taste | home_feedback | review_grown | review_grown_last | review_wrong | wrongnote_store | version_gate | notice
  * 릴리즈 빌드에는 포함되지 않는다(app/src/debug 소스셋).
  */
 class ShowcaseActivity : ComponentActivity() {
@@ -502,6 +502,59 @@ class ShowcaseActivity : ComponentActivity() {
 
                     // 목록 밀도 — 한 화면에 6개 이상 들어와야 한다.
                     // 카드가 아니라 구분선 행이고, 진척(물 N/3·단계·예정일)은 나오지 않는다.
+                    // 스토어 스크린샷 촬영용 — 방어 파싱 샘플("기타")과 날짜 없는 항목을 뺀
+                    // 깨끗한 목록. "wrongnote" 케이스는 그 두 가지를 검증해야 하므로 그대로 둔다.
+                    "wrongnote_store" -> com.finq.app.ui.library.LibraryListScreen(
+                        title = "오답노트",
+                        subtitle = "7문제",
+                        items = listOf(
+                            sampleAttempt(correct = false).copy(
+                                review = ReviewStatus(0, 3, 0, false, LocalDate.now().toString()),
+                            ),
+                            sampleAttempt(correct = false).copy(
+                                quizId = 11L,
+                                question = "정부가 재개발·재건축 이주비 대출 한도를 신축기준으로 바꾸면 조합원 부담은 어떻게 달라지는가?",
+                                review = ReviewStatus(1, 1, 1, false, LocalDate.now().toString()),
+                            ),
+                            sampleAttempt(correct = false).copy(
+                                quizId = 12L,
+                                question = "환율이 오르면 수입 물가는 어떻게 되는가?",
+                                review = ReviewStatus(2, 7, 4, true, null),
+                            ),
+                            sampleAttempt(correct = false).copy(
+                                quizId = 13L,
+                                category = Category.fromServer("INFLATION"),
+                                question = "소비자물가지수(CPI)가 상승하면 실질 구매력은 어떻게 되는가?",
+                                review = ReviewStatus(2, 14, 5, false, LocalDate.now().toString()),
+                            ),
+                            sampleAttempt(correct = false).copy(
+                                quizId = 16L,
+                                question = "기준금리 인하기에 채권 가격은 일반적으로 어떻게 움직이는가?",
+                                review = ReviewStatus(1, 7, 2, false, LocalDate.now().toString()),
+                            ),
+                            sampleAttempt(correct = false).copy(
+                                quizId = 17L,
+                                question = "총부채원리금상환비율(DSR) 규제가 강화되면 대출 한도는?",
+                                review = ReviewStatus(0, 3, 1, false, LocalDate.now().toString()),
+                            ),
+                            sampleAttempt(correct = false).copy(
+                                quizId = 18L,
+                                category = Category.fromServer("EXCHANGE_RATE"),
+                                question = "원·달러 환율이 오를 때 수출 기업의 실적은 일반적으로?",
+                                review = ReviewStatus(2, 14, 4, false, LocalDate.now().toString()),
+                            ),
+                        ),
+                        isLoading = false,
+                        error = null,
+                        emptyMessage = "",
+                        emptyIconRes = com.finq.app.R.drawable.ic_trophy,
+                        onRetry = {},
+                        onToggleBookmark = {},
+                        onOpenDetail = {},
+                        cardEmphasis = AttemptCardEmphasis.CATEGORY,
+                        showTitle = false,
+                    )
+
                     // 졸업 항목만 나무 아이콘으로 구분된다.
                     "wrongnote" -> com.finq.app.ui.library.LibraryListScreen(
                         title = "오답노트",

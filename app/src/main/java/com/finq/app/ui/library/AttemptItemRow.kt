@@ -27,7 +27,9 @@ import com.finq.app.R
 import com.finq.app.data.model.AttemptItem
 import com.finq.app.data.model.Category
 import com.finq.app.data.model.QuizOption
+import androidx.compose.ui.graphics.ColorFilter
 import com.finq.app.data.model.ReviewStatus
+import com.finq.app.data.repository.ReviewStage
 import com.finq.app.ui.theme.Error
 import com.finq.app.ui.theme.FinQTheme
 import com.finq.app.ui.theme.Lime
@@ -57,13 +59,27 @@ enum class AttemptCardEmphasis {
 // 목록은 색인이지 콘텐츠 컨테이너가 아니다. 카드(면 + 테두리 + 그림자)를 씌우면
 // 한 화면에 한두 개밖에 못 들어와 훑을 수가 없다 → 면 없이 구분선으로만 가른다.
 //
-// 여기 들어오는 것: 무엇에 관한 문제인가(카테고리 또는 정답/오답) · 문제 · 언제 · 북마크.
-// 여기 들어오지 않는 것: 진척(단계·물 준 횟수·예정일). 얼마나 자랐는지는 정원이 보여준다.
-// 졸업만 나무 아이콘 하나로 구분한다 — "끝난 것"은 훑을 때 걸러야 하는 정보라서.
+// 여기 들어오는 것: 단계 아이콘 · 무엇에 관한 문제인가 · 언제 · 문제 · 북마크 · 셰브론.
+//
+// 오답노트에서 단계 아이콘을 선두에 세우는 이유는 둘이다.
+//  (1) 한 화면에 같은 카테고리가 연속으로 오면(부동산 4연속) 글자만으로는 행이 안
+//      갈린다. 단계는 행마다 값이 달라 실제로 변별되는 유일한 축이다. "오답" 뱃지는
+//      오답노트에선 전부 같은 값이라 정보량이 0이다.
+//  (2) 왼쪽에 아이콘 열이 생기면 목록이 "글자 벽"에서 "물건들의 목록"으로 읽힌다.
+// 단계 이름을 글자로 또 쓰지는 않는다 — 아이콘이 이미 말한 걸 되풀이하면 아이콘이
+// 장식이 된다(이 앱의 아이콘 규칙). 그래서 날짜를 지울 이유도 없어진다.
+//
+// 셰브론은 **주 동작에 붙이는 표시**다. 종전엔 행에서 유일하게 눌려 보이는 게 별
+// (북마크)이었는데 그건 부차 동작이고, 정작 주 동작인 "탭해서 상세 열기"는 아무
+// 표시가 없었다 — "클릭할 수 있어 보이지 않는다"는 실사용 보고의 출처다.
+// 마이페이지 NavRow 가 이미 쓰는 글리프라 새 어휘가 아니다.
+//
+// 여기 들어오지 않는 것: 물 준 횟수·예정일 같은 수치. 얼마나 자랐는지의 세부는
+// 정원이 보여준다. 이 목록엔 "지금 어느 단계"만 있으면 된다.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** 졸업 나무 아이콘 크기 — 20dp 미만은 획이 뭉개져 형태를 못 읽는다(Material 광학 최소). */
-private val GraduatedIconSize = 20.dp
+/** 단계 아이콘 크기 — 20dp 미만은 획이 뭉개져 형태를 못 읽는다(Material 광학 최소). */
+private val StageIconSize = 22.dp
 
 /**
  * 오답노트 / 북마크 / 전체이력 목록의 항목 한 줄.
@@ -86,6 +102,11 @@ fun AttemptItemRow(
     val dateStr = remember(item.solvedAtIso) { formatSolvedDate(item.solvedAtIso) }
     val graduated = item.review?.graduated == true
 
+    // 단계 아이콘은 오답노트(카테고리 강조) 화면에서만 세운다. 북마크·전체이력은
+    // 정답/오답이 실제 변별축이고 미풀이 항목엔 단계 자체가 없다.
+    val showsStage = emphasis == AttemptCardEmphasis.CATEGORY
+    val stage = if (showsStage) item.review?.stageIcon() else null
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -93,19 +114,36 @@ fun AttemptItemRow(
                 if (item.unsolved && onStartQuiz != null) onStartQuiz() else onOpenDetail()
             }
             .padding(start = 4.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
-        verticalAlignment = Alignment.Top,
+        // 아이콘·셰브론은 행 높이의 세로 가운데에 온다. 문제가 1줄이든 2줄이든
+        // 좌우 끝의 두 글리프가 같은 눈높이에 있어야 목록에 가로 기준선이 선다.
+        verticalAlignment = Alignment.CenterVertically,
     ) {
+        // 아이콘 자리는 이 화면에서 **항상** 잡아 둔다. review 가 없는 항목만 그림을
+        // 비우고 폭은 남긴다 — 있다 없다 하면 행마다 텍스트 시작점이 달라져
+        // 목록 왼쪽에 기준선이 서지 않는다(들쭉날쭉하게 읽힘).
+        if (showsStage) {
+            if (stage != null) {
+                Image(
+                    painter = painterResource(stage.iconRes),
+                    contentDescription = stage.label,
+                    modifier = Modifier.size(StageIconSize),
+                )
+            } else {
+                Spacer(Modifier.size(StageIconSize))
+            }
+            Spacer(Modifier.width(10.dp))
+        }
+
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                if (graduated) {
-                    Image(
-                        painter = painterResource(R.drawable.ic_stage_tree),
-                        contentDescription = "나무 완성",
-                        modifier = Modifier.size(GraduatedIconSize),
-                    )
-                    Spacer(Modifier.width(6.dp))
-                }
                 LeadLabel(item = item, emphasis = emphasis)
+                if (dateStr != null) {
+                    Text(
+                        text = "  ·  $dateStr",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TextMuted,
+                    )
+                }
             }
             Spacer(Modifier.height(4.dp))
             Text(
@@ -118,16 +156,7 @@ fun AttemptItemRow(
             )
         }
 
-        Spacer(Modifier.width(8.dp))
-
-        if (dateStr != null) {
-            Text(
-                text = dateStr,
-                modifier = Modifier.padding(top = 2.dp),
-                style = MaterialTheme.typography.labelSmall,
-                color = TextMuted,
-            )
-        }
+        Spacer(Modifier.width(4.dp))
 
         // 북마크 버튼 — 행 클릭과 분리
         IconButton(
@@ -143,8 +172,26 @@ fun AttemptItemRow(
                 modifier = Modifier.size(20.dp),
             )
         }
+
+        // 주 동작 표시 — 이 행을 누르면 상세로 들어간다.
+        Image(
+            painter = painterResource(R.drawable.ic_chevron_right),
+            contentDescription = null,
+            colorFilter = ColorFilter.tint(TextMuted),
+            modifier = Modifier.size(16.dp),
+        )
     }
 }
+
+/**
+ * 복습 상태 → 목록에 세울 단계. 졸업이면 나무, 아니면 서버 stage 그대로.
+ * 나무는 [ReviewStage] 에 없는 끝점이라 라벨·아이콘을 여기서 짝지어 준다.
+ */
+private fun ReviewStatus.stageIcon(): StageGlyph =
+    if (graduated) StageGlyph(R.drawable.ic_stage_tree, "나무 완성")
+    else ReviewStage.of(stage).let { StageGlyph(it.iconRes, it.label) }
+
+private data class StageGlyph(val iconRes: Int, val label: String)
 
 /**
  * 행 첫 줄의 라벨 — 면 없는 글자 한 줄.
