@@ -398,25 +398,11 @@ private fun NightSceneBackground(
             ),
         )
 
-        // ⑥ 풀결 텍스처 — 능선 근처 지면 커버(화면 하단까지 내려가 잘려 보이지 않게).
-        run {
-            val n = 22
-            val band = size.height - hillTop
-            repeat(n) { i ->
-                val xf = ((i * 37 % n) + 0.5f) / n
-                val yf = (i * 17 % n).toFloat() / n
-                val x = size.width * xf
-                val y = hillTop + hillOffsetAt(xf) * size.height +
-                    band * 0.10f + yf * band * 0.32f
-                val h = size.height * 0.012f
-                drawLine(
-                    color = Grass3.copy(alpha = 0.25f),
-                    start = Offset(x, y),
-                    end = Offset(x, y - h),
-                    strokeWidth = size.width / 340f,
-                )
-            }
-        }
+        // 풀결 텍스처는 두지 않는다. 홈의 잔디밭은 카드 아래·하단 탭 위의 얕은 띠라
+        // 텍스처가 들어갈 자리가 아니다 — 22개 짧은 선을 흩어도 질감이 아니라 빗방울이나
+        // 스크래치로 읽혔고, 격자로 배치했을 땐 평행한 대각선("\\\")이 그어졌다.
+        // 같은 텍스처를 화면 전체를 쓰는 정원(GardenNightScene)에는 남겨 둔다 — 거기선
+        // 띠가 충분히 넓어 실제로 질감이 된다.
 
         // ⑦ 앞줄 나무 — 커스텀 단계 아이콘, 유기적 흩뿌림(요일과 무관).
         // 깊이 범위를 능선 근처로 제한해 화면 하단 클리핑(밑동 잘림)을 막는다.
