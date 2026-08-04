@@ -201,10 +201,11 @@ fun GardenScreen(
                 )
 
                 // due 안내 — 오늘 물 줄 수 있는 잔디가 있으면 복습 세션 진입 한 줄.
-                val today = remember { LocalDate.now() }
-                val dueCount = remember(garden) {
-                    garden.growing.count { it.dueDate != null && !it.dueDate!!.isAfter(today) }
-                }
+                //
+                // 개수는 서버의 todayQueueSize 만 쓴다. 복습 큐는 하루 캡이 있어서
+                // growing 의 dueDate 를 클라가 세면 캡에 잘린 백로그까지 세고,
+                // 그러면 여기 적힌 수와 세션에 실제로 들어오는 수가 어긋난다.
+                val dueCount = garden.todayQueueSize
                 if (dueCount > 0) {
                     Spacer(Modifier.height(12.dp))
                     Box(modifier = Modifier.padding(horizontal = 20.dp)) {
@@ -327,6 +328,7 @@ private fun GardenScreenPreview() {
                         graduatedAtIso = "2026-07-19T14:32:00",
                     ),
                 ),
+                todayQueueSize = 1,
                 graduatedTrees = 12,
             ),
             isLoading = false,

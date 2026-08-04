@@ -55,6 +55,7 @@ import com.finq.app.data.repository.GardenItem
 import com.finq.app.data.repository.ReviewGarden
 import com.finq.app.data.repository.ReviewStage
 import com.finq.app.ui.components.NeonCtaPill
+import com.finq.app.ui.components.FeedbackBanner
 import com.finq.app.ui.components.WaterGrassCard
 import com.finq.app.ui.theme.BgBase
 import com.finq.app.ui.theme.BgElevated
@@ -134,6 +135,10 @@ fun HomeScreen(
     /** 오늘 세트 전체/정답 수 — 퀴즈 완료 상태 "N/M 정답" 표기용. */
     todayTotal: Int = 0,
     todayCorrect: Int = 0,
+    /** 1회성 피드백 배너를 띄울 때인가(첫 실행 +3일, 아직 안 닫음). */
+    showFeedbackBanner: Boolean = false,
+    onOpenFeedback: () -> Unit = {},
+    onDismissFeedback: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val treeCount = garden?.graduatedTrees ?: 0
@@ -228,6 +233,18 @@ fun HomeScreen(
                 weekLevels = weekLevels,
                 todayDow = todayDow,
             )
+
+            // ── 1회성 피드백 배너 ────────────────────────────────────
+            // 오늘 할 일(퀴즈·복습 CTA)과 이번 주 기록 **아래**에 둔다.
+            // 부탁이 먼저 눈에 들어오면 앱이 나에게 뭘 해주는 곳이 아니라
+            // 나한테 뭘 시키는 곳이 된다.
+            if (showFeedbackBanner) {
+                Spacer(Modifier.height(12.dp))
+                FeedbackBanner(
+                    onOpenForm = onOpenFeedback,
+                    onDismiss = onDismissFeedback,
+                )
+            }
 
             // 구성된 여백 — 카드와 언덕 사이 하늘. 콘텐츠로 채우지 않는다.
             Spacer(Modifier.weight(1f))

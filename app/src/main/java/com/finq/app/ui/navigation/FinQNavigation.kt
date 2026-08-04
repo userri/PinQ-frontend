@@ -41,6 +41,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -101,10 +102,18 @@ import com.finq.app.ui.screen.QuizScreen
 import com.finq.app.ui.screen.ResultReportScreen
 import com.finq.app.ui.screen.ReviewDoneScreen
 import com.finq.app.ui.screen.SolvedQuizReviewScreen
+import com.finq.app.ui.screen.TasteQuizScreen
 import com.finq.app.data.local.SessionManager
 import com.finq.app.data.repository.AuthRepository
 import com.finq.app.ui.login.LoginEvent
 import com.finq.app.ui.login.LoginViewModel
+import com.finq.app.data.local.hasSeenTasteQuiz
+import com.finq.app.data.local.isFeedbackHintShown
+import com.finq.app.data.local.markFeedbackBannerDismissed
+import com.finq.app.data.local.markFeedbackHintShown
+import com.finq.app.data.local.markTasteQuizSeen
+import com.finq.app.data.local.shouldShowFeedbackBanner
+import com.finq.app.ui.components.openFeedbackForm
 import com.finq.app.ui.onboarding.OnboardingScreen
 import com.finq.app.ui.onboarding.hasSeenOnboarding
 import com.finq.app.ui.onboarding.markOnboardingSeen
@@ -113,6 +122,7 @@ import com.finq.app.ui.theme.BgBase
 import com.finq.app.ui.theme.Lime
 import com.finq.app.ui.theme.Outline
 import com.finq.app.ui.theme.TextMuted
+import kotlinx.coroutines.launch
 
 /**
  * FinQ 네비게이션 그래프.
@@ -382,13 +392,33 @@ fun FinQNavHost(
                     }
                 }
 
-                LoginScreen(
-                    isLoading = state.isLoading,
-                    error = state.error,
-                    onKakaoLogin = { loginVm.loginWithKakao(context) },
-                    onGoogleLogin = { loginVm.loginWithGoogle(context) },
-                    onClearError = loginVm::clearError,
-                )
+                // 맛보기 문제를 아직 안 본 사람에겐 로그인 대신 그 화면을 먼저 보여준다.
+                // 로그인 버튼은 맛보기 화면 안(결과 아래)에 있으므로 화면 전환이 없다 —
+                // 계정을 내주기 전에 앱이 뭘 주는지 한 번 겪게 하는 게 목적이다.
+                var tasteDone by rememberSaveable { mutableStateOf(hasSeenTasteQuiz(context)) }
+                if (!tasteDone) {
+                    TasteQuizScreen(
+                        isLoading = state.isLoading,
+                        onKakaoLogin = {
+                            markTasteQuizSeen(context)
+                            tasteDone = true
+                            loginVm.loginWithKakao(context)
+                        },
+                        onGoogleLogin = {
+                            markTasteQuizSeen(context)
+                            tasteDone = true
+                            loginVm.loginWithGoogle(context)
+                        },
+                    )
+                } else {
+                    LoginScreen(
+                        isLoading = state.isLoading,
+                        error = state.error,
+                        onKakaoLogin = { loginVm.loginWithKakao(context) },
+                        onGoogleLogin = { loginVm.loginWithGoogle(context) },
+                        onClearError = loginVm::clearError,
+                    )
+                }
             }
 
             // ── 첫 실행 온보딩 ─────────────────────────────────────────
@@ -431,6 +461,21 @@ fun FinQNavHost(
                         homeVm.loadQuizInfo()
                     }
                 }
+                // 피드백 배너 — 로컬 플래그만 보므로 ViewModel 을 거치지 않는다.
+                // 닫거나 폼으로 넘어가면 영구 해제되고, 그 순간 딱 한 번
+                // "창구는 마이페이지에 있다"를 알려 준다.
+                var showFeedback by remember { mutableStateOf(shouldShowFeedbackBanner(context)) }
+                val feedbackScope = rememberCoroutineScope()
+                val retireFeedbackBanner: () -> Unit = {
+                    markFeedbackBannerDismissed(context)
+                    showFeedback = false
+                    if (!isFeedbackHintShown(context)) {
+                        markFeedbackHintShown(context)
+                        feedbackScope.launch {
+                            snackbarHostState.showSnackbar("의견은 마이페이지에서 언제든 보낼 수 있어요")
+                        }
+                    }
+                }
                 HomeScreen(
                     quizCount = state.quizCount,
                     streak = state.streak,
@@ -453,6 +498,12 @@ fun FinQNavHost(
                         navController.resumeOrStartSession()
                     },
                     onRetry = homeVm::loadQuizInfo,
+                    showFeedbackBanner = showFeedback,
+                    onOpenFeedback = {
+                        openFeedbackForm(context)
+                        retireFeedbackBanner()
+                    },
+                    onDismissFeedback = retireFeedbackBanner,
                     onMyPage = {
                         navController.navigate(FinQRoutes.MY_PAGE) {
                             popUpTo(FinQRoutes.HOME) { saveState = true }
@@ -553,6 +604,7 @@ fun FinQNavHost(
                     onOpenOnboarding = {
                         navController.navigate(FinQRoutes.onboarding(replay = true))
                     },
+                    onOpenFeedback = { openFeedbackForm(context) },
                     isLoading = state.isLoading,
                     error = state.error,
                     onRetry = myPageVm::loadStats,
@@ -770,8 +822,10 @@ fun FinQNavHost(
                                 onClose = { navController.exitReviewToHome() },
                                 isSubmitting = state.isSubmitting,
                                 categoryLabel = "${item.stage.label} · ${item.categoryLabel}",
+                                // 누적 통계(물 N번 · 흡수 N번)는 빼둔다 — 진척은 stage 가 말하고
+                                // waterCount 는 시도 누계라 진척이 아니다. 결과 화면의 성장 게이지와
+                                // 같은 원칙(QuizAnswerBody.ReviewGrowthBand).
                                 headerNote = buildString {
-                                    if (item.waterCount > 0) append("물 ${item.waterCount}번 · 흡수 ${item.absorbedCount}번 · ")
                                     if (item.stage.isFinalStage) append("한 번 더 맞히면 나무가 돼요 · ")
                                     append("복습은 기록에 영향 없어요")
                                 },
@@ -813,11 +867,15 @@ fun FinQNavHost(
                             categoryLabel = "${item.stage.label} · ${item.categoryLabel}",
                             graduated = answer.graduated,
                             graduatedMessage = if (answer.graduated && answer.totalGraduatedTrees != null)
-                                "물 ${answer.waterCount}번 준 나무가 완성됐어요 — 당신의 ${answer.totalGraduatedTrees}번째 나무"
+                                "나무가 됐어요 — 당신의 ${answer.totalGraduatedTrees}번째 나무"
                             else null,
+                            // 누적 통계(물 N번 · 흡수 N번)는 뺀다. 진척은 stage 게이지가 전담하고,
+                            // waterCount 는 시도 누계라 진척이 아니다 — 나란히 두면 어느 쪽이
+                            // "얼마나 자랐나"인지 흐려진다. 여기 남길 건 다음 약속뿐.
                             nextReviewText = answer.nextDueDate?.let {
-                                "다음 물 주기: ${it.format(reviewDueDateFormat)} · 물 ${answer.waterCount}번 · 흡수 ${answer.absorbedCount}번"
+                                "다음 물주기 ${it.format(reviewDueDateFormat)}"
                             },
+                            reviewStage = answer.stage,
                             nextLabel = if (state.isLastItem) "복습 완료" else "다음 복습",
                         )
                     }

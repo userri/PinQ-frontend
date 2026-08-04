@@ -35,7 +35,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -53,6 +57,9 @@ import com.finq.app.ui.theme.BgBase
 import com.finq.app.ui.theme.BgElevated
 import com.finq.app.ui.theme.BgSubtle
 import com.finq.app.ui.theme.BgSurface
+import com.finq.app.ui.theme.Error
+import com.finq.app.ui.theme.ErrorFaint
+import androidx.compose.ui.graphics.ColorFilter
 import com.finq.app.ui.theme.Grass1
 import com.finq.app.ui.theme.Lime
 import com.finq.app.ui.theme.OnLime
@@ -98,6 +105,8 @@ fun QuizAnswerScreen(
     graduatedMessage: String? = null,
     /** 졸업하지 않은 복습에서 "다음 물 주기: M월 D일" 안내. graduated 면 무시. */
     nextReviewText: String? = null,
+    /** 채점 후 복습 단계(0~2). 복습이 아니면 null — [QuizAnswerBody] 참조. */
+    reviewStage: Int? = null,
     /** 하단 CTA 라벨 override (예: "다음 복습"). */
     nextLabel: String? = null,
 ) {
@@ -193,6 +202,7 @@ fun QuizAnswerScreen(
                 graduated = graduated,
                 graduatedMessage = graduatedMessage,
                 nextReviewText = nextReviewText,
+                reviewStage = reviewStage,
             )
 
             // ── 배너 광고 (스크롤 콘텐츠 맨 아래 — CTA 를 가리지 않는 자리) ──
@@ -244,25 +254,40 @@ fun QuizAnswerBody(
     graduatedMessage: String? = null,
     /** 졸업하지 않은 복습의 "다음 물 주기" 안내. [graduated] 면 무시. */
     nextReviewText: String? = null,
+    /**
+     * 채점 **후** 복습 단계(0~2). 복습이 아니면 null.
+     * 맞히면 오르고 틀리면 0으로 리셋되는 값이라 "얼마나 자랐나"의 유일한 진실이다
+     * (waterCount 는 누적 시도라 진척이 아니다).
+     */
+    reviewStage: Int? = null,
 ) {
     Column(modifier = modifier) {
-        // ── 정답/오답 줄 ─────────────────────────────────────
-        ResultChip(isCorrect = answer.isCorrect)
+        // ── 복습 보상: 졸업(나무) / 성장 게이지 / 다음 물 주기 (헤더 자리) ──
+        //
+        // 오답일 땐 게이지를 아예 그리지 않는다. 틀리면 stage 가 0 으로 리셋되는데,
+        // 그 사실을 화면이 말하면 "쌓은 게 날아갔다"가 결과 화면의 주제가 된다.
+        // 지금까지 이 규칙은 조용히 돌아갔고 아무도 불편해하지 않았다 — 굳이 꺼내지 않는다.
+        when {
+            graduated -> {
+                GraduatedBanner(message = graduatedMessage)
+                Spacer(Modifier.height(18.dp))
+            }
 
-        // ── 복습 보상: 졸업(나무) 또는 다음 물 주기 안내 ──────────
-        if (graduated) {
-            Spacer(Modifier.height(12.dp))
-            GraduatedBanner(message = graduatedMessage)
-        } else if (nextReviewText != null) {
-            Spacer(Modifier.height(12.dp))
-            Text(
-                text = nextReviewText,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = TextSecondary,
-            )
+            reviewStage != null && answer.isCorrect -> {
+                ReviewGrowthBand(stage = reviewStage, nextReviewText = nextReviewText)
+                Spacer(Modifier.height(18.dp))
+            }
+
+            nextReviewText != null -> {
+                Text(
+                    text = nextReviewText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextSecondary,
+                )
+                Spacer(Modifier.height(18.dp))
+            }
         }
-        Spacer(Modifier.height(18.dp))
 
         // ── 문제 (다크 배경 위 흰 텍스트) ────────────────────
         Text(
@@ -271,6 +296,13 @@ fun QuizAnswerBody(
             fontWeight = FontWeight.Bold,
             color = TextPrimary,
         )
+        Spacer(Modifier.height(14.dp))
+
+        // ── 판정 밴드 — 선지 '바로 위'가 의도된 자리 ──────────
+        // 문제 위에 두면 시선이 판정을 지나쳐 정답(라임 면)에 먼저 닿아
+        // "맞혔다"로 오독한다(실사용 보고). 선지를 읽기 직전에 판정을
+        // 통과시켜 "초록 = 내 결과"라는 오해를 차단한다.
+        VerdictBand(isCorrect = answer.isCorrect)
         Spacer(Modifier.height(14.dp))
 
         // ── 보기 4개 ─────────────────────────────────────────
@@ -364,50 +396,102 @@ private fun GraduatedBanner(message: String? = null) {
 }
 
 /**
- * 채점 결과 한 줄.
+ * 복습 성장 밴드 — 맞혀서 한 단계 자란 순간.
  *
- * 강조는 정답만 가져간다 — 오답에 Error 채움을 주면 화면에서 가장 센 신호가
- * "틀렸다"가 되고, 정작 봐야 할 정답 보기와 세기가 맞붙는다(강조 셋이 붙으면
- * 어느 쪽이 정답인지 오해가 는다). 오답은 면 없이 중립 글자로만 사실을 적는다.
+ * 게이지는 **2칸 + 나무**다. 3칸이 아닌 이유: 서버 `MAX_STAGE = 2` 라 마지막 단계에서
+ * 맞히면 그 즉시 졸업(GraduatedBanner)으로 넘어간다 — 3칸이 다 찬 상태는 화면에
+ * 존재하지 않는다. 도달 못 한 나무를 흐리게 함께 두어 "다음은 나무"를 형태로 말한다.
+ *
+ * 졸업 배너와 같은 자리·같은 밴드 형태를 쓴다("이 자리의 밴드 = 이번 결과").
+ * 오답일 땐 호출되지 않는다 — 리셋을 굳이 화면이 말하지 않기 때문이다.
  */
 @Composable
-private fun ResultChip(isCorrect: Boolean) {
-    if (!isCorrect) {
-        Text(
-            text = "아쉬워요, 다음에 맞혀봐요",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = TextSecondary,
-        )
-        return
-    }
+private fun ReviewGrowthBand(stage: Int, nextReviewText: String?) {
     Row(
         modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(Lime)
-            .padding(start = 6.dp, end = 14.dp, top = 6.dp, bottom = 6.dp),
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(Grass1)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier = Modifier
-                .size(26.dp)
-                .clip(CircleShape)
-                .background(BgSurface),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = "Q",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.ExtraBold,
-                color = Lime,
+        // 칸 2개 + 나무 — 채운 칸 수 = 현재 stage.
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            repeat(2) { i ->
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .clip(CircleShape)
+                        .background(if (i < stage) Lime else Outline),
+                )
+                Spacer(Modifier.size(6.dp))
+            }
+            Image(
+                painter = painterResource(R.drawable.ic_stage_tree),
+                contentDescription = null,
+                colorFilter = ColorFilter.tint(Outline),
+                modifier = Modifier.size(20.dp),
             )
         }
-        Spacer(Modifier.size(8.dp))
+        Spacer(Modifier.size(12.dp))
+        Column {
+            Text(
+                text = "한 단계 자랐어요",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = Lime,
+            )
+            if (nextReviewText != null) {
+                Text(
+                    text = nextReviewText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 채점 판정 밴드 — 정답/오답에 같은 시각적 무게를 준다.
+ *
+ * 종전에는 오답이 회색 캡션이라 화면에서 가장 센 신호가 정답(라임 면)이었고,
+ * 시선이 초록에 먼저 닿아 "맞혔다"로 오독하는 일이 실제로 있었다. 판정이
+ * 절실한 쪽(오답)에 정답과 같은 무게의 밴드를 준다. 오답 강조는 이 밴드가
+ * 가져가고 선지 쪽은 면 없이 테두리·라벨만 — 면 대 면 경쟁(52.5% 오해 실험)을
+ * 피하는 원칙은 그대로다.
+ *
+ * 알약이 아니라 밴드인 이유: 알약은 액션 전용(디자인 규칙). 누를 수 없는
+ * 판정은 GraduatedBanner 와 같은 풀폭 밴드 형태를 쓴다 — "이 자리의 밴드 =
+ * 이번 결과"라는 규칙이 생긴다.
+ *
+ * liveRegion: 화면 내 전이(재풀이 시도 → 결과)에서도 TalkBack 이 판정을
+ * 읽어주도록 한다 — 색·아이콘만으로 알리지 않는다.
+ */
+@Composable
+private fun VerdictBand(isCorrect: Boolean) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(if (isCorrect) Grass1 else ErrorFaint)
+            .padding(horizontal = 14.dp, vertical = 12.dp)
+            .semantics { liveRegion = LiveRegionMode.Polite },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Image(
+            painter = painterResource(
+                if (isCorrect) R.drawable.ic_check_circle else R.drawable.ic_x_circle,
+            ),
+            contentDescription = null,
+            modifier = Modifier.size(22.dp),
+        )
+        Spacer(Modifier.size(10.dp))
         Text(
-            text = "정답이에요!",
+            text = if (isCorrect) "맞혔어요" else "틀렸어요",
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
-            color = OnLime,
+            color = if (isCorrect) Lime else Error,
         )
     }
 }
@@ -417,12 +501,16 @@ private fun ResultChip(isCorrect: Boolean) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * 보기 한 줄.
+ * 보기 한 줄 — 3단 위계.
  *
- * 강조(틴트 면 + 라임 테두리 + 라임 라벨)는 정답 보기 하나만 가져간다.
- * 내가 고른 오답은 **숨기지 않되**(내 답과 정답의 차이를 봐야 교정이 된다)
- * 색 면을 주지 않고 "내 답" 라벨 + 두꺼운 중립 테두리로만 지목한다 — 색이 아니라
- * 형태로 구별되므로 정답과 세기가 붙지 않는다.
+ *  1) 정답: 틴트 면 + 라임 테두리 + 라임 라벨. **면(fill)은 여전히 정답만** 가진다.
+ *  2) 내가 고른 오답: 면 없이 Error 테두리·번호·라벨로만 지목한다.
+ *     색 면을 주지 않는 이유 — 면 대 면이 되면 화면에서 정답과 세기가 맞붙는다
+ *     (내 답·정답·정오표시를 다 강조하면 52.5% 가 정답을 오해한 실험).
+ *  3) 안 고른 선지: 배경 면을 지우고 글자를 muted 로 낮춰 **뒤로 물린다** —
+ *     내 답과 1dp 차이 테두리만으로는 구별이 안 된다는 실사용 보고의 답이다.
+ *     강조를 더하는 대신 나머지를 빼서 위계를 만든다.
+ *
  * 맞힌 경우엔 두 라벨이 같은 줄을 가리키므로 "내 답 · 정답" 하나로 합친다.
  */
 @Composable
@@ -431,15 +519,26 @@ private fun AnswerOptionRow(
     isCorrect: Boolean,
     isUserSelected: Boolean,
 ) {
-    val marked = isCorrect || isUserSelected
+    val wrongPick = isUserSelected && !isCorrect
+    val marked = isCorrect || wrongPick
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(if (isCorrect) Grass1 else BgSurface)
+            .background(
+                when {
+                    isCorrect -> Grass1
+                    wrongPick -> BgSurface
+                    else -> Color.Transparent // 안 고른 선지는 면을 지워 뒤로 물린다
+                },
+            )
             .border(
                 width = if (marked) 2.dp else 1.dp,
-                color = if (isCorrect) Lime else Outline,
+                color = when {
+                    isCorrect -> Lime
+                    wrongPick -> Error
+                    else -> Outline
+                },
                 shape = RoundedCornerShape(14.dp),
             )
             .padding(horizontal = 14.dp, vertical = 14.dp),
@@ -449,7 +548,13 @@ private fun AnswerOptionRow(
             modifier = Modifier
                 .size(26.dp)
                 .clip(CircleShape)
-                .background(if (isCorrect) Lime else BgElevated),
+                .background(
+                    when {
+                        isCorrect -> Lime
+                        wrongPick -> Error
+                        else -> BgElevated
+                    },
+                ),
             contentAlignment = Alignment.Center,
         ) {
             Text(
@@ -458,7 +563,7 @@ private fun AnswerOptionRow(
                 fontWeight = FontWeight.Bold,
                 color = when {
                     isCorrect -> OnLime
-                    isUserSelected -> TextPrimary
+                    wrongPick -> ErrorFaint
                     else -> TextMuted
                 },
             )
@@ -467,7 +572,7 @@ private fun AnswerOptionRow(
         Text(
             text = option.text,
             style = MaterialTheme.typography.bodyLarge,
-            color = TextPrimary,
+            color = if (marked) TextPrimary else TextMuted,
             fontWeight = if (marked) FontWeight.SemiBold else FontWeight.Normal,
             modifier = Modifier.weight(1f),
         )
@@ -493,7 +598,7 @@ private fun AnswerOptionRow(
                 text = "내 답",
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
-                color = TextSecondary,
+                color = Error,
             )
         }
     }

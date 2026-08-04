@@ -27,6 +27,8 @@ import com.finq.app.data.repository.GardenItem
 import com.finq.app.data.repository.ReviewGarden
 import com.finq.app.data.repository.ReviewStage
 import com.finq.app.ui.components.ConceptStatsSection
+import com.finq.app.ui.components.ForcedUpdateDialog
+import com.finq.app.ui.components.NoticeDialog
 import com.finq.app.ui.components.ReviewTreeConceptSheet
 import com.finq.app.ui.components.ReviewTreeConceptVariant
 import com.finq.app.ui.components.garden.GardenCanvas
@@ -52,6 +54,7 @@ import com.finq.app.ui.screen.HomeScreen
 import com.finq.app.ui.screen.MyPageContent
 import com.finq.app.ui.screen.QuizAnswerScreen
 import com.finq.app.ui.screen.QuizScreen
+import com.finq.app.ui.screen.TasteQuizScreen
 import com.finq.app.ui.theme.FinQTheme
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
@@ -61,7 +64,7 @@ import java.time.LocalDate
  *
  *   adb shell am start -n com.finq.app/com.finq.app.debug.ShowcaseActivity --es screen home
  *
- * screen: home | home_pending | home_zero | home_done_water | home_done | quiz | answer | solo_quiz | solo_answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | mypage_trees_none | mypage_trees_zero | mypage_trees_few | mypage_trees_many | filters | wrongnote | history | detail_wrong | detail_correct | detail_graduated | detail_loading | detail_error | list_error | grass | review | review_graduated | review_next | garden | garden_empty | garden_growing_many | garden_trees_few | garden_trees_many | garden_canvas | concept | concept_sheet | concept_sheet_intro | onboarding | onboarding_grass | onboarding_tree | onboarding_replay
+ * screen: home | home_pending | home_zero | home_done_water | home_done | quiz | answer | solo_quiz | solo_answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | mypage_trees_none | mypage_trees_zero | mypage_trees_few | mypage_trees_many | filters | wrongnote | history | detail_wrong | detail_correct | detail_graduated | detail_loading | detail_error | list_error | grass | review | review_graduated | review_next | garden | garden_empty | garden_growing_many | garden_trees_few | garden_trees_many | garden_canvas | concept | concept_sheet | concept_sheet_intro | onboarding | onboarding_grass | onboarding_tree | onboarding_replay | taste | home_feedback | review_grown | review_wrong | version_gate | notice
  * 릴리즈 빌드에는 포함되지 않는다(app/src/debug 소스셋).
  */
 class ShowcaseActivity : ComponentActivity() {
@@ -121,8 +124,42 @@ class ShowcaseActivity : ComponentActivity() {
                         onNext = {}, onBack = {}, onArticleClick = {},
                         categoryLabel = "나무 직전 · 금리",
                         graduated = true,
-                        graduatedMessage = "물 7번 준 나무가 완성됐어요 — 당신의 5번째 나무",
+                        graduatedMessage = "나무가 됐어요 — 당신의 5번째 나무",
                         nextLabel = "복습 완료",
+                    )
+
+                    // 복습 성장 밴드 — 맞혀서 한 단계 자란 순간(게이지 2칸 + 나무).
+                    "review_grown" -> QuizAnswerScreen(
+                        quiz = sampleQuiz,
+                        answer = AnswerResult(
+                            quizId = 1L, selectedOptionId = 1L, isCorrect = true,
+                            correctOptionId = 1L,
+                            explanation = "기준금리가 오르면 시중 금리가 따라 올라 예금 금리도 상승합니다.",
+                            keyword = "기준금리", relatedArticle = RelatedArticle.EMPTY,
+                        ),
+                        isLast = false, quizIndex = 0, totalCount = 3,
+                        onNext = {}, onBack = {}, onArticleClick = {},
+                        categoryLabel = "풀 · 금리",
+                        nextReviewText = "다음 물주기 8월 10일",
+                        reviewStage = 1,
+                        nextLabel = "다음 복습",
+                    )
+
+                    // 복습 오답 — 게이지를 그리지 않는다(리셋을 화면이 말하지 않음).
+                    "review_wrong" -> QuizAnswerScreen(
+                        quiz = sampleQuiz,
+                        answer = AnswerResult(
+                            quizId = 1L, selectedOptionId = 2L, isCorrect = false,
+                            correctOptionId = 1L,
+                            explanation = "기준금리가 오르면 시중 금리가 따라 올라 예금 금리도 상승합니다.",
+                            keyword = "기준금리", relatedArticle = RelatedArticle.EMPTY,
+                        ),
+                        isLast = false, quizIndex = 1, totalCount = 3,
+                        onNext = {}, onBack = {}, onArticleClick = {},
+                        categoryLabel = "새싹 · 금리",
+                        nextReviewText = "다음 물주기 8월 6일",
+                        reviewStage = 0,
+                        nextLabel = "다음 복습",
                     )
 
                     // 정원 — 자라는 중 + 완성 나무 + 카운터 불일치(배포 이전 졸업분) 케이스
@@ -230,6 +267,9 @@ class ShowcaseActivity : ComponentActivity() {
                             },
                             graduated = emptyList(),
                             graduatedTrees = 0,
+                            // due 는 10개지만 서버가 하루 캡(5)을 적용해 내려준다 —
+                            // 배지가 큐 캡을 따르는지 확인하는 케이스.
+                            todayQueueSize = 5,
                         ),
                         isLoading = false, error = null,
                         onRetry = {}, onBack = {}, onOpenQuiz = {},
@@ -768,6 +808,53 @@ class ShowcaseActivity : ComponentActivity() {
                         reviewCount = 2,
                         garden = manyTreesGarden,
                     )
+
+                    // 맛보기 문제 — 로그인 전 첫 화면. 고르면 같은 화면에서 결과+로그인.
+                    "taste" -> TasteQuizScreen(onKakaoLogin = {}, onGoogleLogin = {})
+
+                    // 홈 1회성 피드백 배너 — 첫 실행 +3일 뒤 상태.
+                    "home_feedback" -> HomeScreen(
+                        quizCount = 3, streak = 7, solvedToday = true, maxStreak = 15,
+                        weekLevels = listOf(2, 0, 4, 1, 3, -1, -1),
+                        isLoading = false, error = null,
+                        onStartQuiz = {}, onRetry = {}, nickname = "유리",
+                        reviewCount = 3, garden = sampleGarden,
+                        showFeedbackBanner = true,
+                    )
+
+                    // 버전 게이트 — 실서버는 min=1 이라 네트워크로는 재현되지 않는다.
+                    // 다이얼로그만 직접 렌더해 문구·닫힘 경로를 확인한다.
+                    "version_gate" -> {
+                        HomeScreen(
+                            quizCount = 3, streak = 7, solvedToday = true, maxStreak = 15,
+                            weekLevels = listOf(2, 0, 4, 1, 3, -1, -1),
+                            isLoading = false, error = null,
+                            onStartQuiz = {}, onRetry = {}, nickname = "유리",
+                            reviewCount = 3, garden = sampleGarden,
+                        )
+                        ForcedUpdateDialog(
+                            storeUrl = "https://play.google.com/store/apps/details?id=com.finq.app",
+                            context = this,
+                        )
+                    }
+
+                    // 공지 — 닫으면 배경(홈)만 남는다. "다시 열기" 로 닫힘 경로까지 한 화면에서.
+                    "notice" -> {
+                        var open by remember { mutableStateOf(true) }
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text(
+                                text = "다시 열기",
+                                color = Lime,
+                                modifier = Modifier.clickable { open = true },
+                            )
+                        }
+                        if (open) {
+                            NoticeDialog(
+                                notice = "8월 5일 새벽 2시~4시에 점검이 있어요. 그동안은 문제를 받을 수 없어요.",
+                                onDismiss = { open = false },
+                            )
+                        }
+                    }
 
                     else -> HomeScreen(
                         quizCount = 3,

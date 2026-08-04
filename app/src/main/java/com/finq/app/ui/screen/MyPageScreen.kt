@@ -111,6 +111,8 @@ fun MyPageScreen(
     appVersion: String,
     /** 온보딩 3장 다시 보기 — 앱 정보 줄과 같은 부수 정보 톤으로 둔다. */
     onOpenOnboarding: () -> Unit = {},
+    /** 의견 보내기 — 외부 폼을 연다. 홈 배너를 닫아도 남는 상시 창구. */
+    onOpenFeedback: () -> Unit = {},
     isLoading: Boolean = false,
     error: String? = null,
     onRetry: () -> Unit = {},
@@ -166,6 +168,7 @@ fun MyPageScreen(
                 conceptStats = conceptStats,
                 appVersion = appVersion,
                 onOpenOnboarding = onOpenOnboarding,
+                onOpenFeedback = onOpenFeedback,
                 isWithdrawing = isWithdrawing,
                 onWithdraw = onWithdraw,
                 withdrawError = withdrawError,
@@ -205,6 +208,8 @@ fun MyPageContent(
     appVersion: String,
     /** 온보딩 3장 다시 보기. */
     onOpenOnboarding: () -> Unit = {},
+    /** 의견 보내기 — 외부 폼을 연다. */
+    onOpenFeedback: () -> Unit = {},
     isWithdrawing: Boolean = false,
     onWithdraw: () -> Unit = {},
     withdrawError: String? = null,
@@ -322,6 +327,10 @@ fun MyPageContent(
         // 온보딩 재열람 진입점. 값 대신 셰브론이 들어간 것 말고는 위 줄과 구조가 같다 —
         // 화면 위계를 흔들지 않도록 부수 정보 톤을 유지한다.
         NavRow(label = "앱 소개 다시 보기", onClick = onOpenOnboarding)
+        // 의견 창구 — 홈 배너는 한 번 닫으면 끝이라 상시 입구가 여기 남아야 한다.
+        // 종이비행기 아이콘은 홈 배너에서만 쓴다. 이 목록은 라벨+셰브론 리듬이고
+        // "의견 보내기"라는 말이 이미 아이콘이 할 말을 다 한다.
+        NavRow(label = "의견 보내기", onClick = onOpenFeedback)
 
         Spacer(Modifier.height(24.dp))
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)

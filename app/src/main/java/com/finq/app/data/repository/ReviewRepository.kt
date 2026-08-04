@@ -91,9 +91,20 @@ data class ReviewGarden(
     val growing: List<GardenItem>,
     val graduated: List<GardenItem>,
     val graduatedTrees: Int,
+    /**
+     * 오늘 실제로 물 줄 수 있는 개수 — 서버가 하루 큐 캡을 적용해 내려준다.
+     * [growing] 의 dueDate 로 직접 세지 말 것: 캡에 잘린 백로그까지 세어
+     * 복습 세션에 실제로 들어오는 개수와 어긋난다.
+     */
+    val todayQueueSize: Int = 0,
 ) {
     companion object {
-        val EMPTY = ReviewGarden(growing = emptyList(), graduated = emptyList(), graduatedTrees = 0)
+        val EMPTY = ReviewGarden(
+            growing = emptyList(),
+            graduated = emptyList(),
+            graduatedTrees = 0,
+            todayQueueSize = 0,
+        )
     }
 }
 

@@ -72,6 +72,7 @@ private fun GardenApiResponse.toDomain(): ReviewGarden = ReviewGarden(
     growing = growing.map { it.toDomain() },
     graduated = graduated.map { it.toDomain() },
     graduatedTrees = graduatedTrees,
+    todayQueueSize = todayQueueSize,
 )
 
 private fun GardenItemApiResponse.toDomain(): GardenItem = GardenItem(

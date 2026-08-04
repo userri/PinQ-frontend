@@ -72,6 +72,12 @@ data class GardenApiResponse(
      * "총 몇 그루"는 항상 이 값을 신뢰한다 (graduated.size 와 다를 수 있음).
      */
     val graduatedTrees: Int = 0,
+    /**
+     * "오늘 물 줄 잔디 N개" 배지의 **유일한 원천** — `min(하루 큐 캡, due 개수)`.
+     * 복습 큐가 하루 5개로 제한되므로 [growing] 의 dueDate 를 클라가 직접 세면
+     * 캡에 잘린 백로그까지 세서 실제 큐 개수와 어긋난다. 구서버엔 없음 → 기본 0.
+     */
+    val todayQueueSize: Int = 0,
 )
 
 data class GardenItemApiResponse(

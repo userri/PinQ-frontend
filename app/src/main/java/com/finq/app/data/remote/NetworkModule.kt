@@ -151,6 +151,12 @@ object NetworkModule {
     val libraryApi: LibraryApi by lazy { retrofit.create(LibraryApi::class.java) }
     val reviewApi:  ReviewApi  by lazy { retrofit.create(ReviewApi::class.java) }
 
+    /**
+     * 버전 게이트·공지. 엔드포인트는 공개지만 authRetrofit 이 아니라 [retrofit] 을 쓴다 —
+     * 토큰이 없으면 authInterceptor 가 헤더를 안 붙이고, 200 응답엔 authenticator 도 안 탄다.
+     */
+    val appConfigApi: AppConfigApi by lazy { retrofit.create(AppConfigApi::class.java) }
+
     private fun Response.responseCount(): Int {
         var count = 1
         var prior = priorResponse
