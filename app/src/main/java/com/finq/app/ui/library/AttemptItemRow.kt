@@ -34,6 +34,7 @@ import com.finq.app.ui.theme.Error
 import com.finq.app.ui.theme.FinQTheme
 import com.finq.app.ui.theme.Lime
 import com.finq.app.ui.theme.TextMuted
+import com.finq.app.ui.theme.TextPrimary
 import com.finq.app.ui.theme.TextSecondary
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -59,7 +60,7 @@ enum class AttemptCardEmphasis {
 // 목록은 색인이지 콘텐츠 컨테이너가 아니다. 카드(면 + 테두리 + 그림자)를 씌우면
 // 한 화면에 한두 개밖에 못 들어와 훑을 수가 없다 → 면 없이 구분선으로만 가른다.
 //
-// 여기 들어오는 것: 단계 아이콘 · 무엇에 관한 문제인가 · 언제 · 문제 · 북마크 · 셰브론.
+// 여기 들어오는 것: 단계 아이콘 · 개념어(제목) · 카테고리 · 날짜 · 북마크 · 셰브론.
 //
 // 오답노트에서 단계 아이콘을 선두에 세우는 이유는 둘이다.
 //  (1) 한 화면에 같은 카테고리가 연속으로 오면(부동산 4연속) 글자만으로는 행이 안
@@ -139,25 +140,52 @@ fun AttemptItemRow(
         }
 
         Column(modifier = Modifier.weight(1f)) {
+            // 제목은 개념어(keyword) 한 줄이다. 질문을 제목으로 쓰면 2줄로도 안 끝나
+            // "…"로 잘리는데, 뇌는 잘린 문장을 계속 파싱하려 든다 — 그게 한 화면에
+            // 일곱 번 있는 게 "정보가 너무 많이 들어온다"의 실체였다. 문제 자립성
+            // 규칙이 들어간 뒤 question 은 앞으로도 계속 길어지므로 시간이 지나도
+            // 나아지지 않는다. 개념어는 짧고, 끝나 있고, "뭘 틀렸나"에 곧장 답한다.
+            val title = keywordTitle(item.keyword)
+            if (title != null) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    // 굵기를 뺀다 — 최대 대비(16.3:1) 굵은 글자가 여러 줄 쌓이면
+                    // halation 이 생긴다. 한 줄이면 대비는 그대로 둬도 덩어리가 안 진다.
+                    fontWeight = FontWeight.Normal,
+                    color = TextPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            } else {
+                // keyword 가 없는 경우는 미풀이 북마크뿐이다 — 안 푼 문제의 개념이
+                // 새면 목록이 치팅 경로가 되므로 서버가 마스킹한다. 이때만 질문을
+                // 쓰되 한 줄로 자르고 제목보다 한 단계 낮춘다.
+                Text(
+                    text = item.question,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Normal,
+                    color = TextSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Spacer(Modifier.height(3.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                LeadLabel(item = item, emphasis = emphasis)
+                // 제목이 카테고리와 같은 낱말이면("환율" / "환율 · 7/30") 메타에서 뺀다 —
+                // 같은 말이 두 줄에 겹쳐 찍히면 정보가 아니라 잡음이다.
+                val hidesCategory = title != null &&
+                    emphasis == AttemptCardEmphasis.CATEGORY &&
+                    title == item.categoryDisplay
+                if (!hidesCategory) LeadLabel(item = item, emphasis = emphasis)
                 if (dateStr != null) {
                     Text(
-                        text = "  ·  $dateStr",
+                        text = if (hidesCategory) dateStr else "  ·  $dateStr",
                         style = MaterialTheme.typography.labelSmall,
                         color = TextMuted,
                     )
                 }
             }
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = item.question,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
         }
 
         Spacer(Modifier.width(4.dp))
@@ -206,11 +234,13 @@ private data class StageGlyph(val iconRes: Int, val label: String)
 @Composable
 private fun LeadLabel(item: AttemptItem, emphasis: AttemptCardEmphasis) {
     when (emphasis) {
+        // 메타줄은 제목(개념어) 아래 층이다 — 굵게·밝게 두면 위계가 뒤집혀
+        // 눈이 카테고리를 먼저 읽는다.
         AttemptCardEmphasis.CATEGORY -> Text(
             text = item.categoryDisplay,
             style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
-            color = TextSecondary,
+            fontWeight = FontWeight.Normal,
+            color = TextMuted,
         )
 
         AttemptCardEmphasis.STATUS -> Row(verticalAlignment = Alignment.CenterVertically) {
@@ -238,6 +268,28 @@ private fun LeadLabel(item: AttemptItem, emphasis: AttemptCardEmphasis) {
             )
         }
     }
+}
+
+/**
+ * `keyword` → 행 제목으로 쓸 **용어**만 뽑는다.
+ *
+ * 실제 데이터가 세 가지 형태로 온다(2026-08-04 실서버 30건 측정):
+ *  - `"종합부동산세: 주택 보유 시 부과되는…"` — 콜론형(28/30). 현재 생성 프롬프트가 강제.
+ *  - `"국제유가, 원·달러 환율, 수입물가, …"` — 쉼표 나열형(2/30). 구버전 산출물이라
+ *    형식 오류가 아니다. 첫 항목이 그대로 쓸 만한 용어다.
+ *  - `"금융통화위원회 — 한국은행의…"` — 대시형. 과거 데이터 대비.
+ *
+ * 어느 쪽도 아니고 길이가 [KEYWORD_TERM_MAX] 를 넘으면 null 을 돌려 호출부가
+ * 질문으로 되돌아가게 한다 — 장문을 제목 자리에 세우면 고치려던 문제가 그대로 남는다.
+ */
+internal fun keywordTitle(keyword: String?): String? {
+    val raw = keyword?.trim().orEmpty()
+    if (raw.isEmpty()) return null
+    val cut = raw.indexOfFirst { it == ':' || it == '：' || it == '—' || it == '–' || it == ',' }
+        .takeIf { it > 0 }
+        ?: raw.indexOf(" - ").takeIf { it > 0 }
+    val term = (if (cut != null) raw.take(cut) else raw).trim()
+    return term.takeIf { it.isNotEmpty() && it.length <= KEYWORD_TERM_MAX }
 }
 
 /**

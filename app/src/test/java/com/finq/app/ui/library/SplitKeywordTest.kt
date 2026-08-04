@@ -61,3 +61,40 @@ class SplitKeywordTest {
         assertNull(desc)
     }
 }
+
+/**
+ * 행 제목 추출 — 실서버 30건에서 관측된 세 형태를 모두 덮는지.
+ * (콜론 28 / 쉼표 나열 2 / 대시는 과거 데이터 대비)
+ */
+class KeywordTitleTest {
+
+    @Test
+    fun `콜론형은 용어만 남긴다`() {
+        assertEquals("종합부동산세", keywordTitle("종합부동산세: 주택 보유 시 부과되는 세금으로, 초고가 주택에…"))
+        assertEquals("주택담보대출비율(LTV)", keywordTitle("주택담보대출비율(LTV): 담보 가치 대비 대출 한도 비율"))
+    }
+
+    @Test
+    fun `쉼표 나열형은 첫 용어를 쓴다`() {
+        // 형식 오류가 아니라 구버전 산출물 — 질문으로 되돌아가면 멀쩡한 용어를 버리게 된다.
+        assertEquals("국제유가", keywordTitle("국제유가, 원·달러 환율, 수입물가, 원화 약세, 원자재 가격"))
+        assertEquals("방어주", keywordTitle("방어주, 변동성 장세, 주식 순환매, 투자 포트폴리오 전환"))
+    }
+
+    @Test
+    fun `대시형도 받는다`() {
+        assertEquals("금융통화위원회", keywordTitle("금융통화위원회 — 한국은행의 정책금리를 결정하는 기구"))
+    }
+
+    @Test
+    fun `구분자가 없어도 짧으면 그대로 제목이 된다`() {
+        assertEquals("환율", keywordTitle("환율"))
+    }
+
+    @Test
+    fun `null 이거나 장문이면 null - 호출부가 질문으로 되돌아간다`() {
+        assertNull(keywordTitle(null))
+        assertNull(keywordTitle("   "))
+        assertNull(keywordTitle("구분자 없이 열여섯 자를 훌쩍 넘겨 제목 자리에 세울 수 없는 긴 문장"))
+    }
+}
