@@ -68,7 +68,8 @@ fun GardenScreen(
     onRetry: () -> Unit,
     onBack: () -> Unit,
     /** 앞줄 식물 탭 → 오답노트 해당 문제로. */
-    onOpenQuiz: (Long) -> Unit,
+    /** 식물 탭 — 오늘 큐에 든 것이면 물주기, 아니면 열람. 분기는 네비게이션이 한다. */
+    onOpenQuiz: (GardenItem) -> Unit,
     /** "전체 N개 보기" → 오답노트 탭으로. */
     onOpenAll: () -> Unit = {},
     /** "오늘 물 줄 잔디 N개" → 복습 세션으로. 정원은 보상, 복습은 작업 공간. */

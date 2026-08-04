@@ -146,7 +146,8 @@ internal fun computeNightScene(garden: ReviewGarden, today: LocalDate): SceneLay
 @Composable
 fun GardenNightScene(
     garden: ReviewGarden,
-    onItemTap: (Long) -> Unit,
+    /** 탭한 식물. 목적지 분기(물주기 vs 열람)는 호출부가 정한다. */
+    onItemTap: (GardenItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val layout = remember(garden) { computeNightScene(garden, LocalDate.now()) }
@@ -209,7 +210,7 @@ fun GardenNightScene(
                     }
                     .filter { (_, dist, radius) -> dist <= radius }
                     .minByOrNull { (_, dist, _) -> dist }
-                    ?.let { (p, _, _) -> onItemTap(p.item.quizId) }
+                    ?.let { (p, _, _) -> onItemTap(p.item) }
             }
         },
     ) {

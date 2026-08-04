@@ -45,6 +45,8 @@ data class ReviewSessionUiState(
 
 class ReviewSessionViewModel(
     private val reviewRepository: ReviewRepository,
+    /** 이 문제부터 시작(정원 탭 진입). 큐에 없으면 무시된다. */
+    private val startQuizId: Long? = null,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ReviewSessionUiState())
@@ -62,7 +64,10 @@ class ReviewSessionViewModel(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            items = today.items,
+                            // 정원에서 특정 식물을 눌러 들어왔으면 그 문제를 맨 앞으로.
+                            // 큐에 없으면(자정을 넘겼거나 다른 기기에서 먼저 푼 경우)
+                            // 순서를 건드리지 않고 큐 처음부터 간다.
+                            items = today.items.startingWith(startQuizId),
                             nextDueDate = today.nextDueDate,
                             currentIndex = 0,
                             selectedOptionId = null,
@@ -145,8 +150,17 @@ class ReviewSessionViewModel(
     }
 
     companion object {
-        fun factory(reviewRepository: ReviewRepository) = viewModelFactory {
-            initializer { ReviewSessionViewModel(reviewRepository) }
-        }
+        fun factory(reviewRepository: ReviewRepository, startQuizId: Long? = null) =
+            viewModelFactory {
+                initializer { ReviewSessionViewModel(reviewRepository, startQuizId) }
+            }
     }
+}
+
+/** [startQuizId] 를 맨 앞으로 옮긴 목록. 없으면 원본 그대로. */
+internal fun List<ReviewItem>.startingWith(startQuizId: Long?): List<ReviewItem> {
+    if (startQuizId == null) return this
+    val i = indexOfFirst { it.quizId == startQuizId }
+    if (i <= 0) return this
+    return listOf(this[i]) + filterIndexed { idx, _ -> idx != i }
 }

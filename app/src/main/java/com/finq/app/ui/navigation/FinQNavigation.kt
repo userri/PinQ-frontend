@@ -194,8 +194,26 @@ object FinQRoutes {
     const val DONE = "session/done"
 
     // ── 오답 복습 ("잔디에 물 주기") ──────────────────────────────
+    /**
+     * 복습 세션 그래프.
+     *
+     * `start` — 이 문제부터 시작한다(정원에서 빛나는 식물을 탭한 경우). 큐에 없으면
+     *           큐 처음부터, 큐가 비어 있으면 세션을 열지 않고 상세 열람으로 보낸다.
+     * `from`  — 나갈 때 돌아갈 곳. 정원에서 들어왔는데 홈으로 튀어나오면 어긋난다.
+     */
     const val REVIEW_GRAPH = "review"
-    const val REVIEW_QUIZ = "review/quiz"
+
+    /**
+     * 인자는 그래프가 아니라 **시작 목적지**에 붙인다 — `navigation(arguments=)` 는
+     * 이 navigation-compose 버전에 없다. 세션 안의 다른 화면들은 이 엔트리에서 읽는다.
+     */
+    fun reviewQuiz(startQuizId: Long? = null, from: String? = null) =
+        "review/quiz?start=${startQuizId ?: -1L}&from=${from ?: RETURN_HOME}"
+
+    /** [reviewGraph] 의 `from` 값. */
+    const val RETURN_HOME = "home"
+    const val RETURN_GARDEN = "garden"
+    const val REVIEW_QUIZ = "review/quiz?start={start}&from={from}"
     const val REVIEW_ANSWER = "review/answer"
     const val REVIEW_DONE = "review/done"
 }
@@ -491,7 +509,7 @@ fun FinQNavHost(
                     todayTotal = state.todayTotal,
                     todayCorrect = state.todayCorrect,
                     onOpenGarden = { navController.navigate(FinQRoutes.GARDEN) },
-                    onWaterGrass = { navController.navigate(FinQRoutes.REVIEW_GRAPH) },
+                    onWaterGrass = { navController.navigate(FinQRoutes.reviewQuiz()) },
                     onStartQuiz = {
                         // SESSION_GRAPH 가 이미 백스택에 있으면 복귀(중간 이탈 케이스),
                         // 없으면 신규 생성(첫 진입 또는 컴플리티 후 재풌).
@@ -651,10 +669,24 @@ fun FinQNavHost(
                     error = state.error,
                     onRetry = gardenVm::load,
                     onBack = { navController.popBackStack() },
-                    onOpenQuiz = { quizId ->
-                        // 나무를 탭하면 곧장 그 문제의 상세로 — 목록을 거쳐 스크롤·펼침으로
-                        // 찾아가게 하지 않는다. 뒤로가면 보던 정원으로 돌아온다.
-                        navController.navigate(FinQRoutes.attemptDetail(quizId))
+                    onOpenQuiz = { item ->
+                        // 목적지를 due 상태가 정한다. 빛나는 식물은 "오늘 물 줄 것"이라고
+                        // 말하고 있으므로 탭의 기대는 물주기다 — 상세로 보내면 답만 보고
+                        // 정작 물은 못 주는 데드엔드가 된다(실사용 보고).
+                        //
+                        // 분기는 반드시 inTodayQueue 로만 한다. dueDate 로 대체하면 캡에
+                        // 잘린 백로그까지 세션으로 보내고, 무엇보다 졸업 항목이 섞이면
+                        // 서버가 졸업분 채점을 404 로 막고 있어 에러가 난다.
+                        if (item.inTodayQueue) {
+                            navController.navigate(
+                                FinQRoutes.reviewQuiz(
+                                    startQuizId = item.quizId,
+                                    from = FinQRoutes.RETURN_GARDEN,
+                                ),
+                            )
+                        } else {
+                            navController.navigate(FinQRoutes.attemptDetail(item.quizId))
+                        }
                     },
                     onOpenAll = {
                         // "전체 N개 보기" — 특정 문제 포커스 없이 오답노트 탭으로(같은 스택 규약).
@@ -665,7 +697,7 @@ fun FinQNavHost(
                         }
                     },
                     // 정원은 보상 공간, 복습은 작업 공간 — 홈 물주기 카드와 같은 진입.
-                    onStartReview = { navController.navigate(FinQRoutes.REVIEW_GRAPH) },
+                    onStartReview = { navController.navigate(FinQRoutes.reviewQuiz()) },
                 )
             }
 
@@ -773,11 +805,35 @@ fun FinQNavHost(
                 startDestination = FinQRoutes.REVIEW_QUIZ,
                 route = FinQRoutes.REVIEW_GRAPH,
             ) {
-                composable(FinQRoutes.REVIEW_QUIZ) { entry ->
+                composable(
+                    route = FinQRoutes.REVIEW_QUIZ,
+                    arguments = listOf(
+                        navArgument("start") { type = NavType.LongType; defaultValue = -1L },
+                        navArgument("from") {
+                            type = NavType.StringType
+                            defaultValue = FinQRoutes.RETURN_HOME
+                        },
+                    ),
+                ) { entry ->
                     val vm = entry.reviewViewModel(navController, reviewRepository)
                     val state by vm.uiState.collectAsState()
+                    val from = entry.reviewFrom(navController)
+                    val startQuizId = entry.reviewStartQuizId(navController)
 
-                    BackHandler { navController.exitReviewToHome() }
+                    // 낡은 정원 데이터로 들어온 경우 — 자정을 넘겼거나 다른 기기에서 먼저
+                    // 풀었으면 큐가 비어 있다. 빈 세션(완료 화면)을 띄우면 "빛나서 눌렀는데
+                    // 아무것도 없음"이 되어 지금 데드엔드보다 나쁘다. 상세 열람으로 돌린다.
+                    LaunchedEffect(state.isLoading, state.items.isEmpty(), startQuizId) {
+                        if (!state.isLoading && state.error == null &&
+                            state.items.isEmpty() && startQuizId != null
+                        ) {
+                            navController.navigate(FinQRoutes.attemptDetail(startQuizId)) {
+                                popUpTo(FinQRoutes.REVIEW_GRAPH) { inclusive = true }
+                            }
+                        }
+                    }
+
+                    BackHandler { navController.exitReview(from) }
 
                     LaunchedEffect(state.notice) {
                         state.notice?.let {
@@ -819,7 +875,7 @@ fun FinQNavHost(
                                 selectedOptionId = state.selectedOptionId,
                                 onSelectOption = vm::selectOption,
                                 onSubmit = vm::submitAnswer,
-                                onClose = { navController.exitReviewToHome() },
+                                onClose = { navController.exitReview(from) },
                                 isSubmitting = state.isSubmitting,
                                 categoryLabel = "${item.stage.label} · ${item.categoryLabel}",
                                 // "왜 이걸 하고 있나"에 답하는 한 줄. 답한 직후 성장 게이지가
@@ -843,6 +899,7 @@ fun FinQNavHost(
                 composable(FinQRoutes.REVIEW_ANSWER) { entry ->
                     val vm = entry.reviewViewModel(navController, reviewRepository)
                     val state by vm.uiState.collectAsState()
+                    val from = entry.reviewFrom(navController)
                     val localContext = LocalContext.current
                     val item = state.currentItem
                     val answer = state.lastAnswer
@@ -861,7 +918,7 @@ fun FinQNavHost(
                             quizIndex = state.currentIndex,
                             totalCount = state.totalCount,
                             onNext = vm::moveToNext,
-                            onBack = { navController.exitReviewToHome() },
+                            onBack = { navController.exitReview(from) },
                             onArticleClick = { article ->
                                 val intent = Intent(Intent.ACTION_VIEW, article.url.toUri())
                                 try {
@@ -891,14 +948,15 @@ fun FinQNavHost(
                 composable(FinQRoutes.REVIEW_DONE) { entry ->
                     val vm = entry.reviewViewModel(navController, reviewRepository)
                     val state by vm.uiState.collectAsState()
+                    val from = entry.reviewFrom(navController)
 
-                    BackHandler { navController.exitReviewToHome() }
+                    BackHandler { navController.exitReview(from) }
                     ReviewDoneScreen(
                         reviewedCount = state.totalCount,
                         correctCount = state.correctCount,
                         graduatedCount = state.graduatedCount,
                         nextDueDate = state.nextDueDate,
-                        onGoHome = { navController.exitReviewToHome() },
+                        onGoHome = { navController.exitReview(from) },
                     )
                 }
             }
@@ -906,13 +964,41 @@ fun FinQNavHost(
     }
 }
 
-/** 복습 그래프를 통째로 걷어내고 홈으로. 홈은 RESUMED 마다 재로드하므로 카운트가 갱신된다. */
-private fun NavHostController.exitReviewToHome() {
-    navigate(FinQRoutes.HOME) {
+/**
+ * 복습 그래프를 통째로 걷어내고 **들어온 곳으로** 돌아간다.
+ *
+ * 정원에서 빛나는 식물을 눌러 들어왔는데 홈으로 튀어나오면 맥락이 끊긴다.
+ * 중간 이탈(BackHandler)과 완주(완료 화면의 "돌아가기")가 **같은 목적지**를 써야 한다 —
+ * 한쪽만 고치면 완주했을 때만 홈으로 튄다.
+ *
+ * 정원으로 돌아갈 땐 새로 navigate 해서 GardenViewModel 이 다시 로드되게 한다.
+ * 방금 물을 줬으므로 후광·개수가 갱신돼야 한다.
+ */
+private fun NavHostController.exitReview(from: String) {
+    val dest = if (from == FinQRoutes.RETURN_GARDEN) FinQRoutes.GARDEN else FinQRoutes.HOME
+    navigate(dest) {
         popUpTo(FinQRoutes.REVIEW_GRAPH) { inclusive = true }
         launchSingleTop = true
     }
 }
+
+/** 세션 인자는 시작 목적지(REVIEW_QUIZ) 엔트리에 있다 — 답변·완료 화면도 여기서 읽는다. */
+@Composable
+private fun NavBackStackEntry.reviewGraphArgs(navController: NavHostController) =
+    remember(this) {
+        runCatching { navController.getBackStackEntry(FinQRoutes.REVIEW_QUIZ).arguments }
+            .getOrNull()
+    }
+
+/** 나갈 때 돌아갈 곳. */
+@Composable
+private fun NavBackStackEntry.reviewFrom(navController: NavHostController): String =
+    reviewGraphArgs(navController)?.getString("from") ?: FinQRoutes.RETURN_HOME
+
+/** 이 문제부터 시작(정원에서 탭). 지정이 없으면 null. */
+@Composable
+private fun NavBackStackEntry.reviewStartQuizId(navController: NavHostController): Long? =
+    reviewGraphArgs(navController)?.getLong("start", -1L)?.takeIf { it > 0 }
 
 /** 복습 그래프 전체가 공유하는 ViewModel. */
 @Composable
@@ -923,7 +1009,15 @@ private fun NavBackStackEntry.reviewViewModel(
     val parentEntry = remember(this) {
         navController.getBackStackEntry(FinQRoutes.REVIEW_GRAPH)
     }
-    val factory = remember(reviewRepository) { ReviewSessionViewModel.factory(reviewRepository) }
+    val start = remember(this) {
+        runCatching {
+            navController.getBackStackEntry(FinQRoutes.REVIEW_QUIZ).arguments
+                ?.getLong("start", -1L)
+        }.getOrNull()?.takeIf { it > 0 }
+    }
+    val factory = remember(reviewRepository, start) {
+        ReviewSessionViewModel.factory(reviewRepository, start)
+    }
     return viewModel(viewModelStoreOwner = parentEntry, factory = factory)
 }
 
