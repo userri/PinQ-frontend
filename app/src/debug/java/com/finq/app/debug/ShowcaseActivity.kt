@@ -76,7 +76,7 @@ import java.time.LocalDate
  *
  *   adb shell am start -n com.finq.app/com.finq.app.debug.ShowcaseActivity --es screen home
  *
- * screen: home | home_pending | home_zero | home_done_water | home_done | quiz | answer | solo_quiz | solo_answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | mypage_trees_none | mypage_trees_zero | mypage_trees_few | mypage_trees_many | filters | wrongnote | history | detail_wrong | detail_correct | detail_graduated | detail_loading | detail_error | list_error | grass | review | review_graduated | review_next | garden | garden_empty | garden_growing_many | garden_trees_few | garden_trees_many | garden_canvas | concept | concept_sheet | concept_sheet_intro | onboarding | onboarding_grass | onboarding_tree | onboarding_replay | app_icon | taste | home_feedback | review_grown | review_grown_last | review_wrong | wrongnote_store | version_gate | notice
+ * screen: home | home_pending | home_zero | home_done_water | home_done | quiz | answer | solo_quiz | solo_answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | mypage_trees_none | mypage_trees_zero | mypage_trees_few | mypage_trees_many | filters | wrongnote | history | detail_wrong | detail_correct | detail_graduated | detail_loading | detail_error | list_error | grass | review | review_graduated | review_next | garden | garden_empty | garden_growing_many | garden_trees_few | garden_trees_many | garden_canvas | concept | concept_sheet | concept_sheet_intro | onboarding | onboarding_grass | onboarding_tree | onboarding_replay | app_icon | store_icon | taste | home_feedback | review_grown | review_grown_last | review_wrong | wrongnote_store | version_gate | notice
  * 릴리즈 빌드에는 포함되지 않는다(app/src/debug 소스셋).
  */
 class ShowcaseActivity : ComponentActivity() {
@@ -893,6 +893,27 @@ class ShowcaseActivity : ComponentActivity() {
                         reviewCount = 2,
                         garden = manyTreesGarden,
                     )
+
+                    // 스토어 아이콘(512x512) 추출용 — 배경+전경을 **마스크 없이** 정사각으로
+                    // 꽉 채워 그린다. Play Console 아이콘은 APK 와 별개로 올려야 하고
+                    // 알파·라운딩 없이 512 정사각 PNG 를 요구한다(스토어가 알아서 깎는다).
+                    "store_icon" -> Box(
+                        modifier = Modifier.fillMaxSize().background(BgBase),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Box(modifier = Modifier.size(320.dp)) {
+                            Image(
+                                painter = painterResource(R.drawable.ic_launcher_background),
+                                contentDescription = null,
+                                modifier = Modifier.size(320.dp),
+                            )
+                            Image(
+                                painter = painterResource(R.drawable.ic_launcher_foreground),
+                                contentDescription = "스토어 아이콘",
+                                modifier = Modifier.size(320.dp),
+                            )
+                        }
+                    }
 
                     // 런처 아이콘 후보 — **실제 앱 벡터**로 런처 표시 크기에 렌더한다.
                     // Tabler 목업으로는 실제 형태(잎 각도·수관 덩어리)를 못 봐서 헛다리를 짚는다.
