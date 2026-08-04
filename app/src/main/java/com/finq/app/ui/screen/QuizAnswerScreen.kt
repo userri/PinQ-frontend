@@ -487,7 +487,9 @@ private fun StageLadder(stage: Int, graduated: Boolean) {
                     when {
                         index < currentIndex -> Grass3
                         index == currentIndex -> Lime
-                        else -> Lime.copy(alpha = 0.30f)
+                        // 0.30 은 실기기에서 "나무·나무 직전이 흐리다"는 지적을 받았다.
+                        // 아직 아니라는 건 알리되 형태는 읽혀야 한다.
+                        else -> Lime.copy(alpha = 0.45f)
                     },
                 ),
                 modifier = Modifier.size(26.dp),
