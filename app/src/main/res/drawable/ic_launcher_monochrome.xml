@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  테마 아이콘(모노크롬) 전용 실루엣.
+
+  컬러 전경을 그대로 재사용하면 안 된다 — 시스템이 단색으로 칠하는 순간 줄기·잎·잎맥이
+  한 덩어리로 합쳐져 형태가 무너진다(종전 문제). 여기선 **잎 사이를 벌려** 단색으로
+  칠해도 실루엣이 새싹으로 읽히게 한다. 색은 시스템이 입히므로 흰색으로 둔다.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:translateX="7.2"
+        android:translateY="0.6"
+        android:scaleX="3.9"
+        android:scaleY="3.9">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M11.1,12.5h1.8v8a0.9,0.9 0 0,1 -1.8,0z" />
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M11.6,14.1C7.6,13.9 5.2,11.2 5,7.2 9.3,7.5 11.7,10 11.6,14.1Z" />
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M12.4,12.3C12.4,8.6 14.8,6.2 19,6 18.8,10 16.4,12.4 12.4,12.3Z" />
+    </group>
+</vector>

@@ -39,6 +39,8 @@
     <color name="accent_glow_strong">#3DAEF23C</color>
     <color name="accent_glow_mid">#33AEF23C</color>
     <color name="accent_glow_none">#00AEF23C</color>
+    <!-- 런처 아이콘 배경 후광 — 목록에서 통짜 네이비로 죽지 않을 만큼만. -->
+    <color name="accent_glow_icon">#7AAEF23C</color>
 
     <!-- 아이콘 기본색: Icon(tint=) 로 런타임에 덮어쓰는 벡터의 플레이스홀더 -->
     <color name="icon_tint_base">#FF000000</color>

@@ -26,6 +26,16 @@ import com.finq.app.data.repository.ConceptStats
 import com.finq.app.data.repository.GardenItem
 import com.finq.app.data.repository.ReviewGarden
 import com.finq.app.data.repository.ReviewStage
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.ColorFilter as ColorFilterIcon
+import androidx.compose.ui.res.painterResource
+import com.finq.app.R
+import com.finq.app.ui.theme.BgElevated as BgElevatedIcon
+import com.finq.app.ui.theme.TextMuted as TextMutedIcon
 import com.finq.app.ui.components.ConceptStatsSection
 import com.finq.app.ui.components.ForcedUpdateDialog
 import com.finq.app.ui.components.NoticeDialog
@@ -35,6 +45,8 @@ import com.finq.app.ui.components.garden.GardenCanvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -64,7 +76,7 @@ import java.time.LocalDate
  *
  *   adb shell am start -n com.finq.app/com.finq.app.debug.ShowcaseActivity --es screen home
  *
- * screen: home | home_pending | home_zero | home_done_water | home_done | quiz | answer | solo_quiz | solo_answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | mypage_trees_none | mypage_trees_zero | mypage_trees_few | mypage_trees_many | filters | wrongnote | history | detail_wrong | detail_correct | detail_graduated | detail_loading | detail_error | list_error | grass | review | review_graduated | review_next | garden | garden_empty | garden_growing_many | garden_trees_few | garden_trees_many | garden_canvas | concept | concept_sheet | concept_sheet_intro | onboarding | onboarding_grass | onboarding_tree | onboarding_replay | taste | home_feedback | review_grown | review_grown_last | review_wrong | wrongnote_store | version_gate | notice
+ * screen: home | home_pending | home_zero | home_done_water | home_done | quiz | answer | solo_quiz | solo_answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | mypage_trees_none | mypage_trees_zero | mypage_trees_few | mypage_trees_many | filters | wrongnote | history | detail_wrong | detail_correct | detail_graduated | detail_loading | detail_error | list_error | grass | review | review_graduated | review_next | garden | garden_empty | garden_growing_many | garden_trees_few | garden_trees_many | garden_canvas | concept | concept_sheet | concept_sheet_intro | onboarding | onboarding_grass | onboarding_tree | onboarding_replay | app_icon | taste | home_feedback | review_grown | review_grown_last | review_wrong | wrongnote_store | version_gate | notice
  * 릴리즈 빌드에는 포함되지 않는다(app/src/debug 소스셋).
  */
 class ShowcaseActivity : ComponentActivity() {
@@ -881,6 +893,107 @@ class ShowcaseActivity : ComponentActivity() {
                         reviewCount = 2,
                         garden = manyTreesGarden,
                     )
+
+                    // 런처 아이콘 후보 — **실제 앱 벡터**로 런처 표시 크기에 렌더한다.
+                    // Tabler 목업으로는 실제 형태(잎 각도·수관 덩어리)를 못 봐서 헛다리를 짚는다.
+                    "app_icon" -> Column(
+                        Modifier.fillMaxSize().background(BgBase)
+                            .verticalScroll(rememberScrollState())
+                            .statusBarsPadding().padding(20.dp),
+                    ) {
+                        val candidates = listOf(
+                            "새싹(현행)" to R.drawable.ic_stage_sprout,
+                            "잔디" to R.drawable.ic_stage_grass,
+                            "나무 직전" to R.drawable.ic_stage_almost_tree,
+                            "나무" to R.drawable.ic_stage_tree,
+                        )
+                        // 실제 런처 에셋 — 컬러/모노크롬(테마 아이콘) 둘 다.
+                        Text(text = "런처 실제 에셋", color = Lime, modifier = Modifier.padding(bottom = 8.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(bottom = 24.dp),
+                        ) {
+                            listOf(96.dp, 48.dp).forEach { sz ->
+                                Box(
+                                    modifier = Modifier.size(sz).clip(CircleShape),
+                                ) {
+                                    Image(
+                                        painter = painterResource(R.drawable.ic_launcher_background),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(sz),
+                                    )
+                                    Image(
+                                        painter = painterResource(R.drawable.ic_launcher_foreground),
+                                        contentDescription = "런처 아이콘",
+                                        modifier = Modifier.size(sz),
+                                    )
+                                }
+                            }
+                            // 모노크롬 — 시스템이 단색으로 칠한 상태를 흉내 낸다.
+                            listOf(96.dp, 48.dp).forEach { sz ->
+                                Box(
+                                    modifier = Modifier
+                                        .size(sz)
+                                        .clip(CircleShape)
+                                        .background(TextMutedIcon),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Image(
+                                        painter = painterResource(R.drawable.ic_launcher_monochrome),
+                                        contentDescription = "테마 아이콘",
+                                        colorFilter = ColorFilterIcon.tint(BgBase),
+                                        modifier = Modifier.size(sz),
+                                    )
+                                }
+                            }
+                        }
+
+                        listOf(120.dp, 60.dp, 36.dp).forEach { size ->
+                            Text(
+                                text = "${size.value.toInt()}dp",
+                                color = Lime,
+                                modifier = Modifier.padding(bottom = 8.dp),
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                candidates.forEach { (label, res) ->
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(size)
+                                                .clip(CircleShape)
+                                                .background(
+                                                    Brush.verticalGradient(
+                                                        listOf(BgElevatedIcon, BgBase),
+                                                    ),
+                                                ),
+                                            contentAlignment = Alignment.Center,
+                                        ) {
+                                            Image(
+                                                painter = painterResource(res),
+                                                contentDescription = label,
+                                                // 안전영역(72/108)을 꽉 채운다 — 현행은 여기에
+                                                // scale 0.72 를 또 걸어 절반 이하로 줄었다.
+                                                modifier = Modifier.size(size * 0.66f),
+                                            )
+                                        }
+                                        if (size > 50.dp) {
+                                            Text(
+                                                text = label,
+                                                color = TextMutedIcon,
+                                                modifier = Modifier.padding(top = 6.dp),
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                            Spacer(Modifier.height(22.dp))
+                        }
+                    }
 
                     // 맛보기 문제 — 로그인 전 첫 화면. 고르면 같은 화면에서 결과+로그인.
                     "taste" -> TasteQuizScreen(onKakaoLogin = {}, onGoogleLogin = {})
