@@ -24,6 +24,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -330,8 +331,10 @@ fun QuizAnswerBody(
         if (answer.relatedArticle != RelatedArticle.EMPTY &&
             answer.relatedArticle.title.isNotBlank()
         ) {
-            Spacer(Modifier.height(12.dp))
-            RelatedArticleCard(
+            // 카드들과 다른 종류의 블록이므로 여백을 한 단 더 준다
+            // (블록 간 여백 > 블록 내 여백이어야 경계가 보인다).
+            Spacer(Modifier.height(20.dp))
+            RelatedArticleRow(
                 article = answer.relatedArticle,
                 onClick = { onArticleClick(answer.relatedArticle) },
             )
@@ -679,39 +682,61 @@ private fun KeywordCard(keyword: String) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 관련 기사 — 다크 배경에 어울리는 톤
+// 관련 기사 — 이 화면에서 유일한 "누를 수 있는" 블록
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * 관련 기사 — 이 화면에서 **유일하게 누를 수 있는 콘텐츠 블록**.
+ *
+ * 카드를 쓰지 않는다. 해설·알아두면 좋아요가 이미 같은 모양의 카드라, 배경을 한 단계
+ * 밝히고 테두리를 두르는 정도로는 "다른 종류"가 전달되지 않았다(실사용 지적) —
+ * 다크 화면에서 그 명도차는 그냥 "조금 밝은 카드"로 읽힌다. 색을 더 밝히는 대신
+ * **형태를 바꾼다**: 면을 지우고 구분선 위의 행으로 두면 위 두 블록과 즉시 갈린다.
+ * 오답노트 목록이 카드→구분선 행으로 간 것과 같은 문법이고, 이 화면의 면도 하나 줄어든다.
+ *
+ * 라벨과 글리프에 라임을 쓰는 건 이 앱 규칙(라임 = 누를 수 있음)에 맞춘 것이다.
+ * 글리프가 셰브론이 아니라 **외부 링크**인 이유: 탭하면 브라우저로 나간다.
+ * 셰브론은 "앱 안으로 들어간다"는 뜻이라 여기선 거짓말이 된다.
+ */
 @Composable
-private fun RelatedArticleCard(article: RelatedArticle, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        onClick = onClick,
-        colors = CardDefaults.cardColors(containerColor = BgSubtle),
-        border = BorderStroke(1.dp, Outline),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "관련 기사",
-                style = MaterialTheme.typography.labelMedium,
-                color = TextSecondary,
-                fontWeight = FontWeight.Bold,
-            )
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = article.title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = TextPrimary,
-                maxLines = 2,
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = article.source,
-                style = MaterialTheme.typography.bodySmall,
-                color = TextMuted,
+private fun RelatedArticleRow(article: RelatedArticle, onClick: () -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        HorizontalDivider(color = Outline)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "관련 기사",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Lime,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = article.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextPrimary,
+                    maxLines = 2,
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = article.source,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextMuted,
+                )
+            }
+            Spacer(Modifier.size(12.dp))
+            Image(
+                painter = painterResource(R.drawable.ic_external_link),
+                contentDescription = null,
+                colorFilter = ColorFilter.tint(Lime),
+                modifier = Modifier.size(20.dp),
             )
         }
     }
