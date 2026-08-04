@@ -263,6 +263,9 @@ class ShowcaseActivity : ComponentActivity() {
                                 ).copy(
                                     waterCount = i % 7,
                                     dueDate = if (i % 5 == 0) LocalDate.now() else LocalDate.now().plusDays(3),
+                                    // due 는 10개지만 서버가 캡(5)을 적용해 5개만 오늘 세트다.
+                                    // 후광도 이 플래그를 따르므로 배지 숫자와 개수가 맞는다.
+                                    inTodayQueue = i % 5 == 0 && i < 25,
                                 )
                             },
                             graduated = emptyList(),

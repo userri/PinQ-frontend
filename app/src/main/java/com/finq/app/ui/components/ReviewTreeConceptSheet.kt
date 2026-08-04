@@ -58,6 +58,26 @@ private data class ConceptPoint(
     val body: String,
 )
 
+/**
+ * 정원(REFERENCE)에서만 맨 앞에 붙는 항목.
+ *
+ * `?` 를 누른 사람의 질문 순서는 "왜 어떤 건 빛나지?" → "물은 언제?" → "틀리면?"
+ * → "나무는?" 이다. 후광은 **지금 화면에 보이는 것**에 대한 질문이라 규칙·불안·보상
+ * 셋보다 앞선다. 축하 시트(CELEBRATION)는 정원이 아니라 첫 오답 직후라 뜬금없다.
+ *
+ * 후광과 하루 캡을 한 항목에 합친 건 같은 사실의 앞뒤이기 때문이다 — 나누면 사용자가
+ * 둘을 연결해야 하지만, 붙이면 "빛나는 것 = 5개 = 오늘 할 일"이 한 번에 잡힌다.
+ * 캡은 이번에 새로 생긴 규칙이라 어딘가엔 반드시 설명이 있어야 하고, 그 자리가 여기다.
+ *
+ * 숫자 5 는 하드코딩한다. 서버 상수(DAILY_QUEUE_CAP)가 바뀌면 그건 규칙 변경이라
+ * 문구도 어차피 손봐야 한다.
+ */
+private val GlowPoint = ConceptPoint(
+    R.drawable.ic_stage_grass,
+    "빛나는 잔디가 오늘 몫이에요",
+    "하루 최대 5개까지 물을 줄 수 있어요. 나머지는 다음 날 차례가 와요",
+)
+
 /** 제목 3개만 훑어도 요지가 잡히도록 쓴다 — 일정 규칙·불안 해소·보상 순. */
 private val ConceptPoints = listOf(
     ConceptPoint(
@@ -156,7 +176,11 @@ fun ReviewTreeConceptSheet(
             HorizontalDivider(color = Outline)
             Spacer(Modifier.height(18.dp))
 
-            ConceptPoints.forEachIndexed { i, point ->
+            val points = when (variant) {
+                ReviewTreeConceptVariant.REFERENCE -> listOf(GlowPoint) + ConceptPoints
+                ReviewTreeConceptVariant.CELEBRATION -> ConceptPoints
+            }
+            points.forEachIndexed { i, point ->
                 if (i > 0) Spacer(Modifier.height(16.dp))
                 ConceptPointRow(point)
             }

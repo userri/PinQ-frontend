@@ -91,4 +91,11 @@ data class GardenItemApiResponse(
     val waterCount: Int = 0,
     val absorbedCount: Int = 0,
     val graduatedAt: String? = null,
+    /**
+     * 오늘 복습 세트(캡 적용 상위 N개)에 **실제로 뽑혔는가**. 졸업 항목은 항상 false.
+     * 정원 후광의 유일한 근거다 — dueDate 로 클라가 판정하면 캡에 잘린 백로그까지
+     * 빛나서 배지([GardenApiResponse.todayQueueSize])와 개수가 어긋난다.
+     * 구서버엔 없음 → 기본 false(후광이 안 켜질 뿐 크래시는 없다).
+     */
+    val inTodayQueue: Boolean = false,
 )

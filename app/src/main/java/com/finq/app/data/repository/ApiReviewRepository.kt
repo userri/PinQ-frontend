@@ -85,6 +85,7 @@ private fun GardenItemApiResponse.toDomain(): GardenItem = GardenItem(
     waterCount = waterCount,
     absorbedCount = absorbedCount,
     graduatedAtIso = graduatedAt,
+    inTodayQueue = inTodayQueue,
 )
 
 /** ISO-8601 `yyyy-MM-dd`. 파싱 실패 시 null — 안내 문구를 생략한다. */

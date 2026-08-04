@@ -124,8 +124,9 @@ internal fun computeNightScene(garden: ReviewGarden, today: LocalDate): SceneLay
             xFrac = (0.07f + gx * 0.86f + (rnd.nextFloat() - 0.5f) * 0.07f).coerceIn(0.06f, 0.94f),
             depth = (gd + (rnd.nextFloat() - 0.5f) * 0.18f).coerceIn(0f, 1f),
             rotationDeg = (rnd.nextFloat() - 0.5f) * 7f,
-            due = item.graduatedAtIso == null &&
-                item.dueDate != null && !item.dueDate.isAfter(today),
+            // 서버가 뽑은 오늘 세트만 빛난다. dueDate 로 직접 판정하면 하루 캡에
+            // 잘린 백로그까지 켜져서 "빛나는 건 10개인데 배지는 5개"가 된다.
+            due = item.inTodayQueue,
         )
     }
     return SceneLayout(front = plants, restCount = restCount, restTreeFrac = restTreeFrac)

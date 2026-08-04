@@ -81,6 +81,12 @@ data class GardenItem(
     val absorbedCount: Int,
     /** 졸업 시각 ISO-8601. 자라는 중이면 null. */
     val graduatedAtIso: String?,
+    /**
+     * 오늘 물 줄 세트에 뽑혔는가 — 서버가 캡을 적용해 정한다.
+     * [ReviewGarden.todayQueueSize] 는 이 플래그가 true 인 항목 수라, 후광 개수와
+     * 배지 숫자가 정의상 일치한다. dueDate 로 직접 판정하지 말 것.
+     */
+    val inTodayQueue: Boolean = false,
 )
 
 /**
