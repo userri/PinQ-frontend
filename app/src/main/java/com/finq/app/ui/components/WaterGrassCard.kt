@@ -40,15 +40,13 @@ import com.finq.app.ui.theme.Lime
 import com.finq.app.ui.theme.TextMuted
 import com.finq.app.ui.theme.TextPrimary
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
-private val DUE_DATE_FORMAT = DateTimeFormatter.ofPattern("M/d")
 
 /**
  * 홈의 오답 복습 진입 카드.
  *
  * 복습할 게 있으면 "오늘 물 줄 잔디 N개" (클릭 가능),
- * 없으면 [nextDueDate] 로 "다음 물 주기 7/12" 를 보여주고 클릭을 막는다.
+ * 없으면 [nextDueDate] 로 "다음 물주기 내일" 을 보여주고 클릭을 막는다([nextWateringText]).
  * 둘 다 없으면(복습 큐 자체가 빔) 카드를 그리지 않는다 — 호출부가 판단한다.
  */
 @Composable
@@ -104,7 +102,7 @@ fun WaterGrassCard(
                         // 규칙 설명("3번 맞히면 나무")은 개념 시트가 맡는다. 여기선 한 줄이면 충분하고,
                         // 길면 좁은 카드에서 어색하게 줄바꿈된다(3번 / 맞히면).
                         hasReviews -> "복습할수록 자라요"
-                        nextDueDate != null -> "다음 물 주기 ${nextDueDate.format(DUE_DATE_FORMAT)}"
+                        nextDueDate != null -> nextWateringText(nextDueDate)
                         else -> "복습할 오답이 없어요"
                     },
                     style = MaterialTheme.typography.bodySmall,

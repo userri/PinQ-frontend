@@ -113,6 +113,7 @@ import com.finq.app.data.local.markFeedbackBannerDismissed
 import com.finq.app.data.local.markFeedbackHintShown
 import com.finq.app.data.local.markTasteQuizSeen
 import com.finq.app.data.local.shouldShowFeedbackBanner
+import com.finq.app.ui.components.nextWateringText
 import com.finq.app.ui.components.openFeedbackForm
 import com.finq.app.ui.onboarding.OnboardingScreen
 import com.finq.app.ui.onboarding.hasSeenOnboarding
@@ -151,10 +152,6 @@ import kotlinx.coroutines.launch
  *   공식 재도전은 오답노트 → 복습(REVIEW_GRAPH, api/reviews 하위 endpoint) 경로뿐이며,
  *   복습 결과는 오늘의 정답률/스트릭에 영향을 주지 않는다.
  */
-/** 복습 "다음 물 주기" 날짜 표기. */
-private val reviewDueDateFormat: java.time.format.DateTimeFormatter =
-    java.time.format.DateTimeFormatter.ofPattern("M월 d일")
-
 object FinQRoutes {
     const val LOGIN = "login"
 
@@ -937,7 +934,7 @@ fun FinQNavHost(
                             // waterCount 는 시도 누계라 진척이 아니다 — 나란히 두면 어느 쪽이
                             // "얼마나 자랐나"인지 흐려진다. 여기 남길 건 다음 약속뿐.
                             nextReviewText = answer.nextDueDate?.let {
-                                "다음 물주기 ${it.format(reviewDueDateFormat)}"
+                                nextWateringText(it)
                             },
                             reviewStage = answer.stage,
                             nextLabel = if (state.isLastItem) "복습 완료" else "다음 복습",
@@ -951,6 +948,11 @@ fun FinQNavHost(
                     val from = entry.reviewFrom(navController)
 
                     BackHandler { navController.exitReview(from) }
+
+                    // 완료 시점의 사용자 단위 다음 물주기를 새로 받는다 — 세션 시작 때
+                    // 받은 값은 "오늘 몫이 남아 있던" 시점의 답이다.
+                    LaunchedEffect(Unit) { vm.refreshNextDueDate() }
+
                     ReviewDoneScreen(
                         reviewedCount = state.totalCount,
                         correctCount = state.correctCount,

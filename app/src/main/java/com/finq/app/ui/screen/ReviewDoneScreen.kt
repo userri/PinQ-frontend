@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.finq.app.R
+import com.finq.app.ui.components.nextWateringText
 import com.finq.app.ui.theme.BgBase
 import com.finq.app.ui.theme.FinQTheme
 import com.finq.app.ui.theme.Lime
@@ -35,9 +36,7 @@ import com.finq.app.ui.theme.TextMuted
 import com.finq.app.ui.theme.TextPrimary
 import com.finq.app.ui.theme.TextSecondary
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
-private val DUE_DATE_FORMAT = DateTimeFormatter.ofPattern("M/d")
 
 /**
  * 복습 세션 완료 화면 — "잔디에 물 줬어요".
@@ -119,7 +118,7 @@ fun ReviewDoneScreen(
         if (nextDueDate != null) {
             Spacer(Modifier.height(12.dp))
             Text(
-                text = "다음 물 주기 ${nextDueDate.format(DUE_DATE_FORMAT)}",
+                text = nextWateringText(nextDueDate),
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary,
                 textAlign = TextAlign.Center,
@@ -127,12 +126,11 @@ fun ReviewDoneScreen(
         }
 
         Spacer(Modifier.height(10.dp))
-        Text(
-            text = "복습은 스트릭·정답률 기록에 영향 없어요",
-            style = MaterialTheme.typography.labelSmall,
-            color = TextMuted,
-            textAlign = TextAlign.Center,
-        )
+            // "복습은 스트릭·정답률 기록에 영향 없어요" 는 뺐다. 정답률이 안 떨어지는 건
+            // 통계 화면을 따로 봐야 아는 사실이라 미리 알리면 없던 불안을 만든다(관찰
+            // 불가능한 건 설명하지 않는다). 복습 세션 헤더에서도 같은 이유로 이미 뺐고,
+            // 무엇보다 여기는 성취의 순간이다 — 축하 아래에 "무엇이 일어나지 않았는지"를
+            // 붙이면 김이 빠진다. 궁금한 사람을 위한 설명은 개념 시트가 맡는다.
 
         Spacer(Modifier.height(32.dp))
         Button(

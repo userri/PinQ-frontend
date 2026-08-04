@@ -32,7 +32,10 @@ data class ReviewSessionUiState(
     val correctCount: Int = 0,
     /** 세션의 모든 문제를 다 푼 상태. */
     val isFinished: Boolean = false,
-    /** 복습할 게 없을 때 안내할 다음 물 주기 날짜. */
+    /**
+     * **사용자 단위** 다음 물 주기 — `GET /api/reviews/today` 가 준 값만 쓴다.
+     * 채점 응답에도 같은 이름 필드가 있지만 그건 그 문제 하나의 예정일이라 여기 넣으면 안 된다.
+     */
     val nextDueDate: LocalDate? = null,
     /** 일회성 안내(스낵바용). 예: 이미 졸업한 문제 404. */
     val notice: String? = null,
@@ -85,6 +88,22 @@ class ReviewSessionViewModel(
         }
     }
 
+    /**
+     * 세션을 마친 뒤 사용자 단위 상태를 다시 받는다.
+     *
+     * 세션 시작 때 받은 `nextDueDate` 는 "오늘 몫이 남아 있던" 시점의 값이라,
+     * 다 풀고 난 지금의 답이 아니다. 캡에 잘린 백로그가 남았으면 서버가 오늘+1 을 준다.
+     * 목록(items)은 건드리지 않는다 — 완료 화면이 세션 결과를 계속 보여줘야 한다.
+     */
+    fun refreshNextDueDate() {
+        viewModelScope.launch {
+            runCatching { reviewRepository.getTodayReviews() }
+                .onSuccess { today ->
+                    _uiState.update { it.copy(nextDueDate = today.nextDueDate) }
+                }
+        }
+    }
+
     fun selectOption(optionId: Long) {
         // 채점이 끝난 뒤에는 선택을 바꿀 수 없다.
         if (_uiState.value.lastAnswer != null) return
@@ -107,7 +126,11 @@ class ReviewSessionViewModel(
                             lastAnswer = answer,
                             correctCount = it.correctCount + if (answer.isCorrect) 1 else 0,
                             graduatedCount = it.graduatedCount + if (answer.graduated) 1 else 0,
-                            nextDueDate = answer.nextDueDate ?: it.nextDueDate,
+                            // nextDueDate 를 채점 응답으로 덮지 않는다. 채점 응답의 값은
+                            // **방금 푼 그 문제**의 다음 예정일(stage 2 면 +14일)이고,
+                            // 완료 화면이 물어야 할 건 "내가 언제 또 복습하나"라는
+                            // **사용자 단위** 날짜다. 둘을 섞어 "다음 물주기 8월 18일" 이
+                            // 뜨는데 실제로는 백로그가 남아 내일 또 해야 하는 상태였다.
                         )
                     }
                 }
