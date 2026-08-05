@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 백엔드 "복습 나무 가시화" 스펙(`/Users/iyr/SSAFY/PinQ-backend/docs/api/review-tree-visibility-frontend.md`)을 프론트에 연동한다 — 물 이력(waterCount/absorbedCount) 노출, 채점 응답 확장(기사·졸업 연출·404), 정원(garden) 화면 신설, 오답노트 복습 뱃지.
+**Goal:** 백엔드 "복습 나무 가시화" 스펙(`/Users/iyr/SSAFY/PinQ-backend/docs/decisions/review-tree-visibility-frontend.md`)을 프론트에 연동한다 — 물 이력(waterCount/absorbedCount) 노출, 채점 응답 확장(기사·졸업 연출·404), 정원(garden) 화면 신설, 오답노트 복습 뱃지.
 
 **Architecture:** 기존 복습 스택(ReviewApi → ReviewDtos → ApiReviewRepository → ReviewSessionViewModel → FinQNavigation REVIEW_GRAPH)에 필드를 기본값으로 추가해 하위 호환을 유지하고, garden 은 신규 route(`garden`) + 전용 ViewModel/Screen 으로 추가한다. 오답노트는 AttemptItem 에 nullable `review` 를 붙여 카드 뱃지만 확장한다.
 

@@ -408,6 +408,8 @@ class ShowcaseActivity : ComponentActivity() {
                         ConceptStatsSection(allAboveBarConcepts)
                         Spacer(Modifier.height(16.dp))
                         ConceptStatsSection(flatLowConcepts)
+                        Spacer(Modifier.height(16.dp))
+                        ConceptStatsSection(allLowVariedConcepts)
                     }
 
                     // 잔디밭 로딩 스켈레톤 (grass=null) — stale flash 수정 확인용
@@ -1172,15 +1174,34 @@ class ShowcaseActivity : ComponentActivity() {
         ConceptStats(categories = cats, weakest = cats[3])
     }
 
-    /** 전반이 낮아 지목 대상이 넷 — 배너를 숨겨야 한다(진단이 아니라 잔소리가 되므로). */
+    /**
+     * 넷이 같은 50% — 지목 대상이 [WEAK_GROUP_MAX] 를 넘어 **배너를 숨긴다**.
+     * 전반이 낮은 것이지 특정 개념이 약한 게 아니라 개념 진단으로 답할 문제가 아니다.
+     * 다만 **막대의 빨강은 남는다** — 순위가 아니라 기준 미달을 뜻하므로 여전히 참이다.
+     */
     private val flatLowConcepts: ConceptStats by lazy {
         val cats = listOf(
-            ConceptStat("INTEREST_RATE", "금리", 10, 6, 0.6f),
-            ConceptStat("EXCHANGE_RATE", "환율", 10, 6, 0.6f),
-            ConceptStat("STOCK", "증시", 10, 6, 0.6f),
-            ConceptStat("REAL_ESTATE", "부동산", 10, 6, 0.6f),
+            ConceptStat("INTEREST_RATE", "금리", 10, 5, 0.5f),
+            ConceptStat("EXCHANGE_RATE", "환율", 10, 5, 0.5f),
+            ConceptStat("STOCK", "증시", 10, 5, 0.5f),
+            ConceptStat("REAL_ESTATE", "부동산", 10, 5, 0.5f),
         )
         ConceptStats(categories = cats, weakest = cats[0])
+    }
+
+    /**
+     * 다섯이 전부 기준 미달이지만 값이 제각각 — 최저(41%) 하나만 지목된다.
+     * "다섯 개를 nn%, nn%, nn% … 로 나열하지 않는다"의 실제 모습.
+     */
+    private val allLowVariedConcepts: ConceptStats by lazy {
+        val cats = listOf(
+            ConceptStat("INTEREST_RATE", "금리", 27, 16, 16f / 27), // 59%
+            ConceptStat("EXCHANGE_RATE", "환율", 32, 17, 17f / 32), // 53%
+            ConceptStat("STOCK", "증시", 22, 10, 10f / 22), // 45%
+            ConceptStat("REAL_ESTATE", "부동산", 17, 7, 7f / 17), // 41%
+            ConceptStat("INFLATION", "물가", 19, 9, 9f / 19), // 47%
+        )
+        ConceptStats(categories = cats, weakest = cats[3])
     }
 
     /** 홈 정원 히어로 케이스용 샘플 정원. */
