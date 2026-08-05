@@ -6,6 +6,8 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -324,13 +326,40 @@ fun MyPageContent(
         )
         Spacer(Modifier.height(8.dp))
         InfoRow(label = "버전", value = appVersion)
-        // 온보딩 재열람 진입점. 값 대신 셰브론이 들어간 것 말고는 위 줄과 구조가 같다 —
-        // 화면 위계를 흔들지 않도록 부수 정보 톤을 유지한다.
-        NavRow(label = "앱 소개 다시 보기", onClick = onOpenOnboarding)
-        // 의견 창구 — 홈 배너는 한 번 닫으면 끝이라 상시 입구가 여기 남아야 한다.
-        // 종이비행기 아이콘은 홈 배너에서만 쓴다. 이 목록은 라벨+셰브론 리듬이고
-        // "의견 보내기"라는 말이 이미 아이콘이 할 말을 다 한다.
-        NavRow(label = "의견 보내기", onClick = onOpenFeedback)
+
+        Spacer(Modifier.height(24.dp))
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        Spacer(Modifier.height(16.dp))
+
+        // ── 도움말 · 의견 ──────────────────────────────────────────
+        //
+        // 버전과 한 덩어리로 두면 **읽는 것과 누르는 것이 같은 무게**가 된다 —
+        // 의견을 보내려던 사람도 훑다가 지나친다(실사용 보고). 섹션을 가르는 것만으론
+        // 부족했다. 형태가 같으면 층만 갈릴 뿐이라, 선두에 아이콘 열을 세워 형태부터
+        // 다르게 한다(오답노트 행이 "글자 벽"에서 벗어난 것과 같은 논리).
+        //
+        // 라임을 쓰는 이유: 이 페이지 하단에서 **누를 수 있는 건 이 둘뿐**이다.
+        // 앱 정보·알림·계정은 그대로 중립으로 둔다.
+        Text(
+            text = "도움말 · 의견",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = TextMuted,
+        )
+        Spacer(Modifier.height(4.dp))
+        ActionRow(
+            iconRes = R.drawable.ic_help_circle,
+            label = "앱 소개 다시 보기",
+            onClick = onOpenOnboarding,
+        )
+        ActionRow(
+            iconRes = R.drawable.ic_paper_plane,
+            label = "의견 보내기",
+            // 홈 배너는 한 번 닫으면 끝이라 그 뒤엔 이 줄이 유일한 창구다. 부담이
+            // 얼마인지 모르면 누르지 않으므로 배너가 쓰던 문구를 그대로 가져온다.
+            sublabel = "2분이면 됩니다 · 익명",
+            onClick = onOpenFeedback,
+        )
 
         Spacer(Modifier.height(24.dp))
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -848,21 +877,48 @@ private fun InfoRow(label: String, value: String) {
  * [InfoRow] 와 같은 줄에 값 대신 셰브론이 들어간 형태 — 누르면 다른 화면으로 간다.
  * 배경·테두리를 두르지 않는다(면을 늘리지 않고 타이포·여백으로만 구분).
  */
+/**
+ * 액션 행 — 선두 아이콘 + 라벨(+부제) + 셰브론.
+ *
+ * [InfoRow] 같은 읽기 전용 줄과 달리 **아이콘 열**이 있어 형태로 먼저 갈린다. 라임 아이콘은
+ * "이 줄은 누르는 것"이라는 신호이므로, 읽기만 하는 줄([InfoRow])에는 쓰지 않는다.
+ */
 @Composable
-private fun NavRow(label: String, onClick: () -> Unit) {
+private fun ActionRow(
+    iconRes: Int,
+    label: String,
+    onClick: () -> Unit,
+    sublabel: String? = null,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .heightIn(min = 48.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+            .heightIn(min = 56.dp)
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        Image(
+            painter = painterResource(iconRes),
+            contentDescription = null,
+            colorFilter = ColorFilter.tint(Lime),
+            modifier = Modifier.size(24.dp),
         )
+        Spacer(Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyLarge,
+                color = TextPrimary,
+            )
+            if (sublabel != null) {
+                Text(
+                    text = sublabel,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextMuted,
+                )
+            }
+        }
         Icon(
             painter = painterResource(R.drawable.ic_chevron_right),
             contentDescription = null,
