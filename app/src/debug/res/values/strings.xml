@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  디버그 빌드는 applicationId 가 .debug 로 갈라져 스토어 버전과 나란히 설치된다.
+  런처 아이콘이 둘 다 "경제잔디" 로 보이면 구분이 안 되므로 debug 소스셋에서 이름만 덮어쓴다.
+  (build type 리소스가 main 을 덮어쓰므로 중복 정의 오류는 나지 않는다.)
+-->
+<resources>
+    <string name="app_name">경제잔디 디버그</string>
+</resources>

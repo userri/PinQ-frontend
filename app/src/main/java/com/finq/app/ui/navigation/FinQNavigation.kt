@@ -841,6 +841,19 @@ fun FinQNavHost(
                         }
                     }
 
+                    // 채점 실패 — 문제를 띄운 채 실패했으면 화면을 갈아엎지 않고 스낵바로
+                    // 알린다. 고른 답이 남아 있어 바로 다시 제출할 수 있다. 아래 when 의
+                    // ReviewErrorBox 는 목록 자체를 못 불러온 경우(item == null)만 맡는다.
+                    LaunchedEffect(state.error) {
+                        if (state.error != null && state.currentItem != null) {
+                            snackbarHostState.showSnackbar(
+                                state.error!!,
+                                duration = SnackbarDuration.Short,
+                            )
+                            vm.clearError()
+                        }
+                    }
+
                     // 복습할 게 없거나 모두 끝나면 완료 화면으로.
                     LaunchedEffect(state.isFinished) {
                         if (state.isFinished) {
@@ -1310,6 +1323,13 @@ private fun QuizRoute(
     // 북마크 토글 실패 → 짧은 스낵바 (낙관적 업데이트는 VM 에서 이미 롤백됨).
     LaunchedEffect(Unit) {
         viewModel.bookmarkErrors.collect { msg ->
+            snackbarHostState.showSnackbar(msg, duration = SnackbarDuration.Short)
+        }
+    }
+
+    // 채점 제출 실패 → 문제 화면을 유지한 채 스낵바로만. 고른 답이 남아 바로 재시도된다.
+    LaunchedEffect(Unit) {
+        viewModel.submitErrors.collect { msg ->
             snackbarHostState.showSnackbar(msg, duration = SnackbarDuration.Short)
         }
     }

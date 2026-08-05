@@ -628,8 +628,12 @@ private fun WeekGrassStrip(
                     Text(
                         text = label,
                         style = MaterialTheme.typography.labelSmall,
-                        color = if (isFilled || isToday) Lime else TextMuted,
-                        fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
+                        // 라벨은 요일 축이라 서로 같은 무게로 읽혀야 한다. 예전엔 색이
+                        // "채운 날 또는 오늘" 두 뜻을 겸하고 굵기가 오늘을 한 번 더 말해,
+                        // 오늘이면서 채운 날 하나만 유독 튀었다. 채움은 막대(높이·색)가
+                        // 이미 말하므로 라벨 색은 오늘 하나만 맡는다.
+                        color = if (isToday) Lime else TextMuted,
+                        fontWeight = FontWeight.Normal,
                     )
                 }
             }
@@ -681,6 +685,12 @@ private fun TodayQuizCard(
 ) {
     val hasQuiz = quizCount > 0
 
+    // 오늘 하다 만 상태 — [quizCount] 는 **남은** 개수다. 1문제 풀고 나온 사람에게
+    // "오늘의 퀴즈 4문제"라고만 하면 오늘 4문제가 출제된 것으로 읽힌다. 진행중일 때만
+    // 분모를 붙여 잔량임을 문장이 직접 말하게 한다.
+    val solvedToday = (todayTotal - quizCount).coerceAtLeast(0)
+    val inProgress = hasQuiz && solvedToday > 0
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -711,7 +721,11 @@ private fun TodayQuizCard(
         Spacer(Modifier.size(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = if (hasQuiz) "오늘의 퀴즈 ${quizCount}문제" else "오늘 분량 완료",
+                text = when {
+                    inProgress -> "오늘의 퀴즈"
+                    hasQuiz -> "오늘의 퀴즈 ${quizCount}문제"
+                    else -> "오늘 분량 완료"
+                },
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary,
@@ -723,6 +737,7 @@ private fun TodayQuizCard(
                     // 틀린 정보가 된다(2문제 남아도 3분). "매일 오전 6시 발송"은 이미 도착한
                     // 퀴즈를 보는 시점에 아무도 묻지 않는 질문이고, 둘을 붙여 줄바꿈까지 났다.
                     // 개수는 제목이 말하므로 여기선 행동→보상 연결만 한 줄로.
+                    inProgress -> "${todayTotal}문제 중 ${solvedToday}문제 풀었어요"
                     hasQuiz -> "풀면 오늘 잔디가 심어져요"
                     todayTotal > 0 -> "${todayCorrect}/${todayTotal} 정답 · 내일 오전 6시 새 퀴즈"
                     else -> "내일 오전 6시에 새 퀴즈가 도착해요"
@@ -733,7 +748,7 @@ private fun TodayQuizCard(
         }
         if (hasQuiz) {
             Spacer(Modifier.size(8.dp))
-            NeonCtaPill(text = "풀러 가기")
+            NeonCtaPill(text = if (inProgress) "이어 풀기" else "풀러 가기")
         }
     }
 }

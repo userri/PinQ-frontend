@@ -6,6 +6,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.finq.app.data.repository.LibraryRepository
 import com.finq.app.data.repository.QuizRepository
+import com.finq.app.ui.submitErrorMessage
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -39,6 +40,10 @@ class QuizSessionViewModel(
     /** 북마크 토글 실패 안내 — 1회성 스낵바 메시지. */
     private val _bookmarkErrors = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val bookmarkErrors: SharedFlow<String> = _bookmarkErrors.asSharedFlow()
+
+    /** 채점 제출 실패 — 문제 화면을 유지한 채 스낵바로만 알린다. */
+    private val _submitErrors = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val submitErrors: SharedFlow<String> = _submitErrors.asSharedFlow()
 
     init {
         loadQuizzesIfNeeded()
@@ -146,12 +151,11 @@ class QuizSessionViewModel(
                     }
                 }
                 .onFailure { e ->
-                    _uiState.update {
-                        it.copy(
-                            isSubmitting = false,
-                            error = e.message ?: "Submit failed",
-                        )
-                    }
+                    // uiState.error 로 올리지 않는다 — 그러면 화면 전체가 ErrorBox 로
+                    // 바뀌어 고른 답까지 사라지고, 재시도는 문제 목록 재로딩이 된다.
+                    // 제출 실패는 문제를 띄운 채 알리고 그 자리에서 다시 누르게 한다.
+                    _uiState.update { it.copy(isSubmitting = false) }
+                    _submitErrors.tryEmit(submitErrorMessage(e))
                 }
         }
     }

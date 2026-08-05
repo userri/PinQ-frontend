@@ -24,6 +24,10 @@ val localProps = Properties().apply {
 
 // 카카오 네이티브 앱키 (local.properties: kakao.native.app.key=YOUR_KEY)
 val kakaoKey = localProps.getProperty("kakao.native.app.key", "")
+// 디버그 전용 카카오 앱키 — debug 는 applicationId 가 .debug 로 갈라지는데
+// 카카오 콘솔의 앱키 하나에 패키지명을 하나만 등록할 수 있어 앱키를 분리한다.
+// 미설정 시 운영 앱키로 폴백하지만, 그 경우 디버그 빌드에서 카카오 로그인이 실패한다.
+val kakaoKeyDebug = localProps.getProperty("kakao.native.app.key.debug", "").ifBlank { kakaoKey }
 // 구글 웹 클라이언트 ID (local.properties: google.web.client.id=YOUR_ID)
 val googleClientId = localProps.getProperty("google.web.client.id", "")
 // 개발용 BASE_URL (local.properties: base.url=http://192.168.x.x:8080/)
@@ -80,6 +84,14 @@ android {
 
     buildTypes {
         debug {
+            // 스토어 버전과 나란히 설치되도록 패키지를 분리한다.
+            // 검증할 때마다 스토어판을 지우지 않아도 되고, 제거 통계에도 잡히지 않는다.
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+
+            buildConfigField("String", "KAKAO_NATIVE_APP_KEY", "\"$kakaoKeyDebug\"")
+            manifestPlaceholders["kakaoNativeAppKey"] = kakaoKeyDebug
+
             buildConfigField("String", "BASE_URL", "\"$debugBaseUrl\"")
             // 구글 공식 테스트 배너 광고 단위 — 개발 중 실광고 클릭으로 인한 계정 제재 방지
             buildConfigField(

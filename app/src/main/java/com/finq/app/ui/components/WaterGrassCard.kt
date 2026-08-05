@@ -62,6 +62,12 @@ fun WaterGrassCard(
 ) {
     val hasReviews = reviewCount > 0
 
+    // 오늘 하다 만 상태 — [reviewCount] 는 **남은** 개수라, 3개를 주고 나온 사람에게
+    // "오늘 물 줄 잔디 2개"라고만 하면 오늘 대상이 2개였던 걸로 읽힌다. 진행중일 때만
+    // 분모를 붙여 잔량임을 문장이 직접 말하게 한다.
+    val inProgress = hasReviews && reviewedToday > 0
+    val totalToday = reviewCount + reviewedToday
+
     // 유리 패널 — 밤하늘 배경이 비치는 반투명 카드(테두리 없음).
     Card(
         modifier = modifier
@@ -95,6 +101,7 @@ fun WaterGrassCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = when {
+                        inProgress -> "잔디 물주기"
                         hasReviews -> "오늘 물 줄 잔디 ${reviewCount}개"
                         // 오늘 물을 준 적이 있으면 "없어요"가 아니라 "다 했어요"다.
                         // 두 상태를 한 문구로 뭉치면, 5개를 다 한 사람과 애초에 할 게
@@ -111,6 +118,7 @@ fun WaterGrassCard(
                     text = when {
                         // 규칙 설명("3번 맞히면 나무")은 개념 시트가 맡는다. 여기선 한 줄이면 충분하고,
                         // 길면 좁은 카드에서 어색하게 줄바꿈된다(3번 / 맞히면).
+                        inProgress -> "${totalToday}개 중 ${reviewedToday}개 줬어요"
                         hasReviews -> "복습할수록 자라요"
                         // 오늘 물을 줬으면 한 일을 말한다. 데일리 카드는 완주 시 "4/5 정답"
                         // 이라는 성취를 보여주는데 여기만 "없어요"라는 부정형이면, 방금
@@ -127,7 +135,7 @@ fun WaterGrassCard(
             }
             if (hasReviews) {
                 Spacer(Modifier.size(8.dp))
-                NeonCtaPill(text = "물 주러 가기")
+                NeonCtaPill(text = if (inProgress) "이어서 주기" else "물 주러 가기")
             }
         }
     }

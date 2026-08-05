@@ -104,11 +104,30 @@ class ShowcaseActivity : ComponentActivity() {
                         GrassCalendarCard(grass = sampleGrass)
                     }
 
-                    // 복습 진입 카드 3상태 + 완료 화면
+                    // 복습 진입 카드 4상태 + 완료 화면
                     "review" -> Column(
                         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)
                     ) {
+                        // 미착수 — 남은 수가 곧 오늘 전체다.
                         WaterGrassCard(reviewCount = 3, nextDueDate = null, onClick = {})
+                        Spacer(Modifier.height(12.dp))
+                        // 진행중 — 5개 중 2개를 준 상태. 분모가 보여야 잔량으로 읽힌다.
+                        WaterGrassCard(
+                            reviewCount = 3,
+                            nextDueDate = null,
+                            onClick = {},
+                            reviewedToday = 2,
+                            grownToday = 1,
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        // 완료 — 오늘 다 줬다.
+                        WaterGrassCard(
+                            reviewCount = 0,
+                            nextDueDate = LocalDate.now().plusDays(4),
+                            onClick = {},
+                            reviewedToday = 5,
+                            grownToday = 4,
+                        )
                         Spacer(Modifier.height(12.dp))
                         WaterGrassCard(reviewCount = 0, nextDueDate = LocalDate.now().plusDays(4), onClick = {})
                         Spacer(Modifier.height(12.dp))
@@ -839,6 +858,29 @@ class ShowcaseActivity : ComponentActivity() {
                         onRetry = {},
                         nickname = "유리",
                         reviewCount = 3,
+                        garden = sampleGarden,
+                    )
+
+                    // 하다 만 상태 — 5문제 중 1문제만 풀고 홈으로 돌아왔다.
+                    // 퀴즈 카드는 "오늘의 퀴즈 / 5문제 중 1문제 풀었어요 / 이어 풀기",
+                    // 물주기 카드는 "잔디 물주기 / 5개 중 2개 줬어요 / 이어서 주기"여야 한다.
+                    // 남은 수만 보여주던 옛 문구("오늘의 퀴즈 4문제")는 4문제 출제로 읽혔다.
+                    "home_partial" -> HomeScreen(
+                        quizCount = 4,
+                        todayTotal = 5,
+                        todayCorrect = 1,
+                        streak = 7,
+                        solvedToday = false,
+                        maxStreak = 15,
+                        weekLevels = listOf(2, 0, 4, 1, 3, -1, -1),
+                        isLoading = false,
+                        error = null,
+                        onStartQuiz = {},
+                        onRetry = {},
+                        nickname = "유리",
+                        reviewCount = 3,
+                        reviewedToday = 2,
+                        grownToday = 1,
                         garden = sampleGarden,
                     )
 

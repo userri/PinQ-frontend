@@ -7,6 +7,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.finq.app.data.repository.ReviewAnswer
 import com.finq.app.data.repository.ReviewItem
 import com.finq.app.data.repository.ReviewRepository
+import com.finq.app.ui.submitErrorMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -159,8 +160,12 @@ class ReviewSessionViewModel(
                         }
                         loadReviews()
                     } else {
+                        // 화면은 문제 그대로 남는다 — 답이 날아가면 다시 고르게 되므로.
+                        // 대신 실패를 반드시 말해야 한다. 예전엔 여기서 state 만 채우고
+                        // 문제 화면이 error 를 읽지 않아, 서버가 500 을 줘도 사용자에겐
+                        // "눌렀는데 아무 일도 안 일어남"으로 보였다.
                         _uiState.update {
-                            it.copy(isSubmitting = false, error = e.message ?: "채점에 실패했어요")
+                            it.copy(isSubmitting = false, error = submitErrorMessage(e))
                         }
                     }
                 }
@@ -169,6 +174,11 @@ class ReviewSessionViewModel(
 
     fun clearNotice() {
         _uiState.update { it.copy(notice = null) }
+    }
+
+    /** 채점 실패 안내를 사용자가 본 뒤 지운다 — 문제 화면은 그대로 두고 재시도만 유도한다. */
+    fun clearError() {
+        _uiState.update { it.copy(error = null) }
     }
 
     /** 정답 화면에서 "다음" — 마지막 문제였으면 세션을 끝낸다. */
