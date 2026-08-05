@@ -56,39 +56,24 @@ fun ConceptStatsSection(
             fontWeight = FontWeight.Bold,
             color = TextPrimary,
         )
-        val allBelow = isAllBelowBar(stats)
-        val weakGroup = weakConceptGroup(stats)
-        // 배너도 안내 문구도 없는 경우(지목 과다)가 있다. 그때 여백만 남으면 제목이 뜬금없이
-        // 떠 보이므로, 사이 간격은 실제로 뭔가 그릴 때만 넣는다.
-        //
-        // 지목할 수 없는 두 상태(표본 부족 / 전부 미달)는 **같은 슬롯·같은 스타일**로 둔다.
-        // 여기에 액센트 바를 남기면 색만 뺀 경고가 되어 애매해진다.
-        val mutedLine = when {
-            allBelow -> "아직 익숙해지는 중이에요"
-            stats.weakest == null -> "조금 더 풀면 취약 개념을 진단해드려요"
-            else -> null
+        val diagnosis = conceptDiagnosis(stats)
+        Spacer(Modifier.height(12.dp))
+        when (diagnosis) {
+            is ConceptDiagnosis.Weak -> WeakConceptBanner(diagnosis.concepts)
+            // 지목이 없는 상태들은 **같은 슬롯·같은 스타일**로 둔다. 여기에 경고 액센트를
+            // 남기면 색만 뺀 경고가 되어 애매해진다.
+            else -> Text(
+                text = diagnosis.mutedLine(),
+                style = MaterialTheme.typography.bodySmall,
+                color = TextMuted,
+            )
         }
-        when {
-            weakGroup.isNotEmpty() -> {
-                Spacer(Modifier.height(12.dp))
-                WeakestConceptBanner(weakGroup)
-                Spacer(Modifier.height(14.dp))
-            }
-            mutedLine != null -> {
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    text = mutedLine,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextMuted,
-                )
-                Spacer(Modifier.height(14.dp))
-            }
-            else -> Spacer(Modifier.height(14.dp))
-        }
+        Spacer(Modifier.height(14.dp))
 
+        val weak = (diagnosis as? ConceptDiagnosis.Weak)?.concepts.orEmpty().toSet()
         stats.categories.forEachIndexed { index, stat ->
             if (index > 0) Spacer(Modifier.height(10.dp))
-            ConceptBar(stat = stat, isWeak = !allBelow && stat.isBelowBar())
+            ConceptBar(stat = stat, isWeak = stat in weak)
         }
     }
 }
@@ -96,8 +81,8 @@ fun ConceptStatsSection(
 /** 진단에 쓰는 최소 표본. 서버 `UserStatsService.weakest` 와 같은 값이어야 한다. */
 private const val MIN_SAMPLE = 3
 
-/** 이보다 많이 걸리면 특정 개념이 약한 게 아니라 전반이 낮은 것이라 배너를 숨긴다. */
-private const val WEAK_GROUP_MAX = 3
+/** 이보다 많이 지목되면 이름을 나열하지 않고 개수로 말한다 — 줄이 넘치면 표가 된다. */
+private const val WEAK_NAME_MAX = 3
 
 /**
  * 막대를 빨갛게 칠하는 절대 기준 — **표시 정답률 60% 미만**.
@@ -118,39 +103,50 @@ private fun ConceptStat.isBelowBar(): Boolean =
     total >= MIN_SAMPLE && correctRate.toPercent() < WEAK_BAR_PERCENT
 
 /**
- * 화면에 "흔들린다"고 지목할 개념들. 비어 있으면 배너를 그리지 않는다.
+ * 개념 목록 하나에 대한 진단. **막대의 빨강과 배너 문구는 같은 집합에서 나온다.**
  *
- * 서버의 `weakest` 는 `min()` 이라 **동률이어도 항상 하나**만 내려온다(동률 시 표본 많은 쪽).
- * 그 결과 같은 58% 인데 환율만 빨갛고 부동산은 라임이 되는 일이 실제로 났다 — 사용자는
- * 빨강을 "나쁘다"로 읽는데 실제 의미는 "최저 하나"라 색이 거짓말을 한 것이다.
- * 그래서 **화면에 보이는 값(반올림 %) 기준으로** 동률을 전부 묶는다.
- *
- * 후보는 [isBelowBar] 를 통과한 것뿐이다 — 전부 잘하는 사람에게 최저 하나를 잡아
- * "84% 개념이 흔들려요"라고 하면 거짓이다. 지목은 **기준 미달일 때만** 한다.
- *
- * 전부 비슷하게 낮으면 지목이 아니라 잔소리가 되므로 [WEAK_GROUP_MAX] 를 넘으면 숨긴다.
- * (막대의 빨강은 그대로 남는다 — 그건 순위가 아니라 기준 미달을 뜻하므로 여전히 참이다.)
+ * 종전엔 빨강은 "기준 미달 전부", 배너는 "표시값 동률 최저"를 말했다. 서버 `weakest` 가
+ * `min()` 이라 하나만 내려주던 시절의 흔적인데, 절대 기준을 도입한 뒤로는 존재 이유가
+ * 사라졌다. 그동안 구멍이 둘 있었다 — 동률이 넷 이상이면 빨강 넷에 **아무 말이 없었고**,
+ * 값이 제각각이면 빨강 다섯 중 **하나만 이름이 불렸다**(실사용 지적).
  */
-/**
- * 표본이 [MIN_SAMPLE] 이상인 개념이 **전부** 기준 미달인가.
- *
- * 이때는 화면이 통째로 붉어져 빨강이 아무것도 구별해주지 못하고 질책만 남는다
- * (실기기 확인). 그래서 이 경우에만 경고색을 완전히 끄고 문구 한 줄로 받는다.
- * 하나라도 기준 이상이면 빨강은 여전히 "저 줄은 기준 미달"을 구별해주므로 그대로 둔다.
- */
-internal fun isAllBelowBar(stats: ConceptStats): Boolean {
-    val samples = stats.categories.filter { it.total >= MIN_SAMPLE }
-    return samples.isNotEmpty() && samples.all { it.isBelowBar() }
+internal sealed interface ConceptDiagnosis {
+    /** 표본 [MIN_SAMPLE] 이상인 개념이 아직 없다. */
+    data object NotEnough : ConceptDiagnosis
+
+    /**
+     * 표본이 있는 개념이 **전부** 기준 미달.
+     *
+     * 화면이 통째로 붉어지면 빨강이 아무것도 구별해주지 못하고 질책만 남는다(실기기 확인).
+     * 이때만 경고색을 완전히 끄고 문구 한 줄로 받는다.
+     */
+    data object AllBelow : ConceptDiagnosis
+
+    /** 기준 미달이 있고 기준 이상도 있다 — 빨강이 아직 구별해주므로 남긴다. */
+    data class Weak(val concepts: List<ConceptStat>) : ConceptDiagnosis
+
+    /** 표본이 있는 개념이 전부 기준 이상. */
+    data object AllGood : ConceptDiagnosis
 }
 
-internal fun weakConceptGroup(stats: ConceptStats): List<ConceptStat> {
-    if (stats.weakest == null) return emptyList() // 표본 부족 — 서버 판단을 따른다.
-    // 전부 미달이면 최저 하나를 골라도 "이것 때문"이 아니다.
-    if (isAllBelowBar(stats)) return emptyList()
-    val eligible = stats.categories.filter { it.isBelowBar() }
-    val lowest = eligible.minOfOrNull { it.correctRate.toPercent() } ?: return emptyList()
-    val group = eligible.filter { it.correctRate.toPercent() == lowest }
-    return if (group.size > WEAK_GROUP_MAX) emptyList() else group
+/** 배너를 그리지 않는 상태들의 한 줄. [ConceptDiagnosis.Weak] 은 배너가 대신 말한다. */
+private fun ConceptDiagnosis.mutedLine(): String = when (this) {
+    ConceptDiagnosis.NotEnough -> "조금 더 풀면 취약 개념을 진단해드려요"
+    ConceptDiagnosis.AllBelow -> "아직 익숙해지는 중이에요"
+    ConceptDiagnosis.AllGood -> "모든 개념이 안정적이에요"
+    is ConceptDiagnosis.Weak -> ""
+}
+
+/** 표본 [MIN_SAMPLE] 이상인 개념을 [WEAK_BAR_PERCENT] 로 갈라 상태를 정한다. */
+internal fun conceptDiagnosis(stats: ConceptStats): ConceptDiagnosis {
+    val samples = stats.categories.filter { it.total >= MIN_SAMPLE }
+    if (samples.isEmpty()) return ConceptDiagnosis.NotEnough
+    val below = samples.filter { it.isBelowBar() }.sortedBy { it.correctRate }
+    return when (below.size) {
+        0 -> ConceptDiagnosis.AllGood
+        samples.size -> ConceptDiagnosis.AllBelow
+        else -> ConceptDiagnosis.Weak(below)
+    }
 }
 
 /**
@@ -163,7 +159,7 @@ internal fun weakConceptGroup(stats: ConceptStats): List<ConceptStat> {
  * 페이지가 전부 평평해진 뒤로 혼자 카드처럼 떠 보였다. 지금은 좌측 3dp 액센트만 남긴다.
  */
 @Composable
-private fun WeakestConceptBanner(group: List<ConceptStat>) {
+private fun WeakConceptBanner(group: List<ConceptStat>) {
     // 채운 박스를 쓰지 않는다 — 페이지의 다른 섹션이 전부 평평해진 뒤로는
     // 이것만 카드가 되어 혼자 떠 보인다. 경고 톤은 좌측 액센트 바가 담당한다.
     Row(
@@ -181,7 +177,13 @@ private fun WeakestConceptBanner(group: List<ConceptStat>) {
         Spacer(Modifier.width(10.dp))
         Column {
             Text(
-                text = "${group.joinToString(" · ") { it.displayName }} 개념이 흔들려요",
+                // 넷 이상이면 이름 대신 개수로 말한다 — 줄이 넘치면 진단이 아니라 표가 되고,
+                // 어느 개념인지는 바로 아래 막대 목록이 빨강으로 이미 보여준다.
+                text = if (group.size > WEAK_NAME_MAX) {
+                    "${group.size}개 개념이 흔들려요"
+                } else {
+                    "${group.joinToString(" · ") { it.displayName }} 개념이 흔들려요"
+                },
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary,
@@ -209,8 +211,8 @@ private fun WeakestConceptBanner(group: List<ConceptStat>) {
  * 부동산은 라임이 되어 **색이 거짓말**을 했다. 절대 기준으로 바꾸면 순위와 무관하게
  * 같은 값은 항상 같은 색이 된다.
  *
- * 배너 지목 집합과는 다를 수 있다(빨강 셋 중 최저 하나만 지목되는 식). 역할이 다르므로
- * 모순이 아니다 — 빨강은 "기준 미달", 배너는 "그중 가장 약한 것"이다.
+ * 빨강 집합과 배너가 말하는 집합은 **항상 같다**([ConceptDiagnosis.Weak]). 다르게 두었더니
+ * 이름 없이 빨간 줄이 남았다.
  */
 @Composable
 private fun ConceptBar(stat: ConceptStat, isWeak: Boolean) {

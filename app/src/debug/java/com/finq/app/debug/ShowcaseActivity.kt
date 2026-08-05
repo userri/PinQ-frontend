@@ -410,6 +410,8 @@ class ShowcaseActivity : ComponentActivity() {
                         ConceptStatsSection(flatLowConcepts)
                         Spacer(Modifier.height(16.dp))
                         ConceptStatsSection(allLowVariedConcepts)
+                        Spacer(Modifier.height(16.dp))
+                        ConceptStatsSection(allGoodConcepts)
                     }
 
                     // 잔디밭 로딩 스켈레톤 (grass=null) — stale flash 수정 확인용
@@ -1174,10 +1176,19 @@ class ShowcaseActivity : ComponentActivity() {
         ConceptStats(categories = cats, weakest = cats[3])
     }
 
+    /** 표본이 있는 개념이 전부 기준 이상 — 지목 대신 칭찬 한 줄. */
+    private val allGoodConcepts: ConceptStats by lazy {
+        val cats = listOf(
+            ConceptStat("INTEREST_RATE", "금리", 20, 17, 0.85f),
+            ConceptStat("EXCHANGE_RATE", "환율", 15, 10, 10f / 15),
+            ConceptStat("STOCK", "증시", 18, 13, 13f / 18),
+        )
+        ConceptStats(categories = cats, weakest = cats[1])
+    }
+
     /**
-     * 미달 넷이 같은 50% — 지목 대상이 상한을 넘어 **배너를 숨긴다**.
-     * 전반이 낮은 것이지 특정 개념이 약한 게 아니라 개념 진단으로 답할 문제가 아니다.
-     * 다만 기준 이상(금리)이 있으므로 **막대의 빨강은 남는다** — 아직 구별해주기 때문.
+     * 미달 넷 — 이름을 나열하면 줄이 넘치므로 **개수로** 말한다("4개 개념이 흔들려요").
+     * 기준 이상(금리)이 있으므로 막대의 빨강은 남는다 — 아직 구별해주기 때문.
      */
     private val flatLowConcepts: ConceptStats by lazy {
         val cats = listOf(
