@@ -56,28 +56,39 @@ fun ConceptStatsSection(
             fontWeight = FontWeight.Bold,
             color = TextPrimary,
         )
+        val allBelow = isAllBelowBar(stats)
         val weakGroup = weakConceptGroup(stats)
         // 배너도 안내 문구도 없는 경우(지목 과다)가 있다. 그때 여백만 남으면 제목이 뜬금없이
         // 떠 보이므로, 사이 간격은 실제로 뭔가 그릴 때만 넣는다.
-        if (weakGroup.isNotEmpty()) {
-            Spacer(Modifier.height(12.dp))
-            WeakestConceptBanner(weakGroup)
-            Spacer(Modifier.height(14.dp))
-        } else if (stats.weakest == null) {
-            Spacer(Modifier.height(12.dp))
-            Text(
-                text = "조금 더 풀면 취약 개념을 진단해드려요",
-                style = MaterialTheme.typography.bodySmall,
-                color = TextMuted,
-            )
-            Spacer(Modifier.height(14.dp))
-        } else {
-            Spacer(Modifier.height(14.dp))
+        //
+        // 지목할 수 없는 두 상태(표본 부족 / 전부 미달)는 **같은 슬롯·같은 스타일**로 둔다.
+        // 여기에 액센트 바를 남기면 색만 뺀 경고가 되어 애매해진다.
+        val mutedLine = when {
+            allBelow -> "아직 익숙해지는 중이에요"
+            stats.weakest == null -> "조금 더 풀면 취약 개념을 진단해드려요"
+            else -> null
+        }
+        when {
+            weakGroup.isNotEmpty() -> {
+                Spacer(Modifier.height(12.dp))
+                WeakestConceptBanner(weakGroup)
+                Spacer(Modifier.height(14.dp))
+            }
+            mutedLine != null -> {
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = mutedLine,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextMuted,
+                )
+                Spacer(Modifier.height(14.dp))
+            }
+            else -> Spacer(Modifier.height(14.dp))
         }
 
         stats.categories.forEachIndexed { index, stat ->
             if (index > 0) Spacer(Modifier.height(10.dp))
-            ConceptBar(stat = stat, isWeak = stat.isBelowBar())
+            ConceptBar(stat = stat, isWeak = !allBelow && stat.isBelowBar())
         }
     }
 }
@@ -120,8 +131,22 @@ private fun ConceptStat.isBelowBar(): Boolean =
  * 전부 비슷하게 낮으면 지목이 아니라 잔소리가 되므로 [WEAK_GROUP_MAX] 를 넘으면 숨긴다.
  * (막대의 빨강은 그대로 남는다 — 그건 순위가 아니라 기준 미달을 뜻하므로 여전히 참이다.)
  */
+/**
+ * 표본이 [MIN_SAMPLE] 이상인 개념이 **전부** 기준 미달인가.
+ *
+ * 이때는 화면이 통째로 붉어져 빨강이 아무것도 구별해주지 못하고 질책만 남는다
+ * (실기기 확인). 그래서 이 경우에만 경고색을 완전히 끄고 문구 한 줄로 받는다.
+ * 하나라도 기준 이상이면 빨강은 여전히 "저 줄은 기준 미달"을 구별해주므로 그대로 둔다.
+ */
+internal fun isAllBelowBar(stats: ConceptStats): Boolean {
+    val samples = stats.categories.filter { it.total >= MIN_SAMPLE }
+    return samples.isNotEmpty() && samples.all { it.isBelowBar() }
+}
+
 internal fun weakConceptGroup(stats: ConceptStats): List<ConceptStat> {
     if (stats.weakest == null) return emptyList() // 표본 부족 — 서버 판단을 따른다.
+    // 전부 미달이면 최저 하나를 골라도 "이것 때문"이 아니다.
+    if (isAllBelowBar(stats)) return emptyList()
     val eligible = stats.categories.filter { it.isBelowBar() }
     val lowest = eligible.minOfOrNull { it.correctRate.toPercent() } ?: return emptyList()
     val group = eligible.filter { it.correctRate.toPercent() == lowest }

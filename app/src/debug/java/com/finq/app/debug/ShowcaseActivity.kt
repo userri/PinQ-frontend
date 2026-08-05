@@ -1175,23 +1175,24 @@ class ShowcaseActivity : ComponentActivity() {
     }
 
     /**
-     * 넷이 같은 50% — 지목 대상이 [WEAK_GROUP_MAX] 를 넘어 **배너를 숨긴다**.
+     * 미달 넷이 같은 50% — 지목 대상이 상한을 넘어 **배너를 숨긴다**.
      * 전반이 낮은 것이지 특정 개념이 약한 게 아니라 개념 진단으로 답할 문제가 아니다.
-     * 다만 **막대의 빨강은 남는다** — 순위가 아니라 기준 미달을 뜻하므로 여전히 참이다.
+     * 다만 기준 이상(금리)이 있으므로 **막대의 빨강은 남는다** — 아직 구별해주기 때문.
      */
     private val flatLowConcepts: ConceptStats by lazy {
         val cats = listOf(
-            ConceptStat("INTEREST_RATE", "금리", 10, 5, 0.5f),
+            ConceptStat("INTEREST_RATE", "금리", 20, 17, 0.85f),
             ConceptStat("EXCHANGE_RATE", "환율", 10, 5, 0.5f),
             ConceptStat("STOCK", "증시", 10, 5, 0.5f),
             ConceptStat("REAL_ESTATE", "부동산", 10, 5, 0.5f),
+            ConceptStat("INFLATION", "물가", 10, 5, 0.5f),
         )
-        ConceptStats(categories = cats, weakest = cats[0])
+        ConceptStats(categories = cats, weakest = cats[1])
     }
 
     /**
-     * 다섯이 전부 기준 미달이지만 값이 제각각 — 최저(41%) 하나만 지목된다.
-     * "다섯 개를 nn%, nn%, nn% … 로 나열하지 않는다"의 실제 모습.
+     * **전부 미달** — 화면이 통째로 붉어지면 빨강이 아무것도 구별해주지 못하고 질책만 남는다.
+     * 이때만 경고색을 완전히 끄고 "아직 익숙해지는 중이에요" 한 줄로 받는다.
      */
     private val allLowVariedConcepts: ConceptStats by lazy {
         val cats = listOf(
