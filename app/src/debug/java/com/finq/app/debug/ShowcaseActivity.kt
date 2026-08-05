@@ -76,7 +76,7 @@ import java.time.LocalDate
  *
  *   adb shell am start -n com.finq.app/com.finq.app.debug.ShowcaseActivity --es screen home
  *
- * screen: home | home_pending | home_zero | home_done_water | home_done | quiz | answer | solo_quiz | solo_answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | mypage_trees_none | mypage_trees_zero | mypage_trees_few | mypage_trees_many | filters | wrongnote | history | detail_wrong | detail_correct | detail_graduated | detail_loading | detail_error | list_error | grass | review | review_graduated | review_next | garden | garden_empty | garden_growing_many | garden_trees_few | garden_trees_many | garden_canvas | concept | concept_sheet | concept_sheet_intro | onboarding | onboarding_grass | onboarding_tree | onboarding_replay | app_icon | store_icon | taste | home_feedback | review_grown | review_grown_last | review_wrong | wrongnote_store | version_gate | notice
+ * screen: home | home_pending | home_zero | home_done_water | home_done | quiz | answer | solo_quiz | solo_answer | solved_correct | solved_wrong | mypage | mypage_loading | mypage_grass_error | mypage_trees_none | mypage_trees_zero | mypage_trees_few | mypage_trees_many | filters | wrongnote | history | detail_wrong | detail_correct | detail_graduated | detail_loading | detail_error | list_error | grass | review | review_graduated | review_next | garden | garden_empty | garden_growing_many | garden_trees_few | garden_trees_many | garden_canvas | concept | concept_tie | concept_sheet | concept_sheet_intro | onboarding | onboarding_grass | onboarding_tree | onboarding_replay | app_icon | store_icon | taste | home_feedback | review_grown | review_grown_last | review_wrong | wrongnote_store | version_gate | notice
  * 릴리즈 빌드에는 포함되지 않는다(app/src/debug 소스셋).
  */
 class ShowcaseActivity : ComponentActivity() {
@@ -397,6 +397,15 @@ class ShowcaseActivity : ComponentActivity() {
                         ConceptStatsSection(sampleConcepts)
                         Spacer(Modifier.height(16.dp))
                         ConceptStatsSection(sampleConcepts.copy(weakest = null))
+                    }
+
+                    // 동률 지목 · 지목 과다 시 숨김
+                    "concept_tie" -> Column(
+                        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)
+                    ) {
+                        ConceptStatsSection(tiedConcepts)
+                        Spacer(Modifier.height(16.dp))
+                        ConceptStatsSection(flatLowConcepts)
                     }
 
                     // 잔디밭 로딩 스켈레톤 (grass=null) — stale flash 수정 확인용
@@ -1131,6 +1140,31 @@ class ShowcaseActivity : ComponentActivity() {
             ConceptStat("INFLATION", "물가", 5, 4, 0.80f),
         )
         ConceptStats(categories = cats, weakest = cats[1])
+    }
+
+    /**
+     * 실사용에서 문제가 된 모양: 25/43(58.14%)·7/12(58.33%) 는 화면에서 **둘 다 58%** 인데
+     * 서버 weakest 는 하나만 내려준다. 배너가 둘을 함께 지목하는지 본다.
+     */
+    private val tiedConcepts: ConceptStats by lazy {
+        val cats = listOf(
+            ConceptStat("INTEREST_RATE", "금리", 20, 17, 0.85f),
+            ConceptStat("EXCHANGE_RATE", "환율", 43, 25, 25f / 43),
+            ConceptStat("REAL_ESTATE", "부동산", 12, 7, 7f / 12),
+            ConceptStat("INFLATION", "물가", 2, 0, 0f), // 표본 부족 — 최저지만 지목 제외
+        )
+        ConceptStats(categories = cats, weakest = cats[1])
+    }
+
+    /** 전반이 낮아 지목 대상이 넷 — 배너를 숨겨야 한다(진단이 아니라 잔소리가 되므로). */
+    private val flatLowConcepts: ConceptStats by lazy {
+        val cats = listOf(
+            ConceptStat("INTEREST_RATE", "금리", 10, 6, 0.6f),
+            ConceptStat("EXCHANGE_RATE", "환율", 10, 6, 0.6f),
+            ConceptStat("STOCK", "증시", 10, 6, 0.6f),
+            ConceptStat("REAL_ESTATE", "부동산", 10, 6, 0.6f),
+        )
+        ConceptStats(categories = cats, weakest = cats[0])
     }
 
     /** 홈 정원 히어로 케이스용 샘플 정원. */

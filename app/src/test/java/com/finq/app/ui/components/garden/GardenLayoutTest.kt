@@ -7,14 +7,20 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.LocalDate
 
 class GardenLayoutTest {
 
-    private fun item(quizId: Long, stage: ReviewStage = ReviewStage.SPROUT, graduatedAt: String? = null) =
+    private fun item(
+        quizId: Long,
+        stage: ReviewStage = ReviewStage.SPROUT,
+        graduatedAt: String? = null,
+        inTodayQueue: Boolean = false,
+    ) =
         GardenItem(
             quizId = quizId, categoryLabel = "경제", question = "q$quizId", keyword = null,
             stage = stage, dueDate = null, waterCount = 1, absorbedCount = 1,
-            graduatedAtIso = graduatedAt,
+            graduatedAtIso = graduatedAt, inTodayQueue = inTodayQueue,
         )
 
     private fun garden(growing: Int, graduated: Int, counter: Int = graduated) = ReviewGarden(
@@ -66,5 +72,36 @@ class GardenLayoutTest {
         // growing 8 + graduated 8 + legacy 4(counter 12), 슬롯 10
         val result = computeGardenLayout(garden(growing = 8, graduated = 8, counter = 12), maxSlots = 10)
         assertEquals(8, result.slots.count { !it.graduated })
+    }
+
+    /**
+     * 앞줄은 [FRONT_MAX] 개만 개별 식물로 그리므로, 오늘 물 줄 항목이 여기 못 들어오면
+     * 배지("오늘 물 줄 잔디 N개")와 후광 개수가 어긋난다 — 실제로 배지 5 vs 후광 1 이 났다.
+     */
+    @Test
+    fun `오늘 물 줄 항목은 성장 순위와 무관하게 앞줄에 들어온다`() {
+        // 전시 순위가 가장 낮은(새싹, 물 1번) 항목만 due 로 두고, 앞자리를 나무 직전으로 채운다.
+        val due = item(999, ReviewStage.SPROUT, inTodayQueue = true)
+        val others = (1L..30L).map { item(it, ReviewStage.ALMOST_TREE) }
+        val scene = computeNightScene(
+            ReviewGarden(growing = others + due, graduated = emptyList(), graduatedTrees = 0),
+            LocalDate.of(2026, 8, 5),
+        )
+        assertTrue(scene.front.any { it.item.quizId == 999L })
+        assertTrue(scene.front.first().item.quizId == 999L)
+    }
+
+    @Test
+    fun `due 가 없으면 종전 전시 순서를 그대로 따른다`() {
+        val items = listOf(
+            item(1, ReviewStage.SPROUT),
+            item(2, ReviewStage.ALMOST_TREE),
+            item(3, ReviewStage.GRASS),
+        )
+        val scene = computeNightScene(
+            ReviewGarden(growing = items, graduated = emptyList(), graduatedTrees = 0),
+            LocalDate.of(2026, 8, 5),
+        )
+        assertEquals(listOf(2L, 3L, 1L), scene.front.map { it.item.quizId })
     }
 }

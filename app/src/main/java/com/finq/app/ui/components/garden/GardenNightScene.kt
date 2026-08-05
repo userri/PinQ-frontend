@@ -97,14 +97,28 @@ private data class Firefly(
 /**
  * 큐레이션 + 원근 산포 배치. 입력만의 함수(결정적).
  *
- * 선정(성장 전시 중심): 다 자란 나무 → 나무직전 → 최근 물 준 순. due 우선 아님.
+ * 선정 순서: **오늘 물 줄 것(due) → 다 자란 나무 → 나무 직전 → 최근 물 준 순.**
+ *
+ * due 를 맨 앞에 두는 이유: 앞줄은 [FRONT_MAX] 개만 개별 식물로 그리고 나머지는 능선 뒤
+ * 실루엣이다. 종전엔 성장 전시 순(졸업→stage→waterCount)으로만 뽑아서, 오늘 물 줄
+ * 항목이 그 안에 들어오리란 보장이 없었다 — 배지는 "5개"라는데 후광은 하나만 켜지는
+ * 모순이 실제로 났다(실사용 보고). 배지도 후광도 각각은 맞는데 기준이 서로 달랐던 것.
+ *
+ * 전시 의도는 그대로다: due 는 서버 큐 상한(5)까지라 앞줄 13칸 중 최소 8칸이 성장
+ * 전시용으로 남는다.
+ *
  * 배치: 골든비 수열로 x·깊이를 고르게 흩고, quizId 시드 지터로 격자 티를 없앤다.
  */
 internal fun computeNightScene(garden: ReviewGarden, today: LocalDate): SceneLayout {
     val growingRanked = garden.growing.sortedWith(
         compareByDescending<GardenItem> { it.stage.ordinal }.thenByDescending { it.waterCount }
     )
-    val ranked = garden.graduated.sortedByDescending { it.graduatedAtIso ?: "" } + growingRanked
+    val displayRanked =
+        garden.graduated.sortedByDescending { it.graduatedAtIso ?: "" } + growingRanked
+    // due 를 앞으로 당기되 그 안의 순서와 나머지 순서는 위 전시 규칙을 그대로 따른다.
+    // (졸업 항목은 inTodayQueue 가 항상 false 라 여기 섞이지 않는다.)
+    val ranked = displayRanked.filter { it.inTodayQueue } +
+        displayRanked.filterNot { it.inTodayQueue }
     val front = ranked.take(FRONT_MAX)
 
     val legacyCount = (garden.graduatedTrees - garden.graduated.size).coerceAtLeast(0)
