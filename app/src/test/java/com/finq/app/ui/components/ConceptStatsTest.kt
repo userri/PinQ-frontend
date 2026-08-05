@@ -21,15 +21,30 @@ class ConceptStatsTest {
 
     @Test
     fun `표본이 3 미만인 카테고리는 지목하지 않는다`() {
-        val categories = listOf(stat("금리", 20, 17), stat("증시", 2, 0))
+        // 2문제 틀렸다고 0% 로 지목하면 시작하자마자 질책이 된다.
+        val categories = listOf(stat("금리", 10, 5), stat("증시", 2, 0))
         val group = weakConceptGroup(ConceptStats(categories, weakest = categories[0]))
         assertEquals(listOf("금리"), group.map { it.displayName })
     }
 
     @Test
+    fun `기준 60퍼센트 이상이면 최저여도 지목하지 않는다`() {
+        // 상대 기준이었다면 72% 가 "흔들려요"로 지목됐다 — 거짓이다.
+        val categories = listOf(stat("금리", 20, 17), stat("증시", 25, 18)) // 85%, 72%
+        assertTrue(weakConceptGroup(ConceptStats(categories, weakest = categories[1])).isEmpty())
+    }
+
+    @Test
+    fun `정확히 60퍼센트는 기준 미달이 아니다`() {
+        val categories = listOf(stat("금리", 10, 6), stat("증시", 100, 59)) // 60%, 59%
+        val group = weakConceptGroup(ConceptStats(categories, weakest = categories[1]))
+        assertEquals(listOf("증시"), group.map { it.displayName })
+    }
+
+    @Test
     fun `지목 대상이 셋을 넘으면 배너를 숨긴다`() {
         // 전반이 낮은 것이지 특정 개념이 약한 게 아니다 — 개념 진단으로 답할 문제가 아니다.
-        val categories = (1..4).map { stat("개념$it", 10, 6) }
+        val categories = (1..4).map { stat("개념$it", 10, 5) }
         assertTrue(weakConceptGroup(ConceptStats(categories, weakest = categories[0])).isEmpty())
     }
 

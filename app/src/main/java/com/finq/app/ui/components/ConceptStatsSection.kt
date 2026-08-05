@@ -73,10 +73,9 @@ fun ConceptStatsSection(
             Spacer(Modifier.height(14.dp))
         }
 
-        val weakCategories = weakGroup.map { it.category }.toSet()
         stats.categories.forEachIndexed { index, stat ->
             if (index > 0) Spacer(Modifier.height(10.dp))
-            ConceptBar(stat = stat, isWeak = stat.category in weakCategories)
+            ConceptBar(stat = stat, isWeak = stat.isBelowBar())
         }
     }
 }
@@ -88,19 +87,40 @@ private const val MIN_SAMPLE = 3
 private const val WEAK_GROUP_MAX = 3
 
 /**
+ * 막대를 빨갛게 칠하는 절대 기준 — **표시 정답률 60% 미만**.
+ *
+ * 종전엔 기준이 상대적이었다("이 목록에서 최저"). 그러면 전부 잘해도 하나는 빨갛고,
+ * 전부 못해도 하나만 빨갛다 — 색이 사용자의 실력이 아니라 목록 안 순위를 말한 것이다.
+ *
+ * 60% 인 이유: 10문제 중 4문제 이상 틀린 수준이고, 하루 5문제 기준으로는 2문제 이상이다.
+ * 50% 는 찍어도 나오는 값이라 관대하고, 70% 는 대부분이 빨개져 신호가 죽는다.
+ */
+private const val WEAK_BAR_PERCENT = 60
+
+/**
+ * 표본이 [MIN_SAMPLE] 미만이면 칠하지 않는다 — 2문제 틀렸다고 0% 로 빨갛게 두면
+ * 시작하자마자 질책이 된다. 배너 지목 기준과 같은 하한이다.
+ */
+private fun ConceptStat.isBelowBar(): Boolean =
+    total >= MIN_SAMPLE && correctRate.toPercent() < WEAK_BAR_PERCENT
+
+/**
  * 화면에 "흔들린다"고 지목할 개념들. 비어 있으면 배너를 그리지 않는다.
  *
  * 서버의 `weakest` 는 `min()` 이라 **동률이어도 항상 하나**만 내려온다(동률 시 표본 많은 쪽).
  * 그 결과 같은 58% 인데 환율만 빨갛고 부동산은 라임이 되는 일이 실제로 났다 — 사용자는
  * 빨강을 "나쁘다"로 읽는데 실제 의미는 "최저 하나"라 색이 거짓말을 한 것이다.
- * 그래서 **화면에 보이는 값(반올림 %) 기준으로** 동률을 전부 묶는다. 판정 자체는
- * 서버와 같은 규칙(표본 [MIN_SAMPLE] 이상 중 최저)이라 백엔드 변경이 필요 없다.
+ * 그래서 **화면에 보이는 값(반올림 %) 기준으로** 동률을 전부 묶는다.
  *
- * 다만 전부 비슷하게 낮으면 지목이 아니라 잔소리가 되므로 [WEAK_GROUP_MAX] 를 넘으면 숨긴다.
+ * 후보는 [isBelowBar] 를 통과한 것뿐이다 — 전부 잘하는 사람에게 최저 하나를 잡아
+ * "84% 개념이 흔들려요"라고 하면 거짓이다. 지목은 **기준 미달일 때만** 한다.
+ *
+ * 전부 비슷하게 낮으면 지목이 아니라 잔소리가 되므로 [WEAK_GROUP_MAX] 를 넘으면 숨긴다.
+ * (막대의 빨강은 그대로 남는다 — 그건 순위가 아니라 기준 미달을 뜻하므로 여전히 참이다.)
  */
 internal fun weakConceptGroup(stats: ConceptStats): List<ConceptStat> {
     if (stats.weakest == null) return emptyList() // 표본 부족 — 서버 판단을 따른다.
-    val eligible = stats.categories.filter { it.total >= MIN_SAMPLE }
+    val eligible = stats.categories.filter { it.isBelowBar() }
     val lowest = eligible.minOfOrNull { it.correctRate.toPercent() } ?: return emptyList()
     val group = eligible.filter { it.correctRate.toPercent() == lowest }
     return if (group.size > WEAK_GROUP_MAX) emptyList() else group
@@ -153,14 +173,14 @@ private fun WeakestConceptBanner(group: List<ConceptStat>) {
 }
 
 /**
- * 경고색은 **배너가 지목한 것과 정확히 같은 집합**에만 쓴다.
+ * 빨강의 역할은 하나 — **[WEAK_BAR_PERCENT] 기준 미달**([isBelowBar]).
  *
- * 종전엔 서버 `weakest` 하나에만 칠했다. 그래서 화면상 같은 58% 인데 환율만 빨갛고
- * 부동산은 라임이 되어 **색이 거짓말**을 했다. 색을 빼는 것도 방법이지만, 어느 개념이
- * 약한지는 막대 줄에서 바로 보이는 게 낫다 — 배너와 같은 집합을 칠하면 거짓말은
- * 사라지고 신호는 남는다("한 신호 = 한 역할" — 여기서 빨강의 역할은 '배너가 지목한 것').
+ * 종전엔 서버 `weakest` 하나에만 칠했다. 상대 기준이라 같은 58% 인데 환율만 빨갛고
+ * 부동산은 라임이 되어 **색이 거짓말**을 했다. 절대 기준으로 바꾸면 순위와 무관하게
+ * 같은 값은 항상 같은 색이 된다.
  *
- * 지목이 과다해 배너를 숨긴 경우엔 빨강도 없다. 전부 빨개지면 진단이 아니다.
+ * 배너 지목 집합과는 다를 수 있다(빨강 셋 중 최저 하나만 지목되는 식). 역할이 다르므로
+ * 모순이 아니다 — 빨강은 "기준 미달", 배너는 "그중 가장 약한 것"이다.
  */
 @Composable
 private fun ConceptBar(stat: ConceptStat, isWeak: Boolean) {

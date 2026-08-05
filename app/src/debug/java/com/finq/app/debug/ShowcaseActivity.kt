@@ -405,6 +405,8 @@ class ShowcaseActivity : ComponentActivity() {
                     ) {
                         ConceptStatsSection(tiedConcepts)
                         Spacer(Modifier.height(16.dp))
+                        ConceptStatsSection(allAboveBarConcepts)
+                        Spacer(Modifier.height(16.dp))
                         ConceptStatsSection(flatLowConcepts)
                     }
 
@@ -1154,6 +1156,20 @@ class ShowcaseActivity : ComponentActivity() {
             ConceptStat("INFLATION", "물가", 2, 0, 0f), // 표본 부족 — 최저지만 지목 제외
         )
         ConceptStats(categories = cats, weakest = cats[1])
+    }
+
+    /**
+     * 임계값 경계 — 60% 미만만 빨강. 전부 기준 이상이면 최저(72%)여도 빨강도 배너도 없다.
+     * "이 목록에서 최저"라는 상대 기준이었다면 72% 가 빨갰을 것.
+     */
+    private val allAboveBarConcepts: ConceptStats by lazy {
+        val cats = listOf(
+            ConceptStat("INTEREST_RATE", "금리", 20, 17, 0.85f),
+            ConceptStat("EXCHANGE_RATE", "환율", 10, 6, 0.6f), // 정확히 60% — 빨강 아님
+            ConceptStat("STOCK", "증시", 18, 13, 0.72f),
+            ConceptStat("REAL_ESTATE", "부동산", 10, 5, 0.59f), // 59% — 빨강
+        )
+        ConceptStats(categories = cats, weakest = cats[3])
     }
 
     /** 전반이 낮아 지목 대상이 넷 — 배너를 숨겨야 한다(진단이 아니라 잔소리가 되므로). */
