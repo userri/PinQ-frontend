@@ -4,8 +4,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -139,11 +141,15 @@ internal fun weakConceptGroup(stats: ConceptStats): List<ConceptStat> {
 private fun WeakestConceptBanner(group: List<ConceptStat>) {
     // 채운 박스를 쓰지 않는다 — 페이지의 다른 섹션이 전부 평평해진 뒤로는
     // 이것만 카드가 되어 혼자 떠 보인다. 경고 톤은 좌측 액센트 바가 담당한다.
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        // 높이를 고정하지 않는다 — 둘째 줄이 없는 경우(복수 지목)에도 액센트가 남지 않도록.
         Box(
             modifier = Modifier
                 .width(3.dp)
-                .height(34.dp)
+                .fillMaxHeight()
                 .clip(RoundedCornerShape(2.dp))
                 .background(Error),
         )
@@ -155,19 +161,18 @@ private fun WeakestConceptBanner(group: List<ConceptStat>) {
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary,
             )
-            Spacer(Modifier.height(2.dp))
-            val head = group.first()
-            Text(
-                text = if (group.size == 1) {
-                    "정답률 ${head.correctRate.toPercent()}% · ${head.correct}/${head.total}문제"
-                } else {
-                    // 묶인 것들은 정의상 표시 정답률이 같다. 문제 수까지 나열하면 줄이 길어져
-                    // 진단이 아니라 표가 된다.
-                    "모두 정답률 ${head.correctRate.toPercent()}%"
-                },
-                style = MaterialTheme.typography.labelMedium,
-                color = TextSecondary,
-            )
+            // 정답률은 바로 아래 막대 줄이 이미 말한다. 여기 다시 쓰면 정보가 아니라 소음이다.
+            // 남길 만한 건 막대에 없는 **문제 수** 뿐. 복수 지목이면 어느 수가 어느 개념인지
+            // 모호해지므로(`25/43 · 7/12`) 아예 붙이지 않고 제목 한 줄로 둔다.
+            if (group.size == 1) {
+                val head = group.first()
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = "${head.total}문제 중 ${head.correct}개 정답",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = TextSecondary,
+                )
+            }
         }
     }
 }
