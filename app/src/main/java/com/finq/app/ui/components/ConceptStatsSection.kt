@@ -54,23 +54,29 @@ fun ConceptStatsSection(
             fontWeight = FontWeight.Bold,
             color = TextPrimary,
         )
-        Spacer(Modifier.height(12.dp))
-
         val weakGroup = weakConceptGroup(stats)
+        // 배너도 안내 문구도 없는 경우(지목 과다)가 있다. 그때 여백만 남으면 제목이 뜬금없이
+        // 떠 보이므로, 사이 간격은 실제로 뭔가 그릴 때만 넣는다.
         if (weakGroup.isNotEmpty()) {
+            Spacer(Modifier.height(12.dp))
             WeakestConceptBanner(weakGroup)
+            Spacer(Modifier.height(14.dp))
         } else if (stats.weakest == null) {
+            Spacer(Modifier.height(12.dp))
             Text(
                 text = "조금 더 풀면 취약 개념을 진단해드려요",
                 style = MaterialTheme.typography.bodySmall,
                 color = TextMuted,
             )
+            Spacer(Modifier.height(14.dp))
+        } else {
+            Spacer(Modifier.height(14.dp))
         }
 
-        Spacer(Modifier.height(14.dp))
+        val weakCategories = weakGroup.map { it.category }.toSet()
         stats.categories.forEachIndexed { index, stat ->
             if (index > 0) Spacer(Modifier.height(10.dp))
-            ConceptBar(stat = stat)
+            ConceptBar(stat = stat, isWeak = stat.category in weakCategories)
         }
     }
 }
@@ -147,12 +153,17 @@ private fun WeakestConceptBanner(group: List<ConceptStat>) {
 }
 
 /**
- * 막대에 경고색을 쓰지 않는다 — 길이가 이미 순위를 말한다("한 신호 = 한 역할").
- * 색으로도 최저를 표시하면 같은 값에 다른 색이 붙는 순간 색이 거짓말을 한다.
- * 지목은 위 배너 하나가 담당한다.
+ * 경고색은 **배너가 지목한 것과 정확히 같은 집합**에만 쓴다.
+ *
+ * 종전엔 서버 `weakest` 하나에만 칠했다. 그래서 화면상 같은 58% 인데 환율만 빨갛고
+ * 부동산은 라임이 되어 **색이 거짓말**을 했다. 색을 빼는 것도 방법이지만, 어느 개념이
+ * 약한지는 막대 줄에서 바로 보이는 게 낫다 — 배너와 같은 집합을 칠하면 거짓말은
+ * 사라지고 신호는 남는다("한 신호 = 한 역할" — 여기서 빨강의 역할은 '배너가 지목한 것').
+ *
+ * 지목이 과다해 배너를 숨긴 경우엔 빨강도 없다. 전부 빨개지면 진단이 아니다.
  */
 @Composable
-private fun ConceptBar(stat: ConceptStat) {
+private fun ConceptBar(stat: ConceptStat, isWeak: Boolean) {
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -168,7 +179,7 @@ private fun ConceptBar(stat: ConceptStat) {
                 text = "${stat.correctRate.toPercent()}%",
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
-                color = TextSecondary,
+                color = if (isWeak) Error else TextSecondary,
             )
         }
         Spacer(Modifier.height(5.dp))
@@ -186,7 +197,7 @@ private fun ConceptBar(stat: ConceptStat) {
                     .fillMaxWidth(fraction)
                     .height(8.dp)
                     .clip(RoundedCornerShape(4.dp))
-                    .background(Lime),
+                    .background(if (isWeak) Error else Lime),
             )
         }
     }
