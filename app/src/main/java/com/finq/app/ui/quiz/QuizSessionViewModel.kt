@@ -7,6 +7,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.finq.app.data.repository.LibraryRepository
 import com.finq.app.data.repository.QuizRepository
 import com.finq.app.ui.submitErrorMessage
+import com.finq.app.ui.userErrorMessage
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -91,7 +92,7 @@ class QuizSessionViewModel(
                 }
                 .onFailure { e ->
                     _uiState.update {
-                        it.copy(isLoading = false, error = e.message ?: "Unknown error")
+                        it.copy(isLoading = false, error = userErrorMessage(e, "퀴즈를 불러오지 못했어요"))
                     }
                 }
         }

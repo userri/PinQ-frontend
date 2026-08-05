@@ -526,7 +526,8 @@ private fun GardenLabel(
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * 이번 주(월~일) 잔디 스트립 — 요일별 학습량을 잔디 블록 높이로 표현.
+ * 이번 주(월~일) 잔디 스트립 — 요일별 학습량을 잔디 칸 **색**으로 표현.
+ * (마이페이지 잔디밭과 같은 표기법. 높이는 쓰지 않는다.)
  * 도메인 규칙 유지: level 은 grass days[].level 그대로(잔디≠스트릭),
  * 복습만 한 날은 level 1 = 연한(짙은 초록) 블록.
  */
@@ -604,23 +605,20 @@ private fun WeekGrassStrip(
                 val isToday = index == todayDow
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    // 잔디 블록 — 학습량(level)을 높이로. 빈 날/미래는 낮은 스텁.
-                    val barHeight = if (isFilled) (10 + level * 7).dp else 6.dp
+                    // 잔디 칸 — 학습량은 **색 하나로만** 말한다. 예전엔 높이와 색이 같은
+                    // level 을 동시에 인코딩해, 한 카드 안에서 축이 둘로 읽혔다. 색 램프는
+                    // 마이페이지 잔디밭이 범례로 이미 가르치는 언어라 그쪽에 맞춘다.
                     Box(
                         modifier = Modifier
-                            .width(26.dp)
-                            .height(barHeight)
-                            .clip(RoundedCornerShape(topStart = 5.dp, topEnd = 5.dp))
-                            .background(
-                                if (isFilled) streakColor(level)
-                                else BgElevated.copy(alpha = 0.6f)
-                            )
+                            .size(26.dp)
+                            .clip(RoundedCornerShape(5.dp))
+                            .background(streakColor(if (isFilled) level else 0))
                             .then(
+                                // 오늘 아직 안 푼 상태에서만 빈 칸에 테두리를 준다. 채운
+                                // 날은 색이 이미 오늘의 성과를 말하고, 라벨 라임이 어느
+                                // 칸이 오늘인지 가리킨다.
                                 if (isToday && !isFilled)
-                                    Modifier.border(
-                                        1.5.dp, Lime,
-                                        RoundedCornerShape(topStart = 5.dp, topEnd = 5.dp),
-                                    )
+                                    Modifier.border(1.5.dp, Lime, RoundedCornerShape(5.dp))
                                 else Modifier
                             ),
                     )
@@ -630,8 +628,8 @@ private fun WeekGrassStrip(
                         style = MaterialTheme.typography.labelSmall,
                         // 라벨은 요일 축이라 서로 같은 무게로 읽혀야 한다. 예전엔 색이
                         // "채운 날 또는 오늘" 두 뜻을 겸하고 굵기가 오늘을 한 번 더 말해,
-                        // 오늘이면서 채운 날 하나만 유독 튀었다. 채움은 막대(높이·색)가
-                        // 이미 말하므로 라벨 색은 오늘 하나만 맡는다.
+                        // 오늘이면서 채운 날 하나만 유독 튀었다. 채움은 칸 색이 이미
+                        // 말하므로 라벨 색은 오늘 하나만 맡는다.
                         color = if (isToday) Lime else TextMuted,
                         fontWeight = FontWeight.Normal,
                     )

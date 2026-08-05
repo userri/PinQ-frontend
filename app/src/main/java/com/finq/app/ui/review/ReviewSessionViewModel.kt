@@ -8,6 +8,7 @@ import com.finq.app.data.repository.ReviewAnswer
 import com.finq.app.data.repository.ReviewItem
 import com.finq.app.data.repository.ReviewRepository
 import com.finq.app.ui.submitErrorMessage
+import com.finq.app.ui.userErrorMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -91,7 +92,7 @@ class ReviewSessionViewModel(
                 }
                 .onFailure { e ->
                     _uiState.update {
-                        it.copy(isLoading = false, error = e.message ?: "복습 문제를 불러오지 못했어요")
+                        it.copy(isLoading = false, error = userErrorMessage(e, "복습 문제를 불러오지 못했어요"))
                     }
                 }
         }

@@ -9,6 +9,7 @@ import com.finq.app.data.model.Quiz
 import com.finq.app.data.repository.AnswerResult
 import com.finq.app.data.repository.LibraryRepository
 import com.finq.app.data.repository.QuizRepository
+import com.finq.app.ui.userErrorMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -73,7 +74,7 @@ class SoloQuizViewModel(
                         _uiState.update { it.copy(isLoading = false, notFound = true) }
                     } else {
                         _uiState.update {
-                            it.copy(isLoading = false, error = e.message ?: "문제를 불러오지 못했어요")
+                            it.copy(isLoading = false, error = userErrorMessage(e, "문제를 불러오지 못했어요"))
                         }
                     }
                 }
@@ -102,7 +103,7 @@ class SoloQuizViewModel(
                         _uiState.update { it.copy(isSubmitting = false, notFound = true) }
                     } else {
                         _uiState.update {
-                            it.copy(isSubmitting = false, error = e.message ?: "채점에 실패했어요")
+                            it.copy(isSubmitting = false, error = userErrorMessage(e, "채점에 실패했어요"))
                         }
                     }
                 }

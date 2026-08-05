@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.finq.app.data.repository.AuthRepository
+import com.finq.app.ui.userErrorMessage
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -43,7 +44,7 @@ class LoginViewModel(
                     _events.send(LoginEvent.LoginSuccess)
                 }
                 .onFailure { e ->
-                    _uiState.update { it.copy(isLoading = false, error = e.message ?: "카카오 로그인 실패") }
+                    _uiState.update { it.copy(isLoading = false, error = userErrorMessage(e, "카카오 로그인 실패")) }
                 }
         }
     }
@@ -59,7 +60,7 @@ class LoginViewModel(
                     _events.send(LoginEvent.LoginSuccess)
                 }
                 .onFailure { e ->
-                    _uiState.update { it.copy(isLoading = false, error = e.message ?: "구글 로그인 실패") }
+                    _uiState.update { it.copy(isLoading = false, error = userErrorMessage(e, "구글 로그인 실패")) }
                 }
         }
     }

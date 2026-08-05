@@ -12,6 +12,7 @@ import com.finq.app.data.repository.ReviewRepository
 import com.finq.app.data.repository.UserStatsRepository
 import com.finq.app.push.FcmTokenManager
 import retrofit2.HttpException
+import com.finq.app.ui.userErrorMessage
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -150,7 +151,7 @@ class MyPageViewModel(
                             isLoading = false,
                             // SWR: 데이터가 이미 있으면 에러 화면으로 덮지 않고 이전 값 유지.
                             error = if (it.loadedOnce) it.error
-                            else e.message ?: "통계를 불러오지 못했어요",
+                            else userErrorMessage(e, "통계를 불러오지 못했어요"),
                         )
                     }
                 }
@@ -173,7 +174,7 @@ class MyPageViewModel(
                     _uiState.update {
                         it.copy(
                             isWithdrawing = false,
-                            withdrawError = e.message ?: "탈퇴에 실패했어요",
+                            withdrawError = userErrorMessage(e, "탈퇴에 실패했어요"),
                         )
                     }
                 }
@@ -201,7 +202,7 @@ class MyPageViewModel(
                             nicknameUpdateError = when {
                                 e is HttpException && e.code() == 409
                                     -> "이미 사용 중인 닉네임이에요"
-                                else -> e.message ?: "닉네임 변경에 실패했어요"
+                                else -> userErrorMessage(e, "닉네임 변경에 실패했어요")
                             },
                         )
                     }
@@ -258,7 +259,7 @@ class MyPageViewModel(
                         it.copy(
                             isSavingNotification = false,
                             notificationsEnabled = previous,
-                            notificationError = e.message ?: "알림 설정 변경에 실패했어요",
+                            notificationError = userErrorMessage(e, "알림 설정 변경에 실패했어요"),
                         )
                     }
                 }
@@ -292,7 +293,7 @@ class MyPageViewModel(
                         it.copy(
                             isSavingNotification = false,
                             notificationTime = previous,
-                            notificationError = e.message ?: "알림 시각 변경에 실패했어요",
+                            notificationError = userErrorMessage(e, "알림 시각 변경에 실패했어요"),
                         )
                     }
                 }

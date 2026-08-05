@@ -7,6 +7,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.finq.app.data.repository.QuizRepository
 import com.finq.app.data.repository.ReviewRepository
 import com.finq.app.data.repository.UserStatsRepository
+import com.finq.app.ui.userErrorMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -36,7 +37,7 @@ class HomeViewModel(
             val quizzes = try {
                 quizRepository.getTodayQuizzes()
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, error = e.message ?: "알 수 없는 오류") }
+                _uiState.update { it.copy(isLoading = false, error = userErrorMessage(e, "알 수 없는 오류")) }
                 return@launch
             }
 

@@ -6,6 +6,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.finq.app.data.model.AttemptItem
 import com.finq.app.data.repository.LibraryRepository
+import com.finq.app.ui.userErrorMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -41,7 +42,7 @@ class LibraryViewModel(
                     _state.update {
                         it.copy(
                             isLoadingWrong = false,
-                            wrongError = e.message ?: "오답노트를 불러오지 못했어요",
+                            wrongError = userErrorMessage(e, "오답노트를 불러오지 못했어요"),
                         )
                     }
                 }
@@ -59,7 +60,7 @@ class LibraryViewModel(
                     _state.update {
                         it.copy(
                             isLoadingBookmark = false,
-                            bookmarkError = e.message ?: "북마크를 불러오지 못했어요",
+                            bookmarkError = userErrorMessage(e, "북마크를 불러오지 못했어요"),
                         )
                     }
                 }
@@ -77,7 +78,7 @@ class LibraryViewModel(
                     _state.update {
                         it.copy(
                             isLoadingAttempts = false,
-                            attemptsError = e.message ?: "풀이 이력을 불러오지 못했어요",
+                            attemptsError = userErrorMessage(e, "풀이 이력을 불러오지 못했어요"),
                         )
                     }
                 }
@@ -117,7 +118,7 @@ class LibraryViewModel(
             onSuccess = { true },
             onFailure = { e ->
                 applyBookmarkSync(quizId, !bookmarked, removeFromBookmarksIfFalse = false)
-                _state.update { it.copy(toggleError = e.message ?: "북마크 처리에 실패했어요") }
+                _state.update { it.copy(toggleError = userErrorMessage(e, "북마크 처리에 실패했어요")) }
                 false
             },
         )

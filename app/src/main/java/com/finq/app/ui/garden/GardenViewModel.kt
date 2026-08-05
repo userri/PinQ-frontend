@@ -6,6 +6,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.finq.app.data.repository.ReviewGarden
 import com.finq.app.data.repository.ReviewRepository
+import com.finq.app.ui.userErrorMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,7 +39,7 @@ class GardenViewModel(
                 }
                 .onFailure { e ->
                     _uiState.update {
-                        it.copy(isLoading = false, error = e.message ?: "정원을 불러오지 못했어요")
+                        it.copy(isLoading = false, error = userErrorMessage(e, "정원을 불러오지 못했어요"))
                     }
                 }
         }
