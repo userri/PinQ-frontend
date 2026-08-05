@@ -7,7 +7,7 @@
 |---|---|---|
 | 📏 **규칙 (SSOT)** | 지금 참인 것. 코드와 어긋나면 **코드를 고친다** | `ui-rules.md` |
 | 🧭 **결정 기록** | 왜 이렇게 됐나 / 뭘 기각했나 | `decisions/` |
-| 📦 **작업 산출물** | 일회성. 완료되면 참고용 | `specs/`, `plans/` |
+| 📦 **작업 산출물** | 일회성. 완료되면 참고용 | `specs/`, `plans/`, `handoff/` |
 | 🏪 **스토어 자산** | Play Console 에 올리는 것 | `../store-assets/` |
 
 > 대기 작업의 단일 진실은 **백엔드 레포**에 있다 → `PinQ-backend/docs/PENDING.md`.
@@ -42,6 +42,14 @@
 | [specs/2026-07-21-garden-ui-redesign-design.md](specs/2026-07-21-garden-ui-redesign-design.md) | [plans/2026-07-21-garden-ui-redesign.md](plans/2026-07-21-garden-ui-redesign.md) | 정원 UI 재편 — 잔디+나무 통합 시각 보상. 목록은 오답노트 필터칩으로 이관 | ✅ 완료·병합 `5fcf04f`. **프론트 온리, 백엔드 변경 0** |
 | [specs/2026-07-22-practice-and-growth-nudge-design.md](specs/2026-07-22-practice-and-growth-nudge-design.md) | [plans/2026-07-22-practice-and-growth-nudge.md](plans/2026-07-22-practice-and-growth-nudge.md) | 미리 연습 + 성장 근접 UI — 격리된 순수 연습(기록 0) + goal-gradient | ✅ 완료. **서버 호출·상태 기록 0** |
 | (백엔드가 소유) | [plans/review-tree-plan.md](plans/review-tree-plan.md) | 복습 나무 프론트 연동 — 물 이력, 채점 응답 확장, 정원 화면 신설, 복습 뱃지 | ✅ 완료. 설계는 `PinQ-backend/docs/decisions/review-tree-visibility-frontend.md` |
+
+### 핸드오프 (handoff)
+
+세션이 끝난 시점의 상태와 맥락. **대기 작업 자체는 여기 없다** — `PENDING.md` 가 SSOT다.
+
+| 문서 | 무엇 |
+|---|---|
+| [handoff/2026-08-05-concept-diagnosis-and-garden.md](handoff/2026-08-05-concept-diagnosis-and-garden.md) | 정원 후광(배지와 개수 불일치) · 개념 진단 다섯 상태 · 규칙 문서 소유자 분담 |
 
 ## 🏪 스토어 자산
 
