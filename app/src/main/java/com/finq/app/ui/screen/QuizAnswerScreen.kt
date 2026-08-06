@@ -22,8 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -36,7 +34,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -58,9 +55,6 @@ import com.finq.app.ui.library.keywordTitle
 import com.finq.app.ui.theme.FinQTheme
 import kotlinx.coroutines.launch
 import com.finq.app.ui.theme.BgBase
-import com.finq.app.ui.theme.BgElevated
-import com.finq.app.ui.theme.BgSubtle
-import com.finq.app.ui.theme.BgSurface
 import com.finq.app.ui.theme.Error
 import com.finq.app.ui.theme.ErrorFaint
 import androidx.compose.ui.graphics.ColorFilter
@@ -316,7 +310,9 @@ fun QuizAnswerBody(
         Spacer(Modifier.height(14.dp))
 
         // ── 보기 4개 ─────────────────────────────────────────
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        // 면·테두리가 정답 하나뿐이라 행 간격을 좁힌다. 테두리 넷이 만들던
+        // 리듬이 없어졌으므로 10dp 는 이제 그냥 벌어져 보인다.
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             quiz.options.forEach { option ->
                 AnswerOptionRow(
                     option = option,
@@ -557,15 +553,24 @@ private fun VerdictBand(isCorrect: Boolean) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * 보기 한 줄 — 3단 위계.
+ * 보기 한 줄 — 3단 위계. **테두리와 면은 정답 하나만** 갖는다.
  *
- *  1) 정답: 틴트 면 + 라임 테두리 + 라임 라벨. **면(fill)은 여전히 정답만** 가진다.
- *  2) 내가 고른 오답: 면 없이 Error 테두리·번호·라벨로만 지목한다.
- *     색 면을 주지 않는 이유 — 면 대 면이 되면 화면에서 정답과 세기가 맞붙는다
- *     (내 답·정답·정오표시를 다 강조하면 52.5% 가 정답을 오해한 실험).
- *  3) 안 고른 선지: 배경 면을 지우고 글자를 muted 로 낮춰 **뒤로 물린다** —
- *     내 답과 1dp 차이 테두리만으로는 구별이 안 된다는 실사용 보고의 답이다.
- *     강조를 더하는 대신 나머지를 빼서 위계를 만든다.
+ *  1) 정답: 틴트 면 + 라임 테두리 + 라임 라벨.
+ *  2) 내가 고른 오답: 면도 테두리도 없이 Error 번호 원과 라벨로만 지목한다.
+ *  3) 안 고른 선지: 번호 원도 없이 글자를 muted 로 낮춰 **뒤로 물린다.**
+ *
+ * 종전엔 넷 다 테두리를 둘렀다. 이 화면에서 선지는 **누를 수 없는데**, 바로 앞
+ * 풀이 화면에서 같은 테두리에 "고를 수 있음"이라는 뜻을 부여해 놓은 터라 테두리
+ * 넷이 거짓 약속이 됐다. 면·테두리를 정답 하나로 몰면 **면 = 정답** 한 뜻만 남는다.
+ * 강조를 더하는 대신 나머지를 빼서 위계를 만드는 이 화면의 규칙과 같은 방향이다
+ * (내 답에 색 면을 주지 않는 이유도 같다 — 면 대 면이 되면 정답과 세기가 맞붙어
+ * 52.5% 가 정답을 오해한 실험이 있다).
+ *
+ * **번호 열은 넷 다 자리를 지킨다.** 채점 후에 번호까지 걷어 글줄 목록으로 만드는
+ * 안(C2)을 실기기에서 전후로 붙여 봤는데, 방금 고르던 넷과 지금 보는 넷이 다른
+ * 종류의 블록으로 보여 연결이 끊겼다. 선지 글자(≈52dp)와 해설 글자(20dp)의 왼쪽
+ * 기준선이 어긋나는 문제는 **열어둔 채로 둔다** — 지금까지 나온 안은 전부 그걸
+ * 푸는 값이 문제보다 컸다(해설을 선지 쪽으로 밀면 해설이 선지의 하위 항목처럼 읽힌다).
  *
  * 맞힌 경우엔 두 라벨이 같은 줄을 가리키므로 "내 답 · 정답" 하나로 합친다.
  */
@@ -580,22 +585,13 @@ private fun AnswerOptionRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(
-                when {
-                    isCorrect -> Grass1
-                    wrongPick -> BgSurface
-                    else -> Color.Transparent // 안 고른 선지는 면을 지워 뒤로 물린다
-                },
-            )
-            .border(
-                width = if (marked) 2.dp else 1.dp,
-                color = when {
-                    isCorrect -> Lime
-                    wrongPick -> Error
-                    else -> Outline
-                },
-                shape = RoundedCornerShape(14.dp),
+            .then(
+                if (isCorrect) {
+                    Modifier
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Grass1)
+                        .border(2.dp, Lime, RoundedCornerShape(14.dp))
+                } else Modifier
             )
             .padding(horizontal = 14.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,

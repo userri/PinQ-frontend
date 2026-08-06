@@ -1090,6 +1090,480 @@ class ShowcaseActivity : ComponentActivity() {
                         Spacer(Modifier.height(40.dp))
                     }
 
+                    // 채점 후 선지 구조 시안 — 열어둔 문 ①②(테두리의 뜻 · 왼쪽 기준선).
+                    //
+                    // 지금 화면은 선지 넷이 다 테두리를 두르는데 넷 다 **누를 수 없다**.
+                    // 풀이 화면에서 테두리에 "고를 수 있음"을 부여했기 때문에 더 어긋난다.
+                    // C안은 면·테두리를 정답 하나로 몰아 "면 = 정답" 한 뜻만 남긴다.
+                    //
+                    // 세 시안을 오답 상태로 나란히 둔다. 각 시안 **뒤에 해설을 붙인 것**은
+                    // ②를 눈으로 재려는 것이다 — 선지에서 해설로 내려올 때 글자 왼쪽이
+                    // 튀는지를 보는 게 이 케이스의 목적이다.
+                    "answer_v3" -> Column(
+                        Modifier.fillMaxSize().background(BgBase)
+                            .verticalScroll(rememberScrollState())
+                            .statusBarsPadding()
+                            // 좌우 6dp — C2 의 정답 면이 화면 패딩(20) 안쪽 6 에서 시작해
+                            // 내부 패딩 14 를 더하면 글자가 정확히 20dp 에 선다.
+                            // 다른 블록은 각자 start=14 를 더해 같은 20dp 를 맞춘다.
+                            .padding(horizontal = 6.dp, vertical = 12.dp),
+                    ) {
+                        val tp = androidx.compose.ui.graphics.Color(0xFFF4F7FB)
+                        val ts = androidx.compose.ui.graphics.Color(0xFFB8C7DA)
+                        val tm = TextMutedIcon
+                        val ol = androidx.compose.ui.graphics.Color(0xFF2A4A6E)
+                        val g1 = androidx.compose.ui.graphics.Color(0xFF124A2E)
+                        val errFaint = androidx.compose.ui.graphics.Color(0xFF4A2530)
+                        val err = androidx.compose.ui.graphics.Color(0xFFFF6B6B)
+                        val onLime = androidx.compose.ui.graphics.Color(0xFF05221A)
+                        val r14 = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
+                        val r12 = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+
+                        // 선지 넷 — 2번이 정답, 3번이 내가 고른 오답.
+                        val opts = listOf(
+                            Triple("예금 금리가 내려간다", false, false),
+                            Triple("예금 금리가 올라간다", true, false),
+                            Triple("환율이 먼저 움직인다", false, true),
+                            Triple("아무 변화도 없다", false, false),
+                        )
+
+                        @androidx.compose.runtime.Composable
+                        fun verdict(inset: androidx.compose.ui.unit.Dp) {
+                            Row(
+                                Modifier.fillMaxWidth().padding(horizontal = inset)
+                                    .clip(r12).background(errFaint)
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    "틀렸어요", color = err,
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                    style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
+                                )
+                            }
+                        }
+
+                        // 해설 — 시안마다 같은 글, 시작 x 만 다르다. 여기가 기준선의 기준.
+                        @androidx.compose.runtime.Composable
+                        fun explain(inset: androidx.compose.ui.unit.Dp) {
+                            Column(Modifier.fillMaxWidth().padding(start = inset, end = inset)) {
+                                Text(
+                                    "해설", color = tm,
+                                    style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                )
+                                Spacer(Modifier.height(6.dp))
+                                Text(
+                                    "기준금리가 오르면 은행이 돈을 빌려오는 비용이 올라갑니다. " +
+                                        "그 비용을 메우려면 예금으로 자금을 더 모아야 하므로 " +
+                                        "예금 금리도 따라 오릅니다.",
+                                    color = tp,
+                                    style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
+                                    lineHeight = 25.sp,
+                                )
+                            }
+                        }
+
+                        @androidx.compose.runtime.Composable
+                        fun heading(text: String) {
+                            Spacer(Modifier.height(28.dp))
+                            Text(
+                                text, color = Lime,
+                                modifier = Modifier.padding(start = 14.dp),
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                            )
+                            Spacer(Modifier.height(10.dp))
+                        }
+
+                        // ── 가안 · 현행 ────────────────────────────────────────
+                        // 넷 다 테두리. 번호 원은 표시된 둘만(직전 커밋 상태).
+                        heading("가안 · 현행 (넷 다 테두리)")
+                        verdict(inset = 14.dp)
+                        Spacer(Modifier.height(14.dp))
+                        opts.forEachIndexed { i, (t, ok, mine) ->
+                            Row(
+                                Modifier.fillMaxWidth().padding(horizontal = 14.dp)
+                                    .clip(r14)
+                                    .background(
+                                        when {
+                                            ok -> g1
+                                            mine -> androidx.compose.ui.graphics.Color(0xFF0E2947)
+                                            else -> androidx.compose.ui.graphics.Color.Transparent
+                                        },
+                                    )
+                                    .border(
+                                        if (ok || mine) 2.dp else 1.dp,
+                                        if (ok) Lime else if (mine) err else ol, r14,
+                                    )
+                                    .padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Box(
+                                    Modifier.size(28.dp).then(
+                                        if (ok || mine) Modifier.clip(CircleShape)
+                                            .background(if (ok) Lime else err)
+                                        else Modifier,
+                                    ),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        "${i + 1}",
+                                        color = if (ok) onLime else if (mine) errFaint else tm,
+                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                        style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
+                                    )
+                                }
+                                Spacer(Modifier.width(12.dp))
+                                Text(
+                                    t, color = if (ok || mine) tp else tm,
+                                    modifier = Modifier.weight(1f),
+                                    style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
+                                )
+                                if (ok || mine) {
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        if (ok) "정답" else "내 답",
+                                        color = if (ok) Lime else err,
+                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                        style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.height(10.dp))
+                        }
+                        Spacer(Modifier.height(10.dp))
+                        explain(inset = 14.dp)
+
+                        // ── 나안 · C1 ─────────────────────────────────────────
+                        // 면·테두리를 정답 하나로. 나머지는 번호 열만 남기고 물린다.
+                        // ①은 닫히지만 글자 시작은 여전히 안쪽(≈52dp)이라 ②는 남는다.
+                        heading("나안 · C1 (정답만 면, 번호 열 유지)")
+                        verdict(inset = 14.dp)
+                        Spacer(Modifier.height(14.dp))
+                        opts.forEachIndexed { i, (t, ok, mine) ->
+                            Row(
+                                Modifier.fillMaxWidth().padding(horizontal = 14.dp)
+                                    .then(
+                                        if (ok) Modifier.clip(r14).background(g1)
+                                            .border(2.dp, Lime, r14)
+                                        else Modifier,
+                                    )
+                                    .padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Box(
+                                    Modifier.size(28.dp).then(
+                                        if (ok || mine) Modifier.clip(CircleShape)
+                                            .background(if (ok) Lime else err)
+                                        else Modifier,
+                                    ),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        "${i + 1}",
+                                        color = if (ok) onLime else if (mine) errFaint else tm,
+                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                        style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
+                                    )
+                                }
+                                Spacer(Modifier.width(12.dp))
+                                Text(
+                                    t, color = if (ok || mine) tp else tm,
+                                    modifier = Modifier.weight(1f),
+                                    style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
+                                )
+                                if (mine) {
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        "내 답", color = err,
+                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                        style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.height(6.dp))
+                        }
+                        Spacer(Modifier.height(14.dp))
+                        explain(inset = 14.dp)
+
+                        // ── 다안 · C2 ─────────────────────────────────────────
+                        // C1 에서 **번호를 뺀다.** 채점 후 화면에서 번호는 아무것도
+                        // 참조하지 않는다(해설이 "2번"이라고 부르지 않는다). 번호가
+                        // 빠지면 정답 면을 좌우 6dp 로 물려 글자가 20dp 에 서고,
+                        // 선지·해설의 왼쪽이 한 선에 붙는다 — ①②가 같이 닫힌다.
+                        // 표시는 색과 라벨이 맡는다.
+                        heading("다안 · C2 (번호 없음 · 기준선 통일)")
+                        verdict(inset = 14.dp)
+                        Spacer(Modifier.height(14.dp))
+                        opts.forEach { (t, ok, mine) ->
+                            Row(
+                                Modifier.fillMaxWidth()
+                                    .then(
+                                        if (ok) Modifier.clip(r14).background(g1)
+                                            .border(2.dp, Lime, r14).padding(14.dp)
+                                        else Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
+                                    ),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    t, color = if (ok || mine) tp else tm,
+                                    modifier = Modifier.weight(1f),
+                                    fontWeight = if (ok || mine)
+                                        androidx.compose.ui.text.font.FontWeight.SemiBold
+                                    else androidx.compose.ui.text.font.FontWeight.Normal,
+                                    style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
+                                )
+                                if (ok || mine) {
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        if (ok) "정답" else "내 답",
+                                        color = if (ok) Lime else err,
+                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                        style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.height(2.dp))
+                        }
+                        Spacer(Modifier.height(14.dp))
+                        explain(inset = 14.dp)
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "↑ 다안에서만 선지 글자와 해설 글자의 왼쪽이 같은 선에 선다",
+                            color = ts, modifier = Modifier.padding(start = 14.dp),
+                            style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                        )
+                        Spacer(Modifier.height(40.dp))
+                    }
+
+                    // 전환 시안 — "번호가 있다가 없어져도 되나"를 재는 케이스.
+                    //
+                    // answer_v3 는 채점 후 화면**만** 나란히 놓아서, 풀이 화면에서
+                    // 넘어오는 순간이 자연스러운지가 안 보였다. 여기선 같은 문제의
+                    // **풀이 → 채점** 두 장을 붙여 세로로 잇는다. 위아래 두 묶음이
+                    // 서로 다른 답을 준다.
+                    //
+                    //  1) C2  — 채점되면 번호가 사라진다. 대신 선지·해설 기준선이 통일.
+                    //  2) C2b — 번호를 넷 다 유지하고, 대신 **해설을 선지 쪽으로 민다.**
+                    //           사라지는 것이 없고 기준선도 맞지만 본문 폭을 40dp 먹는다.
+                    "answer_v4" -> Column(
+                        Modifier.fillMaxSize().background(BgBase)
+                            .verticalScroll(rememberScrollState())
+                            .statusBarsPadding()
+                            .padding(horizontal = 6.dp, vertical = 12.dp),
+                    ) {
+                        val tp = androidx.compose.ui.graphics.Color(0xFFF4F7FB)
+                        val ts = androidx.compose.ui.graphics.Color(0xFFB8C7DA)
+                        val tm = TextMutedIcon
+                        val ol = androidx.compose.ui.graphics.Color(0xFF2A4A6E)
+                        val g1 = androidx.compose.ui.graphics.Color(0xFF124A2E)
+                        val errFaint = androidx.compose.ui.graphics.Color(0xFF4A2530)
+                        val err = androidx.compose.ui.graphics.Color(0xFFFF6B6B)
+                        val onLime = androidx.compose.ui.graphics.Color(0xFF05221A)
+                        val r14 = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
+                        val r12 = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+                        val opts = listOf(
+                            Triple("예금 금리가 내려간다", false, false),
+                            Triple("예금 금리가 올라간다", true, false),
+                            Triple("환율이 먼저 움직인다", false, true),
+                            Triple("아무 변화도 없다", false, false),
+                        )
+
+                        @androidx.compose.runtime.Composable
+                        fun label(text: String, color: androidx.compose.ui.graphics.Color) {
+                            Text(
+                                text, color = color,
+                                modifier = Modifier.padding(start = 14.dp),
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                style = androidx.compose.material3.MaterialTheme.typography.labelLarge,
+                            )
+                            Spacer(Modifier.height(8.dp))
+                        }
+
+                        @androidx.compose.runtime.Composable
+                        fun question() {
+                            Text(
+                                "Q. 기준금리가 오르면 예금 금리는 어떻게 될까요?",
+                                color = tp, modifier = Modifier.padding(start = 14.dp, end = 14.dp),
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+                            )
+                            Spacer(Modifier.height(14.dp))
+                        }
+
+                        // 풀이 화면 — 넷 다 누를 수 있어 넷 다 원·테두리. 이건 안 바꾼다.
+                        @androidx.compose.runtime.Composable
+                        fun solving() {
+                            question()
+                            opts.forEachIndexed { i, (t, _, _) ->
+                                Row(
+                                    Modifier.fillMaxWidth().padding(horizontal = 14.dp)
+                                        .clip(r14).border(1.dp, ol, r14).padding(14.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Box(
+                                        Modifier.size(28.dp).clip(CircleShape)
+                                            .background(BgElevatedIcon),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Text(
+                                            "${i + 1}", color = ts,
+                                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                            style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
+                                        )
+                                    }
+                                    Spacer(Modifier.width(12.dp))
+                                    Text(
+                                        t, color = tp, modifier = Modifier.weight(1f),
+                                        style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
+                                    )
+                                }
+                                Spacer(Modifier.height(10.dp))
+                            }
+                        }
+
+                        @androidx.compose.runtime.Composable
+                        fun verdict() {
+                            Row(
+                                Modifier.fillMaxWidth().padding(horizontal = 14.dp)
+                                    .clip(r12).background(errFaint)
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    "틀렸어요", color = err,
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                    style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
+                                )
+                            }
+                            Spacer(Modifier.height(14.dp))
+                        }
+
+                        /** 해설 — [inset] 만 다르다. C2 는 14(=화면 20), C2b 는 54. */
+                        @androidx.compose.runtime.Composable
+                        fun explain(inset: androidx.compose.ui.unit.Dp) {
+                            Column(Modifier.fillMaxWidth().padding(start = inset, end = 14.dp)) {
+                                Text(
+                                    "해설", color = tm,
+                                    style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                )
+                                Spacer(Modifier.height(6.dp))
+                                Text(
+                                    "기준금리가 오르면 은행이 돈을 빌려오는 비용이 올라갑니다. " +
+                                        "그 비용을 메우려면 예금으로 자금을 더 모아야 하므로 " +
+                                        "예금 금리도 따라 오릅니다.",
+                                    color = tp,
+                                    style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
+                                    lineHeight = 25.sp,
+                                )
+                            }
+                        }
+
+                        // ── 묶음 1 · C2 ──────────────────────────────────────
+                        label("① 풀이 화면 (공통 · 안 바뀜)", Lime)
+                        solving()
+                        Spacer(Modifier.height(24.dp))
+                        label("② 채점 후 · C2 — 번호가 사라진다", err)
+                        question()
+                        verdict()
+                        opts.forEach { (t, ok, mine) ->
+                            Row(
+                                Modifier.fillMaxWidth().then(
+                                    if (ok) Modifier.clip(r14).background(g1)
+                                        .border(2.dp, Lime, r14).padding(14.dp)
+                                    else Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
+                                ),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    t, color = if (ok || mine) tp else tm,
+                                    modifier = Modifier.weight(1f),
+                                    fontWeight = if (ok || mine)
+                                        androidx.compose.ui.text.font.FontWeight.SemiBold
+                                    else androidx.compose.ui.text.font.FontWeight.Normal,
+                                    style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
+                                )
+                                if (ok || mine) {
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        if (ok) "정답" else "내 답",
+                                        color = if (ok) Lime else err,
+                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                        style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.height(2.dp))
+                        }
+                        Spacer(Modifier.height(14.dp))
+                        explain(inset = 14.dp)
+
+                        // ── 묶음 2 · C2b ─────────────────────────────────────
+                        Spacer(Modifier.height(36.dp))
+                        label("① 풀이 화면 (같은 화면)", Lime)
+                        solving()
+                        Spacer(Modifier.height(24.dp))
+                        label("② 채점 후 · C2b — 번호는 넷 다 남는다", Lime)
+                        question()
+                        verdict()
+                        opts.forEachIndexed { i, (t, ok, mine) ->
+                            Row(
+                                Modifier.fillMaxWidth().padding(horizontal = 14.dp)
+                                    .then(
+                                        if (ok) Modifier.clip(r14).background(g1)
+                                            .border(2.dp, Lime, r14)
+                                        else Modifier,
+                                    )
+                                    .padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                // 원은 표시된 둘만. 번호 **글자**는 넷 다 남아서
+                                // 풀이 화면의 번호 열이 그대로 이어진다.
+                                Box(
+                                    Modifier.size(28.dp).then(
+                                        if (ok || mine) Modifier.clip(CircleShape)
+                                            .background(if (ok) Lime else err)
+                                        else Modifier,
+                                    ),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        "${i + 1}",
+                                        color = if (ok) onLime else if (mine) errFaint else tm,
+                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                        style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
+                                    )
+                                }
+                                Spacer(Modifier.width(12.dp))
+                                Text(
+                                    t, color = if (ok || mine) tp else tm,
+                                    modifier = Modifier.weight(1f),
+                                    style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
+                                )
+                                if (mine) {
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        "내 답", color = err,
+                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                        style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.height(6.dp))
+                        }
+                        Spacer(Modifier.height(14.dp))
+                        // 해설을 선지 글자와 같은 x 로 민다 — 번호 원 28 + 간격 12 + 14.
+                        explain(inset = 54.dp)
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "↑ C2b 는 해설이 선지 글자에 맞춰 들어와 있다 (본문 폭 −40dp)",
+                            color = ts, modifier = Modifier.padding(start = 14.dp, end = 14.dp),
+                            style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                        )
+                        Spacer(Modifier.height(40.dp))
+                    }
+
                     // 로그인 화면 — 로그아웃하지 않고 보기 위한 케이스.
                     // 실계정 세션을 지우면 다시 로그인해야 하고, 그것 때문에 검증을
                     // 미루게 된다.
