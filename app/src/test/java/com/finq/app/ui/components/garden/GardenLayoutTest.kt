@@ -105,3 +105,45 @@ class GardenLayoutTest {
         assertEquals(listOf(2L, 3L, 1L), scene.front.map { it.item.quizId })
     }
 }
+
+/**
+ * 앞줄 식물의 유일한 변주 축 — **깊이(depth)** 다.
+ *
+ * 회전·좌우 반전·폭 배율을 차례로 시도했다가 모두 되돌렸다(경위는 ScenePlant 주석).
+ * 그래서 depth 가 한 값으로 몰리면 정원의 식물이 통째로 똑같아진다 — 여기가
+ * 마지막 방어선이다.
+ */
+class ScenePlantVarietyTest {
+
+    private fun item(quizId: Long) = GardenItem(
+        quizId = quizId, categoryLabel = "경제", question = "q$quizId", keyword = null,
+        stage = ReviewStage.ALMOST_TREE, dueDate = null, waterCount = 1, absorbedCount = 1,
+        graduatedAtIso = "2026-07-19T12:00:00", inTodayQueue = false,
+    )
+
+    /**
+     * id 시작점을 여러 개로 돌린다. 한 구간만 보면 놓친다 — 좌우 반전을 쓰던 시절
+     * id 1..12 만 보는 테스트는 통과했는데 실제 화면(졸업분 101..112)에서는
+     * 12그루가 **전부 같은 방향**이었다. `Random(작고 연속한 시드)` 의 앞부분은
+     * 시드끼리 상관이 남는다.
+     */
+    @Test
+    fun `깊이는 밴드 전체에 퍼지고 한 값으로 몰리지 않는다`() {
+        listOf(1L, 101L, 500L, 1000L, 12345L).forEach { base ->
+            val garden = ReviewGarden(
+                growing = emptyList(),
+                graduated = (base until base + 12L).map { item(it) },
+                graduatedTrees = 12,
+            )
+            val front = computeNightScene(garden, LocalDate.of(2026, 8, 6)).front
+            assertTrue("표본이 없다", front.size >= 8)
+            val depths = front.map { it.depth }
+            depths.forEach { assertTrue("깊이가 0~1 밖: $it", it in 0f..1f) }
+            assertTrue("id $base — 깊이가 한 값으로 몰렸다", depths.distinct().size >= 6)
+            assertTrue(
+                "id $base — 깊이가 밴드 한쪽에만 있다: ${depths.min()}~${depths.max()}",
+                depths.min() < 0.35f && depths.max() > 0.65f,
+            )
+        }
+    }
+}

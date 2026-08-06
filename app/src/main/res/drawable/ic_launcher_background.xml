@@ -1,36 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  런처 아이콘 배경 — 라임 통짜.
+
+  전경(ic_launcher_foreground)이 이 면에 새싹을 **파내는** 네거티브 방식이라,
+  배경은 아무 무늬 없이 한 값이어야 한다. 여기에 그라데이션이나 후광을 넣으면
+  파낸 자리의 대비가 위치마다 달라져, 없애려던 "애매하게 흐린 가운데"가 그대로 돌아온다.
+
+  종전엔 네이비 수직 그라데이션 + 새싹 뒤 라임 라디얼 후광이었다. 그 후광이
+  아이콘에서 **가장 큰 중간 톤**이었고 밝은 라임 잎과 배경의 경계를 먹었다.
+  초록을 세 단계(줄기 grass_2 · 왼잎 grass_3 · 오른잎 lime)로 쓰던 것도 같은 병이라,
+  값을 둘(네이비/라임)로 못박고 그 사이를 아예 비웠다.
+
+  뒤집은 이유: 앱 안은 전부 다크라 아이콘도 네이비여야 할 것 같지만 홈화면에서는
+  반대다 — 이웃 아이콘 대부분이 밝은 면을 가져서 네이비 통짜는 목록에서 가라앉는다.
+  실기기에서 네 안을 96/48/32dp 로 나란히 놓고 고른 결과다.
+
+  ⚠️ 스토어 512 아이콘은 APK 와 별개로 Play Console 에 올린다 — 여기를 바꾸면
+  store-assets 도 다시 뽑아야 한다(Showcase `store_icon` 화면).
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- 네이비 풀블리드 -->
-    <path android:pathData="M0,0h108v108h-108z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:startX="54" android:startY="0"
-                android:endX="54" android:endY="108"
-                android:type="linear">
-                <item android:offset="0" android:color="@color/bg_elevated" />
-                <item android:offset="0.55" android:color="@color/bg_surface" />
-                <item android:offset="1" android:color="@color/bg_base" />
-            </gradient>
-        </aapt:attr>
-    </path>
-    <!-- 새싹 뒤 라임 후광.
-         종전엔 좌상단(30,22)에 있어 아이콘과 무관한 얼룩이었다. 전경 새싹 중심으로
-         옮겨 "빛나는 것 = 라임"이라는 앱의 신호와 같은 언어를 쓰고, 목록에서 배경이
-         통짜 네이비로 죽지 않게 명도차를 만든다. -->
-    <path android:pathData="M0,0h108v108h-108z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:type="radial"
-                android:centerX="54" android:centerY="48"
-                android:gradientRadius="58">
-                <item android:offset="0" android:color="@color/accent_glow_icon" />
-                <item android:offset="0.72" android:color="@color/accent_glow_none" />
-            </gradient>
-        </aapt:attr>
-    </path>
+    <path android:fillColor="@color/lime" android:pathData="M0,0h108v108h-108z" />
 </vector>

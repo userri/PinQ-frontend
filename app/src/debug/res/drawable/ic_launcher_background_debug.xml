@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ⚠️ 디버그 전용 런처 배경. **app/src/main 으로 옮기지 말 것.**
+
+  안전장치가 둘이다:
+   1. Gradle 은 build type 소스셋(app/src/debug)을 그 변형에만 병합한다 — release
+      빌드는 이 디렉터리를 아예 보지 않는다.
+   2. 파일명이 `_debug` 로 갈려 있어 main 의 어떤 리소스도 **가리지 않는다**.
+      같은 이름으로 덮었더니 디버그 빌드에서 R.drawable.ic_launcher_background 가
+      이 파일을 가리켜, Showcase 로 운영 아이콘을 검증할 수 없었다.
+
+  **전경은 갈라지 않는다.** 운영 아이콘이 라임 면에 새싹을 파내는 네거티브 방식이라,
+  배경 한 장만 앰버로 바꾸면 디버그판이 된다 — 형태·여백·패스가 운영과 100% 같으므로
+  디버그에서 본 아이콘이 운영 아이콘의 대역 노릇을 그대로 한다.
+  갈라지는 것은 이 색 하나뿐이다. 운영 배경을 바꾸면 여기도 같이 볼 것.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:fillColor="@color/debug_accent" android:pathData="M0,0h108v108h-108z" />
+</vector>

@@ -985,6 +985,37 @@ class ShowcaseActivity : ComponentActivity() {
                             "나무 직전" to R.drawable.ic_stage_almost_tree,
                             "나무" to R.drawable.ic_stage_tree,
                         )
+                        // 운영 vs 디버그 — 홈화면에서 두 아이콘이 실제로 갈리는지 본다.
+                        // 디버그 에셋은 파일명이 `_debug` 라 main 을 가리지 않으므로,
+                        // 디버그 빌드에서도 왼쪽은 **진짜 운영 아이콘**이다.
+                        Text(text = "운영 / 디버그 나란히", color = Lime, modifier = Modifier.padding(bottom = 8.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(bottom = 24.dp),
+                        ) {
+                            val pairs = listOf(
+                                "운영" to (R.drawable.ic_launcher_background to R.drawable.ic_launcher_foreground),
+                                // 디버그는 배경만 앰버로 갈린다 — 전경은 운영과 같은 파일.
+                                "디버그" to (R.drawable.ic_launcher_background_debug to R.drawable.ic_launcher_foreground),
+                            )
+                            pairs.forEach { (label, res) ->
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    // 런처 실제 표시 크기(≈48dp)와 크게 본 것을 같이 둔다 —
+                                    // 축소해서 뭉개지는지는 96dp 로는 절대 안 보인다.
+                                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        listOf(96.dp, 48.dp, 32.dp).forEach { sz ->
+                                            Box(modifier = Modifier.size(sz).clip(CircleShape)) {
+                                                Image(painterResource(res.first), null, Modifier.size(sz))
+                                                Image(painterResource(res.second), label, Modifier.size(sz))
+                                            }
+                                        }
+                                    }
+                                    Text(text = label, color = TextMutedIcon, modifier = Modifier.padding(top = 6.dp))
+                                }
+                            }
+                        }
+
                         // 실제 런처 에셋 — 컬러/모노크롬(테마 아이콘) 둘 다.
                         Text(text = "런처 실제 에셋", color = Lime, modifier = Modifier.padding(bottom = 8.dp))
                         Row(

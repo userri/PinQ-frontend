@@ -18,7 +18,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.lerp
@@ -72,7 +71,26 @@ internal data class ScenePlant(
     val item: GardenItem,
     val xFrac: Float,
     val depth: Float,
-    val rotationDeg: Float,
+    /*
+     * 개체차 필드는 없다. 아트를 비트는 축을 셋 시도했고 셋 다 되돌렸다 —
+     * 전부 "변주"가 아니라 **오류**로 읽혔기 때문이다.
+     *
+     * ① **회전(±3.5°)** — 나무·나무직전은 줄기가 곧은 세로선이라 2° 만 기울어도
+     *    잘못 그려진 것으로 읽혔다. 지면과의 직각이 깨지는 순간 눈이 그걸 먼저 잡는다.
+     * ② **좌우 반전** — 벡터 넷이 모두 한쪽에서 빛을 받는 그림이다(나무의 라임
+     *    초승달, 새싹의 밝은 오른쪽 잎, 나무직전의 밝은 가운데 잎). 반전하면 그
+     *    나무만 광원이 반대가 된다. 광원은 개체 속성이 아니라 **장면 전체가 공유하는
+     *    사실**이라 곧바로 모순으로 보였다.
+     * ③ **폭 배율(±6%)** — 수관이 원이라 가로만 늘리면 타원이 되고, 이웃한 나무와
+     *    나란히 놓이면 "찌그러졌다"로 읽혔다. 비례는 형태의 일부다.
+     *
+     * 남은 축이 없다. 크기는 이미 depth(원근)가 쓰고 있어 개체차로 겹쳐 쓸 수 없다
+     * (한 신호 = 한 역할). 같은 단계의 식물이 똑같이 보이는 건 감수한다 — 크기가
+     * 깊이에 따라 이미 다르고, 그게 이 씬이 가진 유일한 정직한 변주다.
+     *
+     * 더 필요하면 표현을 비틀지 말고 **아트를 하나 더 그린다** — 수관 모양이 다른
+     * 나무 벡터 한 종을 만들어 quizId 로 고르면 된다. 그건 거짓말이 아니다.
+     */
     /** 오늘 물 줄 수 있는가 — Lime 글로우 신호. */
     val due: Boolean,
 )
@@ -137,7 +155,6 @@ internal fun computeNightScene(garden: ReviewGarden, today: LocalDate): SceneLay
             item = item,
             xFrac = (0.07f + gx * 0.86f + (rnd.nextFloat() - 0.5f) * 0.07f).coerceIn(0.06f, 0.94f),
             depth = (gd + (rnd.nextFloat() - 0.5f) * 0.18f).coerceIn(0f, 1f),
-            rotationDeg = (rnd.nextFloat() - 0.5f) * 7f,
             // 서버가 뽑은 오늘 세트만 빛난다. dueDate 로 직접 판정하면 하루 캡에
             // 잘린 백로그까지 켜져서 "빛나는 건 10개인데 배지는 5개"가 된다.
             due = item.inTodayQueue,
@@ -390,15 +407,22 @@ private fun DrawScope.drawScenePlant(
     )
 
     // ⚠️ 같은 VectorPainter 를 한 프레임에 서로 다른 size 로 그리면 내부 캐시가 꼬인다
-    // (홈에서 확인된 버그). intrinsic 크기 한 가지로만 draw 하고 확대·축소·회전은
+    // (홈에서 확인된 버그). intrinsic 크기 한 가지로만 draw 하고 확대·축소는
     // 캔버스 transform 으로 처리한다. 밑동은 뷰포트 ~0.875 지점 — top = 0.85·side.
+    //
+    // ⚠️ 그래서 **벡터의 선언 크기(android:width/height)가 곧 래스터 해상도**가 된다.
+    // 48dp 였을 땐 정원의 나무가 화면에서 ~370px 인데 캐시는 144px 라 2.5 배 확대돼
+    // 테두리가 몇 픽셀에 걸쳐 뭉갰다("나무 테두리가 흐리다"). 캔버스로 직접 그린
+    // 그림자 타원만 칼같이 떨어져서 원인이 드러났다. ic_stage_* 넷을 192dp 로 올려
+    // 정원에서도 **축소**가 되게 했다(뷰포트 24 는 그대로라 형태는 안 변한다).
+    // 이 화면이 그 벡터를 가장 크게 쓰는 곳이므로, 정원이 커지면 여기를 다시 볼 것.
     val intrinsic = painter.intrinsicSize
     val factor = side / intrinsic.width
-    rotate(degrees = p.rotationDeg, pivot = Offset(cx, groundY)) {
-        translate(left = cx - side / 2f, top = groundY - side * 0.85f) {
-            scale(scaleX = factor, scaleY = factor, pivot = Offset.Zero) {
-                with(painter) { draw(size = intrinsic, alpha = depthAlpha) }
-            }
+    // 확대·축소는 **등방(scaleX == scaleY)** 으로만 한다. 한 축만 늘리면 원인 수관이
+    // 타원이 되어 "찌그러졌다"로 읽힌다(ScenePlant 주석 ③).
+    translate(left = cx - side / 2f, top = groundY - side * 0.85f) {
+        scale(scaleX = factor, scaleY = factor, pivot = Offset.Zero) {
+            with(painter) { draw(size = intrinsic, alpha = depthAlpha) }
         }
     }
 }

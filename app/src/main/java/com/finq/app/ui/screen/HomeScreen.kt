@@ -561,10 +561,7 @@ private fun WeekGrassStrip(
                 color = TextMuted,
                 fontWeight = FontWeight.Bold,
             )
-            StatPill(
-                iconRes = R.drawable.ic_star_rounded,
-                text = "최고 ${maxStreak.coerceAtLeast(0)}일",
-            )
+            BestStreakStat(days = maxStreak.coerceAtLeast(0))
         }
 
         // 스트릭 문구 — streak 은 "어제까지" 값일 수 있으므로 미풀이 상태에선 +1 로 보여준다.
@@ -640,26 +637,36 @@ private fun WeekGrassStrip(
     }
 }
 
-/** 최고 기록 칩. */
+/**
+ * 최고 연속 기록 — 읽기 전용 값이므로 **알약을 씌우지 않는다**.
+ *
+ * 종전엔 라임 별이 박힌 알약이었다. `docs/ui-rules.md` §2 는 알약을 액션 전용으로
+ * 못박고 있는데(누를 수 있다는 약속), 이건 눌러도 아무 일이 없었다. 게다가 별이
+ * 16dp 라 §3 의 20dp 하한도 넘겼고, 라임이 이 카드 안에서 별과 "N일 연속 학습 중!"
+ * 두 곳에 쓰여 "오늘의 성취"라는 뜻이 흐려졌다.
+ *
+ * 그래서 면 대신 **형태**로 구별한다(§2: 앞에 아이콘 열을 세운다) — 회색 별 20dp +
+ * 라벨 + 값. 라임은 이 카드에서 연속 문구 하나만 맡는다.
+ */
 @Composable
-private fun StatPill(iconRes: Int, text: String) {
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(BgSubtle.copy(alpha = 0.55f))
-            .padding(horizontal = 10.dp, vertical = 5.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+private fun BestStreakStat(days: Int) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(
-            painter = painterResource(iconRes),
+            painter = painterResource(R.drawable.ic_star_rounded),
             contentDescription = null,
-            tint = Lime,
-            modifier = Modifier.size(16.dp),
+            tint = TextMuted,
+            modifier = Modifier.size(20.dp),
+        )
+        Spacer(Modifier.size(6.dp))
+        Text(
+            text = "최고",
+            style = MaterialTheme.typography.labelMedium,
+            color = TextMuted,
         )
         Spacer(Modifier.size(5.dp))
         Text(
-            text = text,
-            style = MaterialTheme.typography.labelMedium,
+            text = "${days}일",
+            style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,
             color = TextPrimary,
         )

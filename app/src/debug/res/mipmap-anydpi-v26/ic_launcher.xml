@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ⚠️ 디버그 전용 런처 아이콘 정의. **app/src/main 으로 옮기지 말 것.**
+  release 빌드는 app/src/debug 를 병합하지 않으므로 main 의 정의가 그대로 쓰인다.
+
+  **배경 한 장만** 앰버로 갈아 끼운다. 운영 아이콘이 라임 면에 새싹을 파내는 네거티브
+  방식이라 배경색만 바꾸면 그대로 디버그판이 되고, 전경(형태)은 운영과 100% 같아
+  디버그에서 본 아이콘이 운영 아이콘의 대역 노릇을 한다.
+  monochrome(테마 아이콘)은 형태만 쓰고 색은 시스템이 칠하므로 갈라 봐야 구별이 안 된다.
+
+  주의: minSdk 24 라 API 25 이하 기기는 mipmap-*dpi 의 PNG 를 쓴다. 그 기기에서는
+  디버그·운영 아이콘이 여전히 같아 보인다(어댑티브 아이콘은 API 26+).
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@drawable/ic_launcher_background_debug" />
+    <foreground android:drawable="@drawable/ic_launcher_foreground" />
+    <monochrome android:drawable="@drawable/ic_launcher_monochrome" />
+</adaptive-icon>
