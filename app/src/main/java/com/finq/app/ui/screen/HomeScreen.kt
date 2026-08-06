@@ -41,6 +41,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.lerp
@@ -192,11 +194,25 @@ fun HomeScreen(
                     color = Lime,
                     letterSpacing = (-0.5).sp,
                 )
-                Spacer(Modifier.weight(1f))
+                Spacer(Modifier.width(12.dp))
+                // 인사말이 남는 폭을 가져가고 그 안에서 오른쪽 끝에 붙는다.
+                //
+                // 종전엔 Spacer(weight 1f) 로 밀고 인사말에는 폭 제약이 없었다. Row 는
+                // weight 없는 자식을 **먼저** 전체 폭으로 재므로, 닉네임이 상한(20자)에
+                // 가까워지면 인사말이 폭을 다 먹고 Spacer 가 0 으로 눌렸다. 그 순간
+                // 오른쪽 정렬이 사라져 로고에 딱 붙고, 거기다 두 줄로 감겨 헤더 높이까지
+                // 늘어났다. 짧을 때와 자리가 달라지는 게 문제였다.
+                //
+                // 이제 제약은 인사말 쪽에 있다 — 로고는 어떤 닉네임에도 밀리지 않고,
+                // 인사말은 한 줄로 말줄임된다. 전체 닉네임은 마이페이지에서 본다.
                 Text(
                     text = if (nickname.isNotEmpty()) "안녕하세요, ${nickname}님" else "안녕하세요",
                     style = MaterialTheme.typography.labelMedium,
                     color = TextSecondary,
+                    textAlign = TextAlign.End,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
                 )
             }
 
@@ -645,16 +661,28 @@ private fun WeekGrassStrip(
  * 16dp 라 §3 의 20dp 하한도 넘겼고, 라임이 이 카드 안에서 별과 "N일 연속 학습 중!"
  * 두 곳에 쓰여 "오늘의 성취"라는 뜻이 흐려졌다.
  *
- * 그래서 면 대신 **형태**로 구별한다(§2: 앞에 아이콘 열을 세운다) — 회색 별 20dp +
- * 라벨 + 값. 라임은 이 카드에서 연속 문구 하나만 맡는다.
+ * 그래서 면 대신 **형태**로 구별한다(§2: 앞에 아이콘 열을 세운다) — 아이콘 20dp +
+ * 라벨 + 값.
+ *
+ * 글리프가 별에서 트로피로 바뀐 이유: 별은 이 앱에서 **북마크 토글**이다
+ * (`ic_bookmark_star` 빈 별 / `ic_bookmark_star_filled` 라임). 읽기 전용 값에 회색 별을
+ * 두니 "아직 안 채운 북마크"로 읽혀, 알약을 걷어내며 없앤 것과 똑같은 거짓 affordance 가
+ * 되돌아왔다. 색을 바꿔서는 못 푼다 — 라임 별은 채워진 북마크와 아예 같아진다.
+ * 트로피는 이 앱에서 다른 뜻으로 쓰이지 않는다.
+ *
+ * 라임을 쓰는 것은 규칙에 맞는다. 이 카드의 라임은 트로피와 "N일 연속 학습 중!" 둘인데
+ * **둘 다 성취**라 역할이 갈리지 않는다. 문제였던 것은 색이 아니라 알약이 약속한
+ * "누를 수 있음"이었고, 트로피에는 그 약속이 없다.
+ *
+ * `Icon(tint=)` 이 아니라 `Image` 로 그린다 — 트로피는 라임 채움 + grass_2 외곽선의
+ * 2톤 벡터라 tint 를 씌우면 단색 덩어리로 뭉갠다. 같은 카드의 불꽃도 같은 이유로 Image 다.
  */
 @Composable
 private fun BestStreakStat(days: Int) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            painter = painterResource(R.drawable.ic_star_rounded),
+        androidx.compose.foundation.Image(
+            painter = painterResource(R.drawable.ic_trophy),
             contentDescription = null,
-            tint = TextMuted,
             modifier = Modifier.size(20.dp),
         )
         Spacer(Modifier.size(6.dp))

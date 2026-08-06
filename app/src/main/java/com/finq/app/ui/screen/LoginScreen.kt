@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -71,14 +72,38 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            // ── 경제잔디 로고 ─────────────────────────────────────
-            Image(
-                painter = painterResource(R.drawable.ic_finq_logo),
-                contentDescription = "경제잔디",
+            // ── 경제잔디 로고 — 런처 아이콘 에셋을 그대로 겹쳐 그린다 ──
+            //
+            // 전용 로고 파일(ic_finq_logo)을 지우고 여기로 왔다. 그 파일은 런처 아이콘의
+            // **사본**이었고 두 세대 뒤처져 있었다 — 네이비 면 + 라임 후광(걷어낸 중간 톤),
+            // grass_2 줄기(같은 병), 1.8 두께 잎맥(축소하면 먼저 뭉개는 획). 96dp 로 크게만
+            // 떠서 눈에 안 걸렸을 뿐이다. 사본을 없애면 런처를 고칠 때 여기가 따라온다.
+            //
+            // 안쪽 아트를 1.8 배로 키워 넘치는 테두리를 잘라낸다. 어댑티브 아이콘은 108
+            // 캔버스 중 가운데 72 만 마스크 뒤에 보이므로, 그대로 그리면 런처보다 새싹이
+            // 훨씬 작게 뜬다. 1.5 배가 그 안전영역(=스토어 512 와 같은 밀도)이고 여기선
+            // 로고가 축소될 일이 없어 한 단계 더 키웠다.
+            //
+            // ⚠️ requiredSize 여야 한다 — Modifier.size 는 부모 제약(96dp)을 따르므로
+            // 172dp 를 줘도 96 으로 눌려 확대가 통째로 사라진다(실기기에서 확인).
+            Box(
                 modifier = Modifier
                     .size(96.dp)
                     .clip(RoundedCornerShape(22.dp)),
-            )
+                contentAlignment = Alignment.Center,
+            ) {
+                val art = Modifier.requiredSize(172.dp)  // 96 × 1.8
+                Image(
+                    painter = painterResource(R.drawable.ic_launcher_background),
+                    contentDescription = null,
+                    modifier = art,
+                )
+                Image(
+                    painter = painterResource(R.drawable.ic_launcher_foreground),
+                    contentDescription = "경제잔디",
+                    modifier = art,
+                )
+            }
 
             Spacer(modifier = Modifier.height(20.dp))
 
