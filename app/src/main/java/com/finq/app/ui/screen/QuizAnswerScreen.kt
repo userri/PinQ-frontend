@@ -44,6 +44,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.finq.app.R
 import com.finq.app.data.DummyQuizData
 import com.finq.app.data.model.Quiz
@@ -53,6 +54,7 @@ import com.finq.app.data.repository.AnswerResult
 import com.finq.app.data.repository.LibraryRepository
 import com.finq.app.data.repository.ReviewStage
 import com.finq.app.ui.components.AdBanner
+import com.finq.app.ui.library.keywordTitle
 import com.finq.app.ui.theme.FinQTheme
 import kotlinx.coroutines.launch
 import com.finq.app.ui.theme.BgBase
@@ -125,7 +127,8 @@ fun QuizAnswerScreen(
             .padding(horizontal = 20.dp, vertical = 12.dp),
     ) {
         // ── 상단 진행도 도트 (퀴즈 화면과 동일) ──────────────────
-        ProgressDotsHeader(quizIndex = quizIndex, totalCount = totalCount)
+        // 이 문제는 방금 채점됐으므로 푼 문제 수는 quizIndex + 1 이다.
+        ProgressDotsHeader(doneCount = quizIndex + 1, totalCount = totalCount)
         Spacer(Modifier.height(12.dp))
 
         // ── 뒤로 + 카테고리 + 북마크 ────────────────────────────
@@ -139,11 +142,14 @@ fun QuizAnswerScreen(
                     .clickable(onClick = onBack),
                 contentAlignment = Alignment.Center,
             ) {
+                // 셰브론이 아니라 **닫기**다. onBack 은 exitReview — 풀이 화면의 ✕ 와
+                // 똑같이 세션을 끝낸다(시스템 뒤로가기는 BackHandler 로 막혀 있다).
+                // 셰브론은 "이전 화면으로 돌아간다"는 뜻이라 여기선 거짓말이었다.
+                // 같은 일을 하면 같은 글리프여야 한다(§4).
                 Image(
-                    painter = painterResource(R.drawable.ic_chevron_left),
-                    contentDescription = "뒤로",
+                    painter = painterResource(R.drawable.ic_close),
+                    contentDescription = "그만두기",
                     modifier = Modifier.size(22.dp),
-                    colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(TextPrimary),
                 )
             }
             Spacer(Modifier.weight(1f))
@@ -321,13 +327,16 @@ fun QuizAnswerBody(
         }
         Spacer(Modifier.height(20.dp))
 
-        // ── 해설 카드 ───────────────────────────────────────
-        ExplanationCard(explanation = answer.explanation)
+        // ── 해설 ───────────────────────────────────────────────
+        // 카드를 쓰지 않는다. 해설·알아두면 좋아요가 카드였는데 둘 다 누를 수 없는
+        // 읽는 글이고, 이 화면에서 유일하게 누를 수 있는 블록(관련 기사)만 카드가
+        // 아니었다 — 카드가 정확히 거꾸로 붙어 있었다. 셋 다 라벨 + 본문으로 통일한다.
+        ExplanationBlock(explanation = answer.explanation)
 
         // ── 알아두면 좋아요 ──────────────────────────────────
         if (!answer.keyword.isNullOrBlank()) {
-            Spacer(Modifier.height(12.dp))
-            KeywordCard(keyword = answer.keyword)
+            Spacer(Modifier.height(18.dp))
+            KeywordBlock(keyword = answer.keyword)
         }
 
         // ── 관련 기사 ────────────────────────────────────────
@@ -349,14 +358,15 @@ fun QuizAnswerBody(
 // 상단 진행도 도트 (QuizScreen 과 동일 비주얼)
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** [QuizScreen] 의 같은 이름 컴포저블과 같은 규칙 — 채워진 칸은 **푼 문제 수**다. */
 @Composable
-private fun ProgressDotsHeader(quizIndex: Int, totalCount: Int) {
+private fun ProgressDotsHeader(doneCount: Int, totalCount: Int) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         repeat(totalCount.coerceAtLeast(1)) { i ->
-            val done = i <= quizIndex
+            val done = i < doneCount
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -655,71 +665,68 @@ private fun AnswerOptionRow(
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun ExplanationCard(explanation: String) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = BgSurface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(BgSurface)
-                    .padding(horizontal = 10.dp, vertical = 4.dp),
-            ) {
-                Text(
-                    text = "해설",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary,
-                )
-            }
-            Spacer(Modifier.height(10.dp))
-            Text(
-                text = explanation,
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextPrimary,
-            )
-        }
+private fun ExplanationBlock(explanation: String) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "해설",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = TextMuted,
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = explanation,
+            style = MaterialTheme.typography.bodyLarge,
+            lineHeight = 25.sp,
+            color = TextPrimary,
+        )
     }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 알아두면 좋아요 (옐로우)
+// 알아두면 좋아요
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * 곁가지 개념 — **용어가 주인공이다.**
+ *
+ * 이 용어는 며칠 뒤 오답노트 목록에서 **이 문제의 제목**으로 다시 만난다
+ * ([keywordTitle] 이 같은 문자열에서 용어만 뽑아 제목으로 쓴다). 여기서 각인되지
+ * 않으면 목록에서 만났을 때 이어지지 않는다. 종전엔 `용어 — 설명` 전체가 한 덩어리
+ * 회색 본문이라, 나중에 제목이 될 단어가 문장에 묻혀 있었다.
+ *
+ * 그래서 자르는 규칙을 목록과 **공유한다** — 두 곳이 각자 자르면 목록 제목과 여기
+ * 용어가 어긋난다.
+ *
+ * 라벨은 작고 조용하게 둔다. 용어를 키우면 라벨과 "누가 이 블록의 이름인가"가
+ * 모호해지는데, 라벨을 없앨 수는 없다 — "정답과 무관한 덤"이라는 정보를 그것만이
+ * 전한다. 라임은 쓰지 않는다(§1 라임 = 누를 수 있는 것 / 성취. 둘 다 아니다).
+ */
 @Composable
-private fun KeywordCard(keyword: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(BgElevated)
-            .padding(horizontal = 14.dp, vertical = 14.dp),
-    ) {
-        Row {
-            Image(
-                painter = painterResource(R.drawable.ic_lightbulb),
-                contentDescription = null,
-                modifier = Modifier.size(22.dp),
+private fun KeywordBlock(keyword: String) {
+    val term = keywordTitle(keyword)
+    val desc = keyword.removePrefix(term.orEmpty()).trimStart(' ', '-', '—', '·', ':').trim()
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "알아두면 좋아요",
+            style = MaterialTheme.typography.labelSmall,
+            color = TextMuted,
+        )
+        Spacer(Modifier.height(5.dp))
+        Text(
+            text = term ?: keyword,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = TextPrimary,
+        )
+        if (desc.isNotBlank()) {
+            Spacer(Modifier.height(3.dp))
+            Text(
+                text = desc,
+                style = MaterialTheme.typography.bodyMedium,
+                lineHeight = 21.sp,
+                color = TextSecondary,
             )
-            Spacer(Modifier.size(10.dp))
-            Column {
-                Text(
-                    text = "알아두면 좋아요",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary,
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = keyword,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary,
-                )
-            }
         }
     }
 }

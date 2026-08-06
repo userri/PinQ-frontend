@@ -3,14 +3,18 @@ package com.finq.app.debug
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.sp
 import com.finq.app.data.model.AttemptItem
 import com.finq.app.data.model.Category
 import com.finq.app.data.model.QuizOption
@@ -45,6 +49,7 @@ import com.finq.app.ui.components.garden.GardenCanvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -61,6 +66,7 @@ import com.finq.app.ui.theme.Lime
 import com.finq.app.ui.components.GrassCalendarCard
 import com.finq.app.ui.components.WaterGrassCard
 import com.finq.app.ui.screen.GardenScreen
+import com.finq.app.ui.screen.LoginScreen
 import com.finq.app.ui.screen.ReviewDoneScreen
 import com.finq.app.ui.screen.HomeScreen
 import com.finq.app.ui.screen.MyPageContent
@@ -774,6 +780,45 @@ class ShowcaseActivity : ComponentActivity() {
                     )
 
                     // 보기 카드 4상태 중 기본/선택 확인
+                    // 긴 지문·긴 선지 — 짧은 더미로는 타이포와 줄바꿈을 검증할 수 없다.
+                    // 실제 서버 문제는 두세 줄이 예사고, 카드를 걷은 이유가 "긴 지문이
+                    // 벽이 된다"였으므로 여기서 봐야 판단이 선다.
+                    "quiz_long" -> QuizScreen(
+                        quizIndex = 1,
+                        totalCount = 5,
+                        quiz = longQuiz,
+                        selectedOptionId = 3L,
+                        onSelectOption = {},
+                        onSubmit = {},
+                    )
+
+                    "answer_long" -> QuizAnswerScreen(
+                        quiz = longQuiz,
+                        answer = AnswerResult(
+                            quizId = longQuiz.id,
+                            selectedOptionId = 3L,
+                            isCorrect = false,
+                            correctOptionId = 1L,
+                            explanation = "기준금리가 오르면 은행이 자금을 조달하는 비용이 함께 " +
+                                "올라갑니다. 은행은 그 비용을 메우기 위해 예금 금리를 올려 " +
+                                "자금을 더 끌어모으고, 동시에 대출 금리도 올려 마진을 지킵니다. " +
+                                "그래서 예금과 대출 금리가 같은 방향으로 움직입니다.",
+                            keyword = "기준금리 — 한국은행 금융통화위원회가 정하는 정책금리로, " +
+                                "시중 금리의 기준이 된다",
+                            relatedArticle = RelatedArticle(
+                                title = "한은, 기준금리 0.25%p 인상… 연 3.75%",
+                                url = "https://example.com",
+                                source = "경제일보",
+                            ),
+                        ),
+                        isLast = false,
+                        quizIndex = 1,
+                        totalCount = 5,
+                        onNext = {},
+                        onBack = {},
+                        onArticleClick = {},
+                    )
+
                     "quiz" -> QuizScreen(
                         quizIndex = 1,
                         totalCount = 3,
@@ -954,6 +999,163 @@ class ShowcaseActivity : ComponentActivity() {
                     // 스토어 아이콘(512x512) 추출용 — 배경+전경을 **마스크 없이** 정사각으로
                     // 꽉 채워 그린다. Play Console 아이콘은 APK 와 별개로 올려야 하고
                     // 알파·라운딩 없이 512 정사각 PNG 를 요구한다(스토어가 알아서 깎는다).
+                    // 제출 후 화면 본문 시안 — 왼쪽 정렬을 어떻게 잡을지 두 안 비교.
+                    //
+                    // 면을 걷으면 해설·키워드 글자가 화면 패딩에서 시작하는데, 선지는
+                    // 면이라 안쪽 패딩만큼 들어가 있다. 그래서 선지 → 해설로 내려올 때
+                    // 글자 왼쪽 끝이 밖으로 튄다. 액센트 바를 세우면 그 들여쓰기가
+                    // 되살아난다. 말로는 안 갈려서 실기기에서 본다.
+                    "answer_v2" -> Column(
+                        Modifier.fillMaxSize().background(BgBase)
+                            .verticalScroll(rememberScrollState())
+                            .statusBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp),
+                    ) {
+                        val tp = androidx.compose.ui.graphics.Color(0xFFF4F7FB)
+                        val ts = androidx.compose.ui.graphics.Color(0xFFB8C7DA)
+                        val tm = TextMutedIcon
+                        val ol = androidx.compose.ui.graphics.Color(0xFF2A4A6E)
+                        val g1 = androidx.compose.ui.graphics.Color(0xFF124A2E)
+                        val errFaint = androidx.compose.ui.graphics.Color(0xFF4A2530)
+                        val err = androidx.compose.ui.graphics.Color(0xFFFF6B6B)
+
+                        @androidx.compose.runtime.Composable
+                        fun shared() {
+                            Row(
+                                Modifier.fillMaxWidth()
+                                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+                                    .background(errFaint).padding(horizontal = 14.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) { Text("틀렸어요", color = err, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold) }
+                            Spacer(Modifier.height(12.dp))
+                            listOf("내려간다" to false, "올라간다" to true, "변하지 않는다" to false).forEach { (t, ok) ->
+                                Row(
+                                    Modifier.fillMaxWidth()
+                                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(14.dp))
+                                        .background(if (ok) g1 else androidx.compose.ui.graphics.Color.Transparent)
+                                        .border(
+                                            if (ok) 2.dp else 1.dp, if (ok) Lime else ol,
+                                            androidx.compose.foundation.shape.RoundedCornerShape(14.dp),
+                                        )
+                                        .padding(14.dp),
+                                ) { Text(t, color = if (ok) tp else tm) }
+                                Spacer(Modifier.height(6.dp))
+                            }
+                        }
+
+                        @androidx.compose.runtime.Composable
+                        fun bodyText(bar: Boolean) {
+                            @androidx.compose.runtime.Composable
+                            fun block(barColor: androidx.compose.ui.graphics.Color?, content: @androidx.compose.runtime.Composable () -> Unit) {
+                                if (bar && barColor != null) {
+                                    Row(Modifier.fillMaxWidth().height(androidx.compose.foundation.layout.IntrinsicSize.Min)) {
+                                        Box(
+                                            Modifier.width(3.dp).fillMaxHeight()
+                                                .clip(androidx.compose.foundation.shape.RoundedCornerShape(2.dp))
+                                                .background(barColor),
+                                        )
+                                        Spacer(Modifier.width(11.dp))
+                                        Column { content() }
+                                    }
+                                } else Column { content() }
+                            }
+                            Spacer(Modifier.height(14.dp))
+                            block(Lime) {
+                                Text("해설", color = tm, style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                Spacer(Modifier.height(6.dp))
+                                Text(
+                                    "기준금리가 오르면 은행이 돈을 빌려오는 비용이 올라갑니다. " +
+                                        "그 비용을 메우려면 예금으로 자금을 더 모아야 하므로 예금 금리도 따라 오릅니다.",
+                                    color = tp, style = androidx.compose.material3.MaterialTheme.typography.bodyLarge, lineHeight = 25.sp,
+                                )
+                            }
+                            Spacer(Modifier.height(16.dp))
+                            block(ol) {
+                                Text("알아두면 좋아요", color = tm, style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
+                                Spacer(Modifier.height(5.dp))
+                                Text("기준금리", color = tp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                    style = androidx.compose.material3.MaterialTheme.typography.titleSmall)
+                                Spacer(Modifier.height(3.dp))
+                                Text("한국은행이 정하는 정책금리", color = ts, style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
+                            }
+                        }
+
+                        Text("가안 · 글자로만 (바 없음)", color = Lime)
+                        Spacer(Modifier.height(10.dp))
+                        shared(); bodyText(bar = false)
+                        Spacer(Modifier.height(28.dp))
+                        Text("나안 · 액센트 바", color = Lime)
+                        Spacer(Modifier.height(10.dp))
+                        shared(); bodyText(bar = true)
+                        Spacer(Modifier.height(40.dp))
+                    }
+
+                    // 로그인 화면 — 로그아웃하지 않고 보기 위한 케이스.
+                    // 실계정 세션을 지우면 다시 로그인해야 하고, 그것 때문에 검증을
+                    // 미루게 된다.
+                    "login" -> LoginScreen(
+                        isLoading = false,
+                        error = null,
+                        onKakaoLogin = {},
+                        onGoogleLogin = {},
+                        onClearError = {},
+                    )
+
+                    // 스토어 스크린샷 4번(홈) 전용 상태.
+                    // 값을 여기 고정해 두는 이유: 실계정으로 찍으면 그날 상태에 따라
+                    // 화면이 달라져 다시 찍을 때마다 다른 그림이 나온다. store-assets 의
+                    // 캡션("하루 3분이면 끝나요")과 맞는 상태는 **오늘 분량을 마친 화면**이다.
+                    "store_home" -> HomeScreen(
+                        quizCount = 0,
+                        streak = 4,
+                        solvedToday = true,
+                        maxStreak = 15,
+                        // 오늘까지 4일 연속 — 스트릭 문구·잔디 칸·solvedToday 가 서로
+                        // 어긋나지 않게 맞춘다. 스토어에 나가는 그림이라 "2일 연속"인데
+                        // 오늘 칸이 비어 있는 식의 모순이 보이면 안 된다.
+                        weekLevels = listOf(2, 3, 2, 4, -1, -1, -1),
+                        isLoading = false,
+                        error = null,
+                        onStartQuiz = {},
+                        onRetry = {},
+                        nickname = "김잔디",
+                        // 복습 카드는 **진행중** 상태로 찍는다("5개 중 1개 줬어요").
+                        // reviewedToday 를 안 넘기면 잔량만 보여 "오늘 물 줄 잔디 4개"가
+                        // 되는데, 그건 총량을 말하는 것처럼 읽힌다 — 분모가 보이는
+                        // 진행중 상태여야 이 앱이 무엇을 세는지 한눈에 전달된다.
+                        reviewCount = 4,
+                        reviewedToday = 1,
+                        garden = sampleGarden,
+                        todayTotal = 5,
+                        todayCorrect = 4,
+                    )
+
+                    // 닉네임 길이 한계 — 입력 상한이 20자다(MyPageScreen 닉네임 다이얼로그).
+                    // 홈 헤더는 "경제잔디" 로고와 인사말이 한 Row 에 있고 사이가 weight
+                    // Spacer 라, 인사말이 길어지면 Spacer 가 0 으로 눌린다. 그 순간
+                    // 인사말이 오른쪽 정렬을 잃는다 — 짧을 때와 다른 자리에 놓인다.
+                    "nickname_len" -> Column(
+                        Modifier.fillMaxSize().background(BgBase)
+                            .verticalScroll(rememberScrollState()).statusBarsPadding(),
+                    ) {
+                        listOf(
+                            "2자" to "유리",
+                            "8자" to "경제잔디마스터",
+                            "20자(상한)" to "가나다라마바사아자차카타파하가나다라마바",
+                        ).forEach { (label, nick) ->
+                            Text(label, color = Lime, modifier = Modifier.padding(start = 20.dp, top = 12.dp))
+                            Box(Modifier.fillMaxWidth().height(150.dp)) {
+                                HomeScreen(
+                                    quizCount = 5, streak = 2, solvedToday = true, maxStreak = 15,
+                                    weekLevels = listOf(2, 3, -1, -1, -1, -1, -1),
+                                    isLoading = false, error = null,
+                                    onStartQuiz = {}, onRetry = {},
+                                    nickname = nick, reviewCount = 4, garden = ReviewGarden.EMPTY,
+                                )
+                            }
+                        }
+                    }
+
                     // 알림 실물 확인 — 서버 발송을 기다리지 않고 실제 알림을 띄운다.
                     // 작은 아이콘이 상태바에서 어떻게 깎이는지, setColor 가 알림 행에서
                     // 어디를 칠하는지는 **화면으로만** 알 수 있다. 계산이나 문서로 대신하면
@@ -1362,6 +1564,21 @@ class ShowcaseActivity : ComponentActivity() {
             QuizOption(2, 2, "대출이 늘어난다"),
             QuizOption(3, 3, "물가가 급등한다"),
             QuizOption(4, 4, "환율이 급락한다"),
+        ),
+    )
+
+    /** 긴 지문·긴 선지 — 실제 서버 문제 길이에 가깝게. 줄바꿈과 타이포 검증용. */
+    private val longQuiz = Quiz(
+        id = 91L,
+        category = Category.INTEREST_RATE,
+        question = "한국은행 금융통화위원회가 기준금리를 0.25%p 인상했다고 발표했습니다. " +
+            "이 결정이 시중은행의 예금·대출 금리와 가계 이자 부담에 미치는 영향으로 " +
+            "가장 적절한 설명은 무엇일까요?",
+        options = listOf(
+            QuizOption(1, 1, "예금 금리와 대출 금리가 모두 올라 이자 부담이 커진다"),
+            QuizOption(2, 2, "예금 금리만 오르고 대출 금리는 그대로 유지된다"),
+            QuizOption(3, 3, "대출 금리만 오르고 예금 금리는 오히려 내려간다"),
+            QuizOption(4, 4, "기준금리는 시중 금리와 무관하므로 아무 변화가 없다"),
         ),
     )
 

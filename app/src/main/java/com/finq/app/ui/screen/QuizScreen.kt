@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.finq.app.R
 import com.finq.app.data.DummyQuizData
 import com.finq.app.data.model.Quiz
@@ -78,7 +79,8 @@ fun QuizScreen(
             .padding(horizontal = 20.dp, vertical = 12.dp),
     ) {
         // ── 진행도 + 닫기 + 즐겨찾기 ────────────────────────────
-        ProgressDotsHeader(quizIndex = quizIndex, totalCount = totalCount)
+        // 아직 풀지 않은 문제이므로 채워진 칸은 quizIndex 개다.
+        ProgressDotsHeader(doneCount = quizIndex, totalCount = totalCount)
         Spacer(Modifier.height(12.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -147,26 +149,27 @@ fun QuizScreen(
                 .weight(1f)
                 .verticalScroll(rememberScrollState()),
         ) {
-            // ── 질문 카드 ────────────────────────────────────────
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(BgElevated)
-                    .border(
-                        1.dp,
-                        Outline,
-                        RoundedCornerShape(16.dp),
-                    )
-                    .padding(horizontal = 20.dp, vertical = 22.dp),
-            ) {
-                Text(
-                    text = quiz.question,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary,
-                )
-            }
+            // ── 질문 ─────────────────────────────────────────────
+            //
+            // 면을 두르지 않는다. 종전엔 BgElevated + Outline 테두리 카드였는데,
+            // 질문은 **누를 수 없는 텍스트**인데 바로 아래 선지(면 + 테두리)와 같은
+            // 문법이라 화면에 같은 모양 박스가 다섯 개였다. 어느 것이 고를 수 있는
+            // 것인지 형태로 갈리지 않았다("왜 카드인지 모르겠다"는 실사용 지적).
+            // 면을 걷으면 이 화면에서 **테두리를 가진 것은 선지뿐**이 되어,
+            // 테두리가 "고를 수 있는 것"이라는 뜻을 얻는다.
+            //
+            // 채점 후 화면은 이미 질문을 면 없는 텍스트로 두고 있었다. 같은 것을 두
+            // 화면이 다르게 그리고 있었고, 그쪽이 규칙에 맞았다.
+            //
+            // 굵기를 Bold 에서 낮추고 행간을 키운다. 지문이 길 때 크고 굵은 글씨는
+            // 읽히는 게 아니라 벽이 된다("너무 하얗고 두껍다").
+            Text(
+                text = quiz.question,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                lineHeight = 27.sp,
+                color = TextPrimary,
+            )
             Spacer(Modifier.height(20.dp))
 
             // ── 보기 카드 4개 ────────────────────────────────────
@@ -219,14 +222,21 @@ fun QuizScreen(
     }
 }
 
+/**
+ * 진행 막대 — 채워진 칸은 **푼 문제 수**다.
+ *
+ * 종전엔 `i <= quizIndex` 라 **지금 풀고 있는 문제까지** 채웠다. 아직 답을 고르지도
+ * 않았는데 완료로 보였다(§4 가장 큰 참말). 화면마다 "푼 문제"의 값이 다르므로
+ * 판단을 호출자에게 넘긴다 — 풀이 중이면 quizIndex, 채점 후면 quizIndex + 1.
+ */
 @Composable
-private fun ProgressDotsHeader(quizIndex: Int, totalCount: Int) {
+private fun ProgressDotsHeader(doneCount: Int, totalCount: Int) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         repeat(totalCount.coerceAtLeast(1)) { i ->
-            val done = i <= quizIndex
+            val done = i < doneCount
             Box(
                 modifier = Modifier
                     .weight(1f)
