@@ -600,16 +600,28 @@ private fun AnswerOptionRow(
             .padding(horizontal = 14.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // 번호 — **원은 표시된 선지만** 갖는다.
+        //
+        // 종전엔 안 고른 선지도 BgElevated(#16385C) 원을 달고 있었는데, 배경
+        // (#081A2E) 위에서 거의 안 보여 아무것도 말하지 않는 도형이었다. 이 화면은
+        // 이미 "강조를 더하는 대신 나머지를 빼서 위계를 만든다"를 쓰고 있다(안 고른
+        // 선지의 배경을 지운 것). 원도 같은 처리를 받으면 **원이 있다 = 표시된 것**이
+        // 되어 도형 자체가 뜻을 얻는다.
+        //
+        // 풀이 화면은 넷 다 원을 유지한다 — 거기선 넷 다 누를 수 있어 전부 터치
+        // 대상이기 때문이다. 두 화면이 갈리는 이유가 그 한 문장이다.
+        //
+        // 자리는 28dp 로 고정해 원이 없어도 번호 열이 흔들리지 않게 한다. 28 인 것은
+        // 풀이 화면의 원과 같은 크기라서다 — 종전엔 26 대 28 로 근거 없이 2dp 달랐다.
         Box(
             modifier = Modifier
-                .size(26.dp)
-                .clip(CircleShape)
-                .background(
-                    when {
-                        isCorrect -> Lime
-                        wrongPick -> Error
-                        else -> BgElevated
-                    },
+                .size(28.dp)
+                .then(
+                    if (marked) {
+                        Modifier
+                            .clip(CircleShape)
+                            .background(if (isCorrect) Lime else Error)
+                    } else Modifier
                 ),
             contentAlignment = Alignment.Center,
         ) {
@@ -632,22 +644,19 @@ private fun AnswerOptionRow(
             fontWeight = if (marked) FontWeight.SemiBold else FontWeight.Normal,
             modifier = Modifier.weight(1f),
         )
+        // 라벨은 **알약을 쓰지 않는다.** 읽기 전용 값이라 눌러도 아무 일이 없는데
+        // 알약은 누를 수 있다는 약속이다(ui-rules §2). 게다가 정답만 알약이고 내 답은
+        // 이미 텍스트라 같은 역할의 두 라벨이 형태부터 달랐다. 텍스트 쪽에 맞추면
+        // 새로 만드는 형태가 없다.
         if (isCorrect) {
             Spacer(Modifier.size(8.dp))
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(50))
-                    .background(Lime)
-                    .padding(horizontal = 10.dp, vertical = 4.dp),
-            ) {
-                Text(
-                    // 맞힌 문제에선 색 블록이 하나로 유지되도록 라벨을 병합한다.
-                    text = if (isUserSelected) "내 답 · 정답" else "정답",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = OnLime,
-                )
-            }
+            Text(
+                // 맞힌 문제에선 라벨을 병합한다 — 같은 줄에 두 라벨을 세우지 않는다.
+                text = if (isUserSelected) "내 답 · 정답" else "정답",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = Lime,
+            )
         } else if (isUserSelected) {
             Spacer(Modifier.size(8.dp))
             Text(
