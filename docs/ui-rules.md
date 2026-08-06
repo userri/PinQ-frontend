@@ -7,7 +7,7 @@
 모르고 믿게 된다 — 실제로 "오답이면 stage=0 리셋"이라는 폐기된 규칙을 사실로 알고 있다가
 백엔드를 읽고서야 잡은 적이 있다. **링크만 걸고 값은 옮기지 않는다.**
 
-- 백엔드 규칙: [`../PinQ-backend/docs/rules/grass-and-streak.md`](../PinQ-backend/docs/rules/grass-and-streak.md), [`../PinQ-backend/docs/rules/concept-diagnosis.md`](../PinQ-backend/docs/rules/concept-diagnosis.md)
+- 백엔드 규칙: [`../../PinQ-backend/docs/rules/grass-and-streak.md`](../../PinQ-backend/docs/rules/grass-and-streak.md), [`../../PinQ-backend/docs/rules/concept-diagnosis.md`](../../PinQ-backend/docs/rules/concept-diagnosis.md)
 
 ---
 
