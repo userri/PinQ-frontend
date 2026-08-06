@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.finq.app.MainActivity
@@ -30,10 +31,18 @@ class FinQMessagingService : FirebaseMessagingService() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onNewToken(token: String) {
+        Log.i(TAG, "onNewToken — 토큰 갱신됨")
         scope.launch { FcmTokenManager.registerToken(token) }
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
+        // 도착 자체를 남긴다. "푸시가 안 온다"가 ⓐ 서버가 안 보냄 ⓑ 도착했는데
+        // 표시에서 막힘 중 어느 쪽인지, 이 한 줄이 있고 없고로 갈린다.
+        Log.i(
+            TAG,
+            "onMessageReceived — notification=${message.notification != null} " +
+                "dataKeys=${message.data.keys}",
+        )
         val title = message.notification?.title
             ?: message.data["title"]
             ?: getString(R.string.app_name)
@@ -70,15 +79,18 @@ class FinQMessagingService : FirebaseMessagingService() {
             .build()
 
         val manager = NotificationManagerCompat.from(this)
-        if (manager.areNotificationsEnabled()) {
-            // POST_NOTIFICATIONS 권한이 런타임에 회수될 수 있으므로 방어적으로 감싼다.
-            runCatching {
-                manager.notify(DAILY_QUIZ_NOTIFICATION_ID, notification)
-            }
+        if (!manager.areNotificationsEnabled()) {
+            // 여기서 조용히 끝나면 "도착은 했는데 화면에 없다"가 되어 원인을 못 찾는다.
+            Log.w(TAG, "알림 표시 생략 — OS 레벨에서 앱 알림이 꺼져 있음")
+            return
         }
+        // POST_NOTIFICATIONS 권한이 런타임에 회수될 수 있으므로 방어적으로 감싼다.
+        runCatching { manager.notify(DAILY_QUIZ_NOTIFICATION_ID, notification) }
+            .onFailure { Log.w(TAG, "알림 표시 실패", it) }
     }
 
     companion object {
+        private const val TAG = "FinQMessaging"
         const val CHANNEL_ID = "daily_quiz"
         private const val DAILY_QUIZ_NOTIFICATION_ID = 1001
 
