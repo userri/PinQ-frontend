@@ -954,6 +954,31 @@ class ShowcaseActivity : ComponentActivity() {
                     // 스토어 아이콘(512x512) 추출용 — 배경+전경을 **마스크 없이** 정사각으로
                     // 꽉 채워 그린다. Play Console 아이콘은 APK 와 별개로 올려야 하고
                     // 알파·라운딩 없이 512 정사각 PNG 를 요구한다(스토어가 알아서 깎는다).
+                    // 알림 실물 확인 — 서버 발송을 기다리지 않고 실제 알림을 띄운다.
+                    // 작은 아이콘이 상태바에서 어떻게 깎이는지, setColor 가 알림 행에서
+                    // 어디를 칠하는지는 **화면으로만** 알 수 있다. 계산이나 문서로 대신하면
+                    // 틀린다 — One UI 는 AOSP 와 다르게 그린다.
+                    "notification" -> Column(
+                        Modifier.fillMaxSize().background(BgBase)
+                            .statusBarsPadding().padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        val ctx = androidx.compose.ui.platform.LocalContext.current
+                        Text("알림 띄우기 — 상태바와 알림창을 직접 볼 것", color = Lime)
+                        androidx.compose.material3.Button(onClick = {
+                            com.finq.app.push.FinQMessagingService.showNotification(
+                                ctx,
+                                "오늘의 경제 퀴즈가 도착했어요",
+                                "방금 나온 경제 뉴스로 만든 5문제, 지금 풀어보세요!",
+                            )
+                        }) { Text("알림 띄우기") }
+                        Text(
+                            "누른 뒤 상태바를 내려 확인한다. 라이트/다크 모드를 바꿔 각각 볼 것 — " +
+                                "작은 아이콘은 시스템이 칠하고, 알림 행의 컬러 아이콘은 런처 아이콘이다.",
+                            color = TextMutedIcon,
+                        )
+                    }
+
                     "store_icon" -> Box(
                         modifier = Modifier.fillMaxSize().background(BgBase),
                         contentAlignment = Alignment.Center,

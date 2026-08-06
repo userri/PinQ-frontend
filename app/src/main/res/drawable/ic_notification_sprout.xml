@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  알림 작은 아이콘(상태바 · 알림 배지) 전용 새싹.
+
+  ⚠️ **색은 여기서 정할 수 없다.** Android 는 작은 아이콘의 알파 채널만 읽어 모양을
+  실루엣으로 깎고 색은 시스템이 칠한다(상태바는 흰색). 그래서 흰 단색으로 그린다 —
+  여기에 라임을 칠해도 버려진다. 브랜드색이 들어갈 자리는 NotificationCompat 의
+  setColor() 하나뿐이고, 그건 알림 행의 배지와 앱 이름을 틴트한다.
+
+  종모양(ic_bell)을 쓰던 것을 바꿨다. 종은 "알림"이라는 뜻이지 이 앱이라는 뜻이 아니고,
+  알림창에 뜨는 건 이미 전부 알림이라 아무것도 구별해주지 않았다. 런처 아이콘과 같은
+  패스를 써서 홈화면에서 익힌 형태가 상태바에서 반복되게 한다.
+
+  크기: 원본 아트는 24 뷰포트에서 x5~19 · y6~20.9 로 여백이 크다. 작은 아이콘은
+  22x22 안을 채우는 것이 관례라 1.45 배로 키우고 중심을 뷰포트 중앙(12,12)에 맞춘다.
+  스트로크가 아니라 채운 도형이라 상태바 크기(≈18dp)로 줄어도 뭉개지지 않는다.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <group
+        android:pivotX="12"
+        android:pivotY="13.45"
+        android:scaleX="1.45"
+        android:scaleY="1.45"
+        android:translateY="-1.45">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M11.1,12.5h1.8v8a0.9,0.9 0 0,1 -1.8,0z" />
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M12,14C7.8,14 5.2,11.2 5,7.2 9.5,7.5 12,10 12,14Z" />
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M12,12.2C12,8.5 14.5,6.2 19,6 18.8,10 16.2,12.3 12,12.2Z" />
+    </group>
+</vector>

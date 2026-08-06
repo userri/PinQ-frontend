@@ -9,6 +9,7 @@ import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import com.finq.app.MainActivity
 import com.finq.app.R
 import com.google.firebase.messaging.FirebaseMessagingService
@@ -49,7 +50,7 @@ class FinQMessagingService : FirebaseMessagingService() {
         val body = message.notification?.body
             ?: message.data["body"]
             ?: "오늘의 경제 퀴즈가 도착했어요!"
-        showNotification(title, body)
+        showNotification(this, title, body)
     }
 
     override fun onDestroy() {
@@ -57,19 +58,39 @@ class FinQMessagingService : FirebaseMessagingService() {
         super.onDestroy()
     }
 
-    private fun showNotification(title: String, body: String) {
-        ensureChannel(this)
+    companion object {
+        private const val TAG = "FinQMessaging"
+        const val CHANNEL_ID = "daily_quiz"
+        private const val DAILY_QUIZ_NOTIFICATION_ID = 1001
 
-        val intent = Intent(this, MainActivity::class.java).apply {
+    /**
+     * 알림을 만들어 띄운다.
+     *
+     * companion 으로 뺀 이유: 디버그 Showcase 가 **같은 알림**을 서버 발송 없이 띄울 수
+     * 있어야 한다. 작은 아이콘이 상태바에서 어떻게 깎이는지, setColor 가 어디를 칠하는지는
+     * 화면으로만 알 수 있는데, 매번 서버 발송 시각을 기다릴 수는 없다. 복사본을 두면
+     * 곧 어긋나므로 한 벌만 둔다.
+     */
+    fun showNotification(context: Context, title: String, body: String) {
+        ensureChannel(context)
+
+        val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         val pendingIntent = PendingIntent.getActivity(
-            this, 0, intent,
+            context, 0, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_bell)
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            // 작은 아이콘은 알파만 쓰인다 — 색은 아래 setColor 가 맡는다.
+            // 종(ic_bell)은 "알림"을 뜻할 뿐 이 앱을 가리키지 않아 새싹으로 바꿨다.
+            .setSmallIcon(R.drawable.ic_notification_sprout)
+            // 알림 배지·앱 이름 틴트.
+            // ⚠️ 라임은 흰 배경 대비가 1.35:1 이라 라이트 모드에서 앱 이름이 흐려질 수
+            // 있다(짙은 초록 grass_2 는 5.3:1). 실기기에서 양쪽 모드를 찍어 보고 라임을
+            // 유지하기로 했다 — 바꿀 일이 생기면 계산이 아니라 화면을 근거로 바꿀 것.
+            .setColor(ContextCompat.getColor(context, R.color.lime))
             .setContentTitle(title)
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
@@ -78,7 +99,7 @@ class FinQMessagingService : FirebaseMessagingService() {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .build()
 
-        val manager = NotificationManagerCompat.from(this)
+        val manager = NotificationManagerCompat.from(context)
         if (!manager.areNotificationsEnabled()) {
             // 여기서 조용히 끝나면 "도착은 했는데 화면에 없다"가 되어 원인을 못 찾는다.
             Log.w(TAG, "알림 표시 생략 — OS 레벨에서 앱 알림이 꺼져 있음")
@@ -88,11 +109,6 @@ class FinQMessagingService : FirebaseMessagingService() {
         runCatching { manager.notify(DAILY_QUIZ_NOTIFICATION_ID, notification) }
             .onFailure { Log.w(TAG, "알림 표시 실패", it) }
     }
-
-    companion object {
-        private const val TAG = "FinQMessaging"
-        const val CHANNEL_ID = "daily_quiz"
-        private const val DAILY_QUIZ_NOTIFICATION_ID = 1001
 
         /** 알림 채널 생성 (Android 8+, 멱등). */
         fun ensureChannel(context: Context) {
