@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -171,22 +172,40 @@ fun AttemptItemRow(
                 )
             }
             Spacer(Modifier.height(3.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                // 제목이 카테고리와 같은 낱말이면("환율" / "환율 · 7/30") 메타에서 뺀다 —
-                // 같은 말이 두 줄에 겹쳐 찍히면 정보가 아니라 잡음이다.
-                val hidesCategory = title != null &&
-                    emphasis == AttemptCardEmphasis.CATEGORY &&
-                    title == item.categoryDisplay
-                if (!hidesCategory) LeadLabel(item = item, emphasis = emphasis)
-                if (dateStr != null) {
-                    Text(
-                        text = if (hidesCategory) dateStr else "  ·  $dateStr",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = TextMuted,
-                    )
-                }
-            }
+            // 제목이 카테고리와 같은 낱말이면("환율" / "환율") 메타에서 뺀다 — 같은 말이
+            // 두 줄에 겹쳐 찍히면 정보가 아니라 잡음이다. **빈 글자로 자리는 남긴다** —
+            // 줄을 통째로 없애면 그 행만 키가 작아져 목록에 계단이 생긴다. 이 규칙이
+            // 8/5 에 반려됐던 이유가 그 계단이었고, 원인은 그때 메타줄에 날짜까지 있어서
+            // 길이 차가 크게 벌어진 것이었다(날짜는 이제 오른쪽 열이다).
+            //
+            // 백엔드가 8/5 에 저장 전 폐기(`73fc2a5`)를 넣어 신규 발행분엔 안 생긴다.
+            // 남은 건 과거 발행분뿐이라 이 분기는 시간이 지나면 안 타게 된다.
+            val hidesCategory = title != null &&
+                emphasis == AttemptCardEmphasis.CATEGORY &&
+                title == item.categoryDisplay
+            LeadLabel(item = item, emphasis = emphasis, hidden = hidesCategory)
         }
+
+        // ── 날짜는 오른쪽 고정 열 ──────────────────────────────
+        //
+        // 종전엔 메타줄 안에 `카테고리 · 5/18` 로 붙어 있었다. 그러면 카테고리를 뺀 행만
+        // 메타가 짧아져 **날짜가 행마다 다른 x 에 찍혔고**, 목록 전체가 어긋나 보였다.
+        // 날짜는 모든 행에 있는 같은 종류의 값이므로 세로로 줄을 세우는 게 맞다.
+        //
+        // 폭을 고정하는 이유: `오늘`(2자)과 `12/31`(5자)의 폭이 달라서, 오른쪽 정렬만
+        // 해서는 왼쪽 끝이 들쭉날쭉해진다. 자리를 잡아두고 그 안에서 오른쪽 정렬한다.
+        // 날짜가 없는 항목(미풀이 북마크)도 폭은 남긴다 — 있다 없다 하면 별·셰브론이
+        // 행마다 밀린다.
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = dateStr.orEmpty(),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Normal,
+            color = TextMuted,
+            maxLines = 1,
+            textAlign = TextAlign.End,
+            modifier = Modifier.width(DateColumnWidth),
+        )
 
         Spacer(Modifier.width(4.dp))
 
@@ -226,19 +245,30 @@ private fun ReviewStatus.stageIcon(): StageGlyph =
 private data class StageGlyph(val iconRes: Int, val label: String)
 
 /**
- * 행 첫 줄의 라벨 — 면 없는 글자 한 줄.
+ * 행 둘째 줄의 라벨 — 면 없는 글자 한 줄.
  *
  * 상태 화면에선 "정답 · 금리"처럼 판별 정보를 앞에, 분류를 뒤에 둔다. 색은 글자가
  * 이미 말하는 것을 되풀이하는 보조 신호일 뿐이라, 색을 못 봐도 뜻이 통한다.
+ *
+ * [hidden] 이면 **글자만 비우고 줄은 그린다.** 호출부 주석 참조 — 줄을 없애면 그 행만
+ * 키가 작아진다.
+ *
+ * 글자 크기는 `labelSmall`(11sp) → `labelMedium`(12sp). 작다는 지적을 받은 자리인데,
+ * 색(TextMuted)과 굵기가 위계를 이미 지키고 있어서 한 단계는 올려도 제목을 넘지
+ * 않는다(제목은 15sp).
  */
 @Composable
-private fun LeadLabel(item: AttemptItem, emphasis: AttemptCardEmphasis) {
+private fun LeadLabel(
+    item: AttemptItem,
+    emphasis: AttemptCardEmphasis,
+    hidden: Boolean = false,
+) {
     when (emphasis) {
         // 메타줄은 제목(개념어) 아래 층이다 — 굵게·밝게 두면 위계가 뒤집혀
         // 눈이 카테고리를 먼저 읽는다.
         AttemptCardEmphasis.CATEGORY -> Text(
-            text = item.categoryDisplay,
-            style = MaterialTheme.typography.labelSmall,
+            text = if (hidden) "" else item.categoryDisplay,
+            style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Normal,
             color = TextMuted,
         )
@@ -251,24 +281,30 @@ private fun LeadLabel(item: AttemptItem, emphasis: AttemptCardEmphasis) {
             }
             Text(
                 text = statusText,
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
                 color = statusColor,
             )
             Text(
                 text = "  ·  ",
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelMedium,
                 color = TextMuted,
             )
             Text(
                 text = item.categoryDisplay,
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Medium,
                 color = TextSecondary,
             )
         }
     }
 }
+
+/**
+ * 날짜 열의 폭. `12/31`(5자)이 12sp 에서 들어가는 최소치보다 조금 넉넉하게 —
+ * 큰 글꼴 설정에서 잘리지 않아야 하고, 그렇다고 제목이 먹을 폭을 크게 뺏어도 안 된다.
+ */
+private val DateColumnWidth = 42.dp
 
 /**
  * `keyword` → 행 제목으로 쓸 **용어**만 뽑는다.

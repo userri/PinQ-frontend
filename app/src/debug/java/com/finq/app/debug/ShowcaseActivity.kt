@@ -637,6 +637,16 @@ class ShowcaseActivity : ComponentActivity() {
                             ),
                             // 세션 직후 오답노트와 같은 형태 (solvedAtIso=null) — 날짜 자리가 빈다
                             sampleAttempt(correct = false).copy(quizId = 15L, solvedAtIso = null),
+                            // 제목(개념어)이 카테고리명과 **같은 낱말**인 과거 발행분.
+                            // 메타에서 카테고리를 빼되 줄 자리는 남겨야 한다 — 줄을
+                            // 없애면 이 행만 키가 작아져 목록에 계단이 생긴다.
+                            // 백엔드가 8/5 에 저장 전 폐기를 넣어 신규분엔 안 생기지만,
+                            // 이미 발행된 12건이 남아 있어 방어가 필요하다.
+                            sampleAttempt(correct = false).copy(
+                                quizId = 18L,
+                                keyword = "금리: 돈을 빌리는 값. 기준금리가 시중 금리의 바탕이 된다",
+                                question = "기준금리가 오르면 시중 예금 금리는 어떻게 되는가?",
+                            ),
                             sampleAttempt(correct = false).copy(
                                 quizId = 16L,
                                 question = "기준금리 인하기에 채권 가격은 일반적으로 어떻게 움직이는가?",
