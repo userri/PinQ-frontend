@@ -376,8 +376,11 @@ private fun QuizScreenSelectedPreview() {
     }
 }
 
-/** 유리 선지의 면 알파. 뒤의 밤하늘이 비칠 만큼 얇다. */
-private const val GLASS_ALPHA = 0.28f
+/**
+ * 유리 선지의 면 알파. 뒤의 밤하늘이 비칠 만큼 얇다.
+ * 0.28 도 봤지만 0.16 에서 별이 카드 안팎으로 이어져 유리로 읽힌다.
+ */
+private const val GLASS_ALPHA = 0.16f
 
 /** 유리 가장자리 — 불투명 [Outline] 은 유리가 아니라 상자로 읽힌다. */
 private val GlassBorder = Color.White.copy(alpha = 0.18f)

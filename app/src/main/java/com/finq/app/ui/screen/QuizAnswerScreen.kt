@@ -54,6 +54,7 @@ import com.finq.app.ui.components.AdBanner
 import com.finq.app.ui.library.keywordTitle
 import com.finq.app.ui.theme.FinQTheme
 import kotlinx.coroutines.launch
+import com.finq.app.ui.components.QuizNightSky
 import com.finq.app.ui.theme.BgBase
 import com.finq.app.ui.theme.Error
 import com.finq.app.ui.theme.ErrorFaint
@@ -114,12 +115,14 @@ fun QuizAnswerScreen(
     val shownBookmarked = bookmarked ?: localBookmarked
     val scope = rememberCoroutineScope()
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(BgBase)
-            .padding(horizontal = 20.dp, vertical = 12.dp),
-    ) {
+    // 풀이 화면과 같은 하늘. 채점으로 넘어갈 때 배경이 사라지면 전환이 튄다.
+    Box(modifier.fillMaxSize()) {
+        QuizNightSky(Modifier.matchParentSize())
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp, vertical = 12.dp),
+        ) {
         // ── 상단 진행도 도트 (퀴즈 화면과 동일) ──────────────────
         // 이 문제는 방금 채점됐으므로 푼 문제 수는 quizIndex + 1 이다.
         ProgressDotsHeader(doneCount = quizIndex + 1, totalCount = totalCount)
@@ -236,6 +239,7 @@ fun QuizAnswerScreen(
             )
         }
         Spacer(Modifier.height(4.dp))
+    }
     }
 }
 

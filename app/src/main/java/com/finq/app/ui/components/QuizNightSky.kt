@@ -24,8 +24,13 @@ import kotlin.random.Random
  * 것은 별이 아니라 앰비언트 블롭 — 넓은 밝기 기울기다. 별은 점이라 카드 한 장
  * 안에서 밝기 차를 만들지 못한다.
  *
- * 블롭 두 개는 **선지 영역에 걸리도록** 아래쪽에 둔다. 위로 올리면 질문 글자에
- * 색이 물든다.
+ * 값은 실기기 시안 비교로 정했다. 닫아둔 것들:
+ *  - **별을 늘리지 않는다**(120·240·400 을 봤다). 촘촘할수록 글자 주변에서
+ *    어른거리기만 하고 얻는 게 없었다.
+ *  - **블롭을 늘려 옅게 깔지 않는다**(넷·여섯). 넓은 라디얼이 여럿 겹치면 서로를
+ *    메워 평균이 균일해지고, 비침이 오히려 사라진다.
+ *  - **대각 은하수 띠**도 봤다. 배경 자체는 곱지만 색을 뺄수록 밤하늘다워져서,
+ *    이 화면이 홈과 나눠 갖는 라임을 잃는다.
  */
 @Composable
 fun QuizNightSky(modifier: Modifier = Modifier) {
@@ -48,8 +53,8 @@ fun QuizNightSky(modifier: Modifier = Modifier) {
             size = size,
         )
         listOf(
-            Triple(0.16f, 0.40f, Lime),
-            Triple(0.88f, 0.62f, BlobBlue),
+            Triple(0.18f, 0.34f, Lime),
+            Triple(0.86f, 0.62f, BlobBlue),
         ).forEach { (cx, cy, color) ->
             val center = Offset(cx * size.width, cy * size.height)
             val radius = size.minDimension * 0.85f
@@ -63,15 +68,6 @@ fun QuizNightSky(modifier: Modifier = Modifier) {
                 center = center,
             )
         }
-        // 아래로 갈수록 블롭을 잠재운다. 문항이 짧으면 선지 아래가 통째로 비는데,
-        // 거기 남은 발광은 가리킬 것이 없어 그냥 초록 안개로 보인다.
-        drawRect(
-            brush = Brush.verticalGradient(
-                0.5f to Color.Transparent,
-                1f to BgBase,
-            ),
-            size = size,
-        )
         stars.forEach { star ->
             drawCircle(
                 color = Color.White.copy(alpha = star.alpha),
@@ -85,7 +81,7 @@ fun QuizNightSky(modifier: Modifier = Modifier) {
 private data class Star(val x: Float, val y: Float, val radiusDp: Float, val alpha: Float)
 
 private const val SKY_SEED = 20260808
-private const val STAR_COUNT = 56
-private const val STAR_ALPHA_MAX = 0.95f
-private const val BLOB_ALPHA = 0.18f
+private const val STAR_COUNT = 48
+private const val STAR_ALPHA_MAX = 0.85f
+private const val BLOB_ALPHA = 0.10f
 private val BlobBlue = Color(0xFF4A7FD4)
