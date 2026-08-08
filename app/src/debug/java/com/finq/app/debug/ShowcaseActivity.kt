@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.ColorFilter as ColorFilterIcon
 import androidx.compose.ui.res.painterResource
 import com.finq.app.R
@@ -829,11 +830,24 @@ class ShowcaseActivity : ComponentActivity() {
                         onArticleClick = {},
                     )
 
+                    // ── 선지 면 시안 3종 (2026-08-08) ──────────────────
+                    // 홈 유리카드와 선지의 시각 언어를 맞출지 가르는 판단용.
+                    // A=현행 / B=조용한 밤하늘+유리 선지 / C=조용한 밤하늘+현행 선지.
+                    // 알파는 화면에 그려봐야 판정된다 — 목업으로는 알 수 없다.
+                    "opt_a", "opt_a_sel" -> QuizScreen(
+                        quizIndex = 1,
+                        totalCount = 5,
+                        quiz = longQuiz,
+                        selectedOptionId = if (screen.endsWith("_sel")) 3L else null,
+                        onSelectOption = {},
+                        onSubmit = {},
+                    )
+
                     "quiz" -> QuizScreen(
                         quizIndex = 1,
                         totalCount = 3,
                         quiz = sampleQuiz,
-                        selectedOptionId = 2L,   // 선택 상태 = BgSubtle + Lime 테두리
+                        selectedOptionId = 2L,   // 선택 상태 = Lime 테두리
                         onSelectOption = {},
                         onSubmit = {},
                     )

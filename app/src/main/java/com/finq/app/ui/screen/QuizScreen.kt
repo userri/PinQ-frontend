@@ -28,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -40,6 +41,7 @@ import com.finq.app.data.DummyQuizData
 import com.finq.app.data.model.Quiz
 import com.finq.app.data.model.QuizOption
 import com.finq.app.ui.theme.FinQTheme
+import com.finq.app.ui.components.QuizNightSky
 import com.finq.app.ui.theme.BgBase
 import com.finq.app.ui.theme.BgElevated
 import com.finq.app.ui.theme.BgSubtle
@@ -72,10 +74,43 @@ fun QuizScreen(
     bookmarked: Boolean = false,
     onToggleBookmark: (() -> Unit)? = null,
 ) {
+    Box(modifier.fillMaxSize()) {
+        QuizNightSky(Modifier.matchParentSize())
+        QuizContent(
+            quizIndex = quizIndex,
+            totalCount = totalCount,
+            quiz = quiz,
+            selectedOptionId = selectedOptionId,
+            onSelectOption = onSelectOption,
+            onSubmit = onSubmit,
+            onClose = onClose,
+            isSubmitting = isSubmitting,
+            categoryLabel = categoryLabel,
+            headerNote = headerNote,
+            bookmarked = bookmarked,
+            onToggleBookmark = onToggleBookmark,
+        )
+    }
+}
+
+@Composable
+private fun QuizContent(
+    quizIndex: Int,
+    totalCount: Int,
+    quiz: Quiz,
+    selectedOptionId: Long?,
+    onSelectOption: (Long) -> Unit,
+    onSubmit: () -> Unit,
+    onClose: () -> Unit,
+    isSubmitting: Boolean,
+    categoryLabel: String?,
+    headerNote: String?,
+    bookmarked: Boolean,
+    onToggleBookmark: (() -> Unit)?,
+) {
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
-            .background(BgBase)
             .padding(horizontal = 20.dp, vertical = 12.dp),
     ) {
         // ── 진행도 + 닫기 + 즐겨찾기 ────────────────────────────
@@ -258,16 +293,26 @@ private fun OptionCard(
     onClick: () -> Unit,
     enabled: Boolean = true,
 ) {
+    val shape = RoundedCornerShape(14.dp)
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            // 보기 카드 — 기본: BgSurface+Outline / 선택: BgSubtle+Lime 2dp
-            .background(if (selected) BgSubtle else BgSurface)
+            .clip(shape)
+            // 유리 선지 — 뒤의 밤하늘이 비친다. 면을 얇게 깔고 흰 hairline 으로
+            // 가장자리를 세운 뒤, 위쪽에 광원(sheen)을 준다.
+            .background(BgSurface.copy(alpha = GLASS_ALPHA))
+            .background(
+                Brush.verticalGradient(
+                    0f to Color.White.copy(alpha = 0.07f),
+                    0.55f to Color.Transparent,
+                )
+            )
+            // 선택은 **테두리만**으로 말한다. 유리에서는 면을 밝히려 해도 뒤의
+            // 어두운 하늘이 비쳐 오히려 어두워진다 — 신호가 거꾸로 간다.
             .border(
                 width = if (selected) 2.dp else 1.dp,
-                color = if (selected) Lime else Outline,
-                shape = RoundedCornerShape(14.dp),
+                color = if (selected) Lime else GlassBorder,
+                shape = shape,
             )
             .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 14.dp),
@@ -330,3 +375,9 @@ private fun QuizScreenSelectedPreview() {
         )
     }
 }
+
+/** 유리 선지의 면 알파. 뒤의 밤하늘이 비칠 만큼 얇다. */
+private const val GLASS_ALPHA = 0.28f
+
+/** 유리 가장자리 — 불투명 [Outline] 은 유리가 아니라 상자로 읽힌다. */
+private val GlassBorder = Color.White.copy(alpha = 0.18f)
