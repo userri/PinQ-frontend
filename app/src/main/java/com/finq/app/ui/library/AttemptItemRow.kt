@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -166,7 +167,16 @@ fun AttemptItemRow(
             Spacer(Modifier.width(12.dp))
         }
 
-        Column(modifier = Modifier.weight(1f)) {
+        // 글자 블록의 높이를 **최소치로 고정**한다. 제목만 있는 행(아래 hidesCategory)이
+        // 생기면 그 행만 키가 작아져 목록에 계단이 생기는데, 그렇다고 빈 메타줄을
+        // 그리면 글자가 위로 치우쳐 보인다(그 행만 위쪽 정렬처럼 읽힌다). 자리를 잡고
+        // **가운데 정렬**하면 둘 다 없다.
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .heightIn(min = RowTextMinHeight),
+            verticalArrangement = Arrangement.Center,
+        ) {
             // 제목은 개념어(keyword) 한 줄이다. 질문을 제목으로 쓰면 2줄로도 안 끝나
             // "…"로 잘리는데, 뇌는 잘린 문장을 계속 파싱하려 든다 — 그게 한 화면에
             // 일곱 번 있는 게 "정보가 너무 많이 들어온다"의 실체였다. 문제 자립성
@@ -197,19 +207,22 @@ fun AttemptItemRow(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            Spacer(Modifier.height(3.dp))
-            // 제목이 카테고리와 같은 낱말이면("환율" / "환율") 메타에서 뺀다 — 같은 말이
-            // 두 줄에 겹쳐 찍히면 정보가 아니라 잡음이다. **빈 글자로 자리는 남긴다** —
-            // 줄을 통째로 없애면 그 행만 키가 작아져 목록에 계단이 생긴다. 이 규칙이
-            // 8/5 에 반려됐던 이유가 그 계단이었고, 원인은 그때 메타줄에 날짜까지 있어서
-            // 길이 차가 크게 벌어진 것이었다(날짜는 이제 오른쪽 열이다).
+            // 제목이 카테고리와 같은 낱말이면("환율" / "환율") 메타줄을 **그리지 않는다** —
+            // 같은 말이 두 줄에 겹쳐 찍히면 정보가 아니라 잡음이다.
+            //
+            // 종전엔 빈 글자로 줄 자리를 남겼는데, 그러면 글자가 위로 치우쳐 그 행만
+            // 위쪽 정렬처럼 보였다(실기기 지적). 높이는 위 [RowTextMinHeight] 가 잡고
+            // 가운데 정렬이 받으므로, 줄을 없애도 계단이 생기지 않는다.
             //
             // 백엔드가 8/5 에 저장 전 폐기(`73fc2a5`)를 넣어 신규 발행분엔 안 생긴다.
             // 남은 건 과거 발행분뿐이라 이 분기는 시간이 지나면 안 타게 된다.
             val hidesCategory = title != null &&
                 emphasis == AttemptCardEmphasis.CATEGORY &&
                 title == item.categoryDisplay
-            LeadLabel(item = item, emphasis = emphasis, hidden = hidesCategory)
+            if (!hidesCategory) {
+                Spacer(Modifier.height(3.dp))
+                LeadLabel(item = item, emphasis = emphasis)
+            }
         }
 
         // ── 날짜는 오른쪽 고정 열 ──────────────────────────────
@@ -300,9 +313,6 @@ private data class StageGlyph(val iconRes: Int, val label: String)
  * 상태 화면에선 "정답 · 금리"처럼 판별 정보를 앞에, 분류를 뒤에 둔다. 색은 글자가
  * 이미 말하는 것을 되풀이하는 보조 신호일 뿐이라, 색을 못 봐도 뜻이 통한다.
  *
- * [hidden] 이면 **글자만 비우고 줄은 그린다.** 호출부 주석 참조 — 줄을 없애면 그 행만
- * 키가 작아진다.
- *
  * 글자 크기는 `labelSmall`(11sp) → `labelMedium`(12sp). 작다는 지적을 받은 자리인데,
  * 색(TextMuted)과 굵기가 위계를 이미 지키고 있어서 한 단계는 올려도 제목을 넘지
  * 않는다(제목은 15sp).
@@ -311,13 +321,12 @@ private data class StageGlyph(val iconRes: Int, val label: String)
 private fun LeadLabel(
     item: AttemptItem,
     emphasis: AttemptCardEmphasis,
-    hidden: Boolean = false,
 ) {
     when (emphasis) {
         // 메타줄은 제목(개념어) 아래 층이다 — 굵게·밝게 두면 위계가 뒤집혀
         // 눈이 카테고리를 먼저 읽는다.
         AttemptCardEmphasis.CATEGORY -> Text(
-            text = if (hidden) "" else item.categoryDisplay,
+            text = item.categoryDisplay,
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Normal,
             color = TextMuted,
@@ -361,6 +370,12 @@ private val DateColumnWidth = 42.dp
  * 오른쪽 정렬된다. 행마다 값이 달라도 별·날짜가 안 밀리게 하는 것이 목적이다.
  */
 private val ActionColumnWidth = 30.dp
+
+/**
+ * 행 글자 블록의 최소 높이 — 제목(bodyLarge 22sp) + 간격 3 + 메타(labelMedium 16sp).
+ * 메타줄이 없는 행도 이 높이를 지켜야 목록에 계단이 안 생긴다.
+ */
+private val RowTextMinHeight = 41.dp
 
 /**
  * `keyword` → 행 제목으로 쓸 **용어**만 뽑는다.

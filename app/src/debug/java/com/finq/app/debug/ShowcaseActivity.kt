@@ -1740,6 +1740,170 @@ class ShowcaseActivity : ComponentActivity() {
                         Spacer(Modifier.height(40.dp))
                     }
 
+                    // 날짜 축 라벨 시안 — 같은 자리의 숫자가 탭마다 다른 뜻이다.
+                    //
+                    // 오답노트·전체이력의 날짜는 **푼 날**, 북마크의 날짜는 **담은 날**이다
+                    // (각 화면의 서버 정렬 축과 맞춘 결과). 화면 안에서는 순서가 설명되지만,
+                    // 사용자는 탭을 옮겨다니며 보므로 **숫자의 뜻이 바뀌는 걸 알 수가 없다.**
+                    //
+                    // 네 안은 라벨을 **어디에 두느냐**가 다르다. 각 안에 북마크 화면 상단
+                    // (카운트 줄 + 필터칩)과 행 셋을 함께 그려, 그 자리가 실제로 눈에
+                    // 들어오는지·날짜 열과 이어져 보이는지를 본다.
+                    "bookmark_dateaxis" -> Column(
+                        Modifier.fillMaxSize().background(BgBase)
+                            .verticalScroll(rememberScrollState())
+                            .statusBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp),
+                    ) {
+                        val tp = androidx.compose.ui.graphics.Color(0xFFF4F7FB)
+                        val ts = androidx.compose.ui.graphics.Color(0xFFB8C7DA)
+                        val tm = TextMutedIcon
+                        val ol = androidx.compose.ui.graphics.Color(0xFF2A4A6E)
+                        val bold = androidx.compose.ui.text.font.FontWeight.Bold
+                        val normal = androidx.compose.ui.text.font.FontWeight.Normal
+                        val typo = androidx.compose.material3.MaterialTheme.typography
+                        val endAlign = androidx.compose.ui.text.style.TextAlign.End
+
+                        val rows = listOf(
+                            Triple("원·달러 환율이 빠르게 하락하여 원…", "오늘", true),
+                            Triple("기준금리", "8/7", false),
+                            Triple("소비자물가지수", "7/28", false),
+                        )
+
+                        @androidx.compose.runtime.Composable
+                        fun listRows() {
+                            rows.forEach { (title, date, unsolved) ->
+                                Row(
+                                    Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text(
+                                            title, color = if (unsolved) ts else tp,
+                                            style = typo.bodyLarge, fontWeight = normal, maxLines = 1,
+                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                        )
+                                        Spacer(Modifier.height(3.dp))
+                                        Row {
+                                            Text(
+                                                if (unsolved) "아직 안 푼 문제" else "정답",
+                                                color = if (unsolved) ts else Lime,
+                                                style = typo.labelMedium, fontWeight = bold,
+                                            )
+                                            Text("  ·  ", color = tm, style = typo.labelMedium)
+                                            Text(
+                                                if (unsolved) "환율" else "금리",
+                                                color = ts, style = typo.labelMedium,
+                                            )
+                                        }
+                                    }
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        date, color = tm, style = typo.labelMedium, fontWeight = normal,
+                                        textAlign = endAlign, modifier = Modifier.width(42.dp),
+                                    )
+                                    Spacer(Modifier.width(4.dp))
+                                    Image(
+                                        painter = painterResource(R.drawable.ic_bookmark_star_filled),
+                                        contentDescription = null, modifier = Modifier.size(20.dp),
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Box(Modifier.width(30.dp), contentAlignment = Alignment.CenterEnd) {
+                                        if (unsolved) {
+                                            Text("풀기", color = Lime, style = typo.labelMedium, fontWeight = bold)
+                                        } else {
+                                            Image(
+                                                painter = painterResource(R.drawable.ic_chevron_right),
+                                                contentDescription = null,
+                                                colorFilter = ColorFilterIcon.tint(tm),
+                                                modifier = Modifier.size(16.dp),
+                                            )
+                                        }
+                                    }
+                                }
+                                androidx.compose.material3.HorizontalDivider(thickness = 1.dp, color = ol)
+                            }
+                        }
+
+                        @androidx.compose.runtime.Composable
+                        fun chips() {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                listOf("전체", "금리", "환율").forEachIndexed { i, c ->
+                                    Box(
+                                        Modifier
+                                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(20.dp))
+                                            .background(if (i == 0) Lime else BgElevatedIcon)
+                                            .padding(horizontal = 16.dp, vertical = 7.dp),
+                                    ) {
+                                        Text(
+                                            c,
+                                            color = if (i == 0) androidx.compose.ui.graphics.Color(0xFF05221A) else ts,
+                                            style = typo.labelMedium, fontWeight = bold,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        @androidx.compose.runtime.Composable
+                        fun heading(t: String, sub: String) {
+                            Spacer(Modifier.height(28.dp))
+                            Text(t, color = Lime, fontWeight = bold, style = typo.titleSmall)
+                            Text(sub, color = tm, style = typo.bodySmall)
+                            Spacer(Modifier.height(10.dp))
+                        }
+
+                        // ── 가안 · 카운트 줄에 이어 붙인다 ────────────────────
+                        heading("가안 · 카운트 줄에 붙인다", "`14문제 · 담은 날짜순` — 이미 있는 자리")
+                        Text(
+                            "14문제  ·  담은 날짜순",
+                            color = tp, style = typo.titleMedium, fontWeight = bold,
+                        )
+                        Spacer(Modifier.height(10.dp)); chips(); Spacer(Modifier.height(8.dp))
+                        listRows()
+
+                        // ── 나안 · 카운트 줄 오른쪽 끝 ───────────────────────
+                        // 라벨을 날짜 열과 **같은 쪽**에 세운다. 위아래로 이어져 보여
+                        // "저 숫자가 그거"라는 연결이 생기는지가 이 안의 전부다.
+                        heading("나안 · 카운트 줄 오른쪽 끝", "날짜 열과 같은 쪽에 세운다 — 세로로 이어 보이게")
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.Bottom,
+                        ) {
+                            Text("14문제", color = tp, style = typo.titleMedium, fontWeight = bold)
+                            Spacer(Modifier.weight(1f))
+                            Text("담은 날짜순", color = tm, style = typo.labelMedium)
+                        }
+                        Spacer(Modifier.height(10.dp)); chips(); Spacer(Modifier.height(8.dp))
+                        listRows()
+
+                        // ── 다안 · 열 머리글 ────────────────────────────────
+                        // 목록 첫 행 **바로 위**에 날짜 열의 이름을 단다. 표의 문법이라
+                        // 연결은 가장 확실한데, 이 앱 목록엔 없던 어휘라 줄이 하나 는다.
+                        heading("다안 · 열 머리글", "목록 바로 위에 열 이름 — 표의 문법, 줄이 하나 는다")
+                        Text("14문제", color = tp, style = typo.titleMedium, fontWeight = bold)
+                        Spacer(Modifier.height(10.dp)); chips(); Spacer(Modifier.height(10.dp))
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Spacer(Modifier.weight(1f))
+                            Text(
+                                "담은 날", color = tm, style = typo.labelSmall,
+                                textAlign = endAlign, modifier = Modifier.width(42.dp),
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Spacer(Modifier.width(20.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Spacer(Modifier.width(30.dp))
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        listRows()
+
+                        // ── 라안 · 라벨 없음(현행) ──────────────────────────
+                        heading("라안 · 라벨 없음 (현행)", "아무 말도 안 한다 — 비교 기준")
+                        Text("14문제", color = tp, style = typo.titleMedium, fontWeight = bold)
+                        Spacer(Modifier.height(10.dp)); chips(); Spacer(Modifier.height(8.dp))
+                        listRows()
+                        Spacer(Modifier.height(40.dp))
+                    }
+
                     // 로그인 화면 — 로그아웃하지 않고 보기 위한 케이스.
                     // 실계정 세션을 지우면 다시 로그인해야 하고, 그것 때문에 검증을
                     // 미루게 된다.
