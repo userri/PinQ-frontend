@@ -81,6 +81,8 @@ fun AttemptHistoryRoute(
                 viewModel.toggleBookmark(item.quizId, item.bookmarked)
             },
             onOpenDetail = onOpenDetail,
+            // 오답노트와 같은 정렬·같은 표시 축이다(UserQuizAttempt.createdAt DESC).
+            sortLabel = "푼 날짜순",
             modifier = Modifier.weight(1f),
         )
     }

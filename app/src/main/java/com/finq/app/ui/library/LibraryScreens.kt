@@ -43,6 +43,7 @@ import com.finq.app.data.model.Category
 import com.finq.app.ui.theme.Lime
 import com.finq.app.ui.theme.Outline
 import com.finq.app.ui.theme.OnLime
+import com.finq.app.ui.theme.TextMuted
 import com.finq.app.ui.theme.TextPrimary
 
 /**
@@ -83,6 +84,22 @@ fun LibraryListScreen(
     cardEmphasis: AttemptCardEmphasis = AttemptCardEmphasis.STATUS,
     /** 날짜 열의 축 — 그 화면의 정렬 축과 같은 값을 넘긴다. [AttemptDateAxis] */
     dateAxis: AttemptDateAxis = AttemptDateAxis.SOLVED,
+    /**
+     * 정렬 축 한 마디(`푼 날짜순` · `담은 날짜순`). 카운트 뒤에 이어 붙는다.
+     *
+     * 목록마다 날짜 열의 **뜻이 다르다** — 오답노트·전체이력은 푼 날, 북마크는 담은
+     * 날이다. 각 화면 안에서는 정렬 축과 맞아 순서가 설명되지만, 사용자는 탭을
+     * 옮겨다니며 보므로 같은 자리의 숫자가 언제 뜻이 바뀌는지 알 수가 없었다.
+     *
+     * 정렬을 말하면 날짜 뜻이 따라온다 — 그래서 "날짜 = 담은 날"이 아니라 "담은
+     * 날짜순"이라고 쓴다. 두 문구 다 서버 정렬과 대조해 확인한 참말이다(오답노트·
+     * 전체이력은 `UserQuizAttempt.createdAt DESC` 이고 응답의 `solvedAt` 이 같은 컬럼,
+     * 북마크는 `bookmarkedAt DESC`).
+     *
+     * 카운트 줄 **오른쪽 끝**은 쓸 수 없다 — 오답노트가 그 자리에 복습 필터를 갖고
+     * 있어서, 오른쪽에 두면 화면마다 라벨 자리가 달라진다.
+     */
+    sortLabel: String? = null,
     modifier: Modifier = Modifier,
 ) {
     // 다중 선택 — 빈 셋이면 "전체". 선택된 카테고리들의 합집합(OR)을 보여준다.
@@ -117,7 +134,7 @@ fun LibraryListScreen(
                 )
                 if (subtitle.isNotBlank()) {
                     Text(
-                        text = subtitle,
+                        text = if (sortLabel != null) "$subtitle  ·  $sortLabel" else subtitle,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -138,6 +155,16 @@ fun LibraryListScreen(
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                if (sortLabel != null && subtitle.isNotBlank()) {
+                    // 카운트보다 한 층 아래로 — 굵기를 빼고 더 흐리게. 개수가 먼저
+                    // 읽히고 축은 물어볼 때 눈에 들어오면 된다.
+                    Text(
+                        text = "  ·  $sortLabel",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Normal,
+                        color = TextMuted,
+                    )
+                }
                 Spacer(Modifier.weight(1f))
                 extraFilterRow?.invoke()
             }

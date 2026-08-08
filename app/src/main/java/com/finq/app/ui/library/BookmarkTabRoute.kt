@@ -55,6 +55,7 @@ fun BookmarkTabRoute(
         // 순서가 설명된다 — 푼 날짜를 찍으면 미풀이는 빈칸이고 나머지는 정렬과
         // 무관한 날짜라 목록이 뒤죽박죽으로 읽힌다.
         dateAxis = AttemptDateAxis.BOOKMARKED,
+        sortLabel = "담은 날짜순",
         showTitle = false,
         modifier = modifier,
     )

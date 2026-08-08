@@ -85,6 +85,10 @@ fun WrongNoteTabRoute(
         onOpenDetail = onOpenDetail,
         // 이 화면은 전부 오답 — "오답" 배지는 정보량 0이므로 카테고리를 강조한다.
         cardEmphasis = AttemptCardEmphasis.CATEGORY,
+        // 서버 정렬이 UserQuizAttempt.createdAt DESC 이고 응답의 solvedAt 이 같은 컬럼이라
+        // 화면의 날짜 열과 정렬 축이 일치한다(엄밀히는 첫 시도 시각 — 재풀이는 행을
+        // 새로 만들지 않는다).
+        sortLabel = "푼 날짜순",
         showTitle = false,
         extraFilterRow = {
             ReviewFilterRow(selected = reviewFilter, onSelect = { reviewFilter = it })
