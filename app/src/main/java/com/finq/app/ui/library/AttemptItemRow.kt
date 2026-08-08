@@ -3,6 +3,7 @@ package com.finq.app.ui.library
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -249,13 +250,37 @@ fun AttemptItemRow(
             )
         }
 
-        // 주 동작 표시 — 이 행을 누르면 상세로 들어간다.
-        Image(
-            painter = painterResource(R.drawable.ic_chevron_right),
-            contentDescription = null,
-            colorFilter = ColorFilter.tint(TextMuted),
-            modifier = Modifier.size(16.dp),
-        )
+        // ── 주 동작 표시 ─────────────────────────────────────
+        //
+        // 이 행을 누르면 어디로 가는지를 말한다. 대부분은 상세(셰브론)인데,
+        // **미풀이 북마크만 그 문제 풀이로 간다** — 같은 목록에서 행 하나만 동작이
+        // 다르므로 글리프도 달라야 한다. 셰브론은 "앱 안으로 들어간다"는 뜻이라
+        // 풀이 진입에는 약하다.
+        //
+        // 자리를 고정폭으로 잡는다. `풀기`(12sp Bold)가 셰브론(16dp)보다 넓어서,
+        // 폭을 안 잡으면 미풀이 행에서만 별·날짜가 왼쪽으로 밀린다 — 날짜 열을
+        // 고정 열로 세운 이유와 같다.
+        Box(
+            modifier = Modifier.width(ActionColumnWidth),
+            contentAlignment = Alignment.CenterEnd,
+        ) {
+            if (item.unsolved && onStartQuiz != null) {
+                Text(
+                    text = "풀기",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Lime,
+                    maxLines = 1,
+                )
+            } else {
+                Image(
+                    painter = painterResource(R.drawable.ic_chevron_right),
+                    contentDescription = null,
+                    colorFilter = ColorFilter.tint(TextMuted),
+                    modifier = Modifier.size(16.dp),
+                )
+            }
+        }
     }
 }
 
@@ -330,6 +355,12 @@ private fun LeadLabel(
  * 큰 글꼴 설정에서 잘리지 않아야 하고, 그렇다고 제목이 먹을 폭을 크게 뺏어도 안 된다.
  */
 private val DateColumnWidth = 42.dp
+
+/**
+ * 주 동작 표시 열의 폭. `풀기`(12sp Bold, 2글자)가 들어가고 셰브론(16dp)도 같은 자리에
+ * 오른쪽 정렬된다. 행마다 값이 달라도 별·날짜가 안 밀리게 하는 것이 목적이다.
+ */
+private val ActionColumnWidth = 30.dp
 
 /**
  * `keyword` → 행 제목으로 쓸 **용어**만 뽑는다.

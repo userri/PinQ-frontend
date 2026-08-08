@@ -1574,6 +1574,172 @@ class ShowcaseActivity : ComponentActivity() {
                         Spacer(Modifier.height(40.dp))
                     }
 
+                    // 미풀이 북마크 행 표기 시안 — 제목 자리에 무엇을 세울까.
+                    //
+                    // 안 푼 문제는 서버가 keyword 를 마스킹한다(치팅 차단, 유지 확정).
+                    // 그래서 제목이 질문 장문으로 폴백돼 한 줄로 잘리는데, 실계정에서
+                    // 미풀이가 담은 순 상단에 몰리면 **목록 첫인상이 잘린 문장 셋**이 된다.
+                    // 개념어 제목으로 얻은 이득을 상단에서 그대로 잃는 자리다.
+                    //
+                    // 네 안은 "어떻게 자르나"의 변주가 아니라 **무엇을 제목으로 세우나**가
+                    // 서로 다르다. 각 안에 미풀이 둘 + 푼 항목 하나를 섞어, 목록의 리듬이
+                    // 깨지는지(행 키·왼쪽 기준선)까지 같이 본다.
+                    "bookmark_unsolved" -> Column(
+                        Modifier.fillMaxSize().background(BgBase)
+                            .verticalScroll(rememberScrollState())
+                            .statusBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp),
+                    ) {
+                        val tp = androidx.compose.ui.graphics.Color(0xFFF4F7FB)
+                        val ts = androidx.compose.ui.graphics.Color(0xFFB8C7DA)
+                        val tm = TextMutedIcon
+                        val ol = androidx.compose.ui.graphics.Color(0xFF2A4A6E)
+                        val bold = androidx.compose.ui.text.font.FontWeight.Bold
+                        val semi = androidx.compose.ui.text.font.FontWeight.SemiBold
+                        val normal = androidx.compose.ui.text.font.FontWeight.Normal
+                        val typo = androidx.compose.material3.MaterialTheme.typography
+
+                        // 실계정에 실제로 들어 있는 세 항목(길이를 그대로 쓴다).
+                        val q1 = "원·달러 환율이 빠르게 하락하여 원화 가치가 오를 때 수출 기업의 " +
+                            "채산성에 나타나는 변화로 가장 적절한 것은?"
+                        val q2 = "일본 엔화 가치가 장기적으로 약세를 보일 때, 아시아 주요 국가들이 " +
+                            "동반 통화 약세 압력에 대응해 자국 통화 정책을 조정하는 주된 이유는?"
+
+                        @androidx.compose.runtime.Composable
+                        fun rowFrame(
+                            date: String,
+                            action: Boolean = false,
+                            content: @androidx.compose.runtime.Composable () -> Unit,
+                        ) {
+                            Row(
+                                Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column(Modifier.weight(1f)) { content() }
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    date, color = tm, style = typo.labelMedium,
+                                    fontWeight = normal,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                                    modifier = Modifier.width(42.dp),
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Image(
+                                    painter = painterResource(R.drawable.ic_bookmark_star_filled),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                if (action) {
+                                    // 라안 전용 — 이 행만 동작이 다르다(상세가 아니라 풀이로 간다)
+                                    Text("풀기", color = Lime, style = typo.labelMedium, fontWeight = bold)
+                                } else {
+                                    Image(
+                                        painter = painterResource(R.drawable.ic_chevron_right),
+                                        contentDescription = null,
+                                        colorFilter = ColorFilterIcon.tint(tm),
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                }
+                            }
+                            androidx.compose.material3.HorizontalDivider(thickness = 1.dp, color = ol)
+                        }
+
+                        /** 푼 항목 — 네 안에서 똑같다. 리듬 비교용 기준선. */
+                        @androidx.compose.runtime.Composable
+                        fun solvedRow() {
+                            rowFrame(date = "8/7") {
+                                Text("기준금리", color = tp, style = typo.bodyLarge, fontWeight = normal, maxLines = 1)
+                                Spacer(Modifier.height(3.dp))
+                                Row {
+                                    Text("정답", color = Lime, style = typo.labelMedium, fontWeight = bold)
+                                    Text("  ·  ", color = tm, style = typo.labelMedium)
+                                    Text("금리", color = ts, style = typo.labelMedium)
+                                }
+                            }
+                        }
+
+                        @androidx.compose.runtime.Composable
+                        fun metaUnsolved(category: String) {
+                            Row {
+                                Text("아직 안 푼 문제", color = ts, style = typo.labelMedium, fontWeight = bold)
+                                Text("  ·  ", color = tm, style = typo.labelMedium)
+                                Text(category, color = ts, style = typo.labelMedium)
+                            }
+                        }
+
+                        @androidx.compose.runtime.Composable
+                        fun heading(t: String, sub: String) {
+                            Spacer(Modifier.height(26.dp))
+                            Text(t, color = Lime, fontWeight = bold, style = typo.titleSmall)
+                            Text(sub, color = tm, style = typo.bodySmall)
+                            Spacer(Modifier.height(6.dp))
+                        }
+
+                        // ── 가안 · 현행 ─────────────────────────────────────
+                        heading("가안 · 현행", "질문을 제목 자리에 한 줄로 자른다")
+                        listOf(q1 to "환율", q2 to "환율").forEach { (q, c) ->
+                            rowFrame(date = if (q === q1) "오늘" else "8/7") {
+                                Text(
+                                    q, color = ts, style = typo.bodyLarge, fontWeight = normal,
+                                    maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                )
+                                Spacer(Modifier.height(3.dp))
+                                metaUnsolved(c)
+                            }
+                        }
+                        solvedRow()
+
+                        // ── 나안 · 질문 두 줄 ───────────────────────────────
+                        // 자르지 않고 더 보여준다. 뜻은 통하지만 행이 커져 한 화면에
+                        // 들어오는 개수가 줄고, 미풀이 행만 키가 달라진다.
+                        heading("나안 · 질문 두 줄", "자르지 말고 더 보여준다 — 행이 커진다")
+                        listOf(q1 to "환율", q2 to "환율").forEach { (q, c) ->
+                            rowFrame(date = if (q === q1) "오늘" else "8/7") {
+                                Text(
+                                    q, color = ts, style = typo.bodyMedium, fontWeight = normal,
+                                    lineHeight = 20.sp,
+                                    maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                metaUnsolved(c)
+                            }
+                        }
+                        solvedRow()
+
+                        // ── 다안 · 카테고리를 제목으로 ──────────────────────
+                        // 푼 항목의 개념어와 **같은 자리·같은 크기**에 짧은 낱말이 온다.
+                        // 질문은 아래 줄로 내려 보조 정보가 된다(잘려도 제목이 아니라 부제라
+                        // 뇌가 끝까지 파싱하려 들지 않는다).
+                        heading("다안 · 카테고리를 제목으로", "질문은 아래 줄 보조로 — 제목 자리는 항상 짧다")
+                        listOf(q1 to "환율", q2 to "환율").forEach { (q, c) ->
+                            rowFrame(date = if (q === q1) "오늘" else "8/7") {
+                                Text(c, color = tp, style = typo.bodyLarge, fontWeight = normal, maxLines = 1)
+                                Spacer(Modifier.height(2.dp))
+                                Text(
+                                    q, color = tm, style = typo.bodySmall,
+                                    maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                )
+                                Spacer(Modifier.height(3.dp))
+                                Text("아직 안 푼 문제", color = ts, style = typo.labelMedium, fontWeight = bold)
+                            }
+                        }
+                        solvedRow()
+
+                        // ── 라안 · 액션 행 ──────────────────────────────────
+                        // 이 행만 **동작이 다르다**(상세가 아니라 그 문제 풀이로 간다).
+                        // 질문을 아예 빼고 형태로 그 차이를 말한다 — 셰브론 대신 `풀기`.
+                        heading("라안 · 액션 행", "질문을 빼고 동작이 다름을 형태로 — 셰브론 대신 `풀기`")
+                        listOf("환율", "환율").forEachIndexed { i, c ->
+                            rowFrame(date = if (i == 0) "오늘" else "8/7", action = true) {
+                                Text(c, color = tp, style = typo.bodyLarge, fontWeight = semi, maxLines = 1)
+                                Spacer(Modifier.height(3.dp))
+                                Text("아직 안 푼 문제", color = ts, style = typo.labelMedium, fontWeight = bold)
+                            }
+                        }
+                        solvedRow()
+                        Spacer(Modifier.height(40.dp))
+                    }
+
                     // 로그인 화면 — 로그아웃하지 않고 보기 위한 케이스.
                     // 실계정 세션을 지우면 다시 로그인해야 하고, 그것 때문에 검증을
                     // 미루게 된다.
