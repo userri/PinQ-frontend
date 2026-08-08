@@ -42,6 +42,23 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 /**
+ * 날짜 열이 무엇을 말하는가 — **화면당 하나**로 고정한다.
+ *
+ * 목록의 날짜는 그 화면의 **정렬 축과 같은 값**이어야 한다. 다르면 순서가 설명되지
+ * 않는다 — 북마크 탭이 실제로 그랬다. 서버 정렬은 담은 순 내림차순인데 화면은
+ * 푼 날짜를 찍고 있어서 `8/6 → 5/28 → 5/21 → 7/16` 처럼 뒤죽박죽으로 보였고,
+ * 미풀이 항목은 푼 날짜가 없어 아예 빈칸이었다(그 항목들이 맨 위에 몰려 있는 이유도
+ * 화면이 말하지 못했다).
+ */
+enum class AttemptDateAxis {
+    /** 푼 날짜(`solvedAtIso`). 오답노트·전체이력. 미풀이 항목은 빈칸이 된다. */
+    SOLVED,
+
+    /** 북마크에 담은 날짜(`bookmarkedAtIso`). 북마크 탭 — 서버 정렬 축과 같다. */
+    BOOKMARKED,
+}
+
+/**
  * 행 왼쪽 첫 조각으로 무엇을 세울지 — 화면당 정확히 하나.
  *
  * 카테고리·상태가 모두 같은 세기로 붙으면 위계가 0이 되므로, 그 화면에서 판별력을
@@ -104,8 +121,16 @@ fun AttemptItemRow(
     emphasis: AttemptCardEmphasis = AttemptCardEmphasis.STATUS,
     /** 미풀이 북마크를 탭했을 때 풀이 화면으로 보내는 콜백. null 이면 상세로 간다. */
     onStartQuiz: (() -> Unit)? = null,
+    /** 날짜 열이 말하는 값 — 그 화면의 정렬 축과 같아야 한다. [AttemptDateAxis] */
+    dateAxis: AttemptDateAxis = AttemptDateAxis.SOLVED,
 ) {
-    val dateStr = remember(item.solvedAtIso) { formatSolvedDate(item.solvedAtIso) }
+    // 북마크 화면에서 담은 날짜가 없는 건 구서버 응답뿐이다. 그때만 푼 날짜로 물러선다
+    // — 빈칸보다는 낫고, 두 축이 섞이는 건 그 경우에만이다.
+    val dateIso = when (dateAxis) {
+        AttemptDateAxis.SOLVED -> item.solvedAtIso
+        AttemptDateAxis.BOOKMARKED -> item.bookmarkedAtIso ?: item.solvedAtIso
+    }
+    val dateStr = remember(dateIso) { formatSolvedDate(dateIso) }
     val graduated = item.review?.graduated == true
 
     // 단계 아이콘은 오답노트(카테고리 강조) 화면에서만 세운다. 북마크·전체이력은

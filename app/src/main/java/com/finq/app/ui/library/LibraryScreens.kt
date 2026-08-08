@@ -81,6 +81,8 @@ fun LibraryListScreen(
      * 오답노트처럼 모든 항목이 오답인 화면은 [AttemptCardEmphasis.CATEGORY] 를 넘긴다.
      */
     cardEmphasis: AttemptCardEmphasis = AttemptCardEmphasis.STATUS,
+    /** 날짜 열의 축 — 그 화면의 정렬 축과 같은 값을 넘긴다. [AttemptDateAxis] */
+    dateAxis: AttemptDateAxis = AttemptDateAxis.SOLVED,
     modifier: Modifier = Modifier,
 ) {
     // 다중 선택 — 빈 셋이면 "전체". 선택된 카테고리들의 합집합(OR)을 보여준다.
@@ -180,6 +182,7 @@ fun LibraryListScreen(
                         onToggleBookmark = { onToggleBookmark(item) },
                         onOpenDetail = { onOpenDetail(item) },
                         onStartQuiz = onStartQuiz?.let { cb -> { cb(item) } },
+                        dateAxis = dateAxis,
                     )
                     HorizontalDivider(
                         thickness = 1.dp,

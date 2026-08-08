@@ -32,6 +32,14 @@ data class AttemptItemApiResponse(
     val solved: Boolean? = null,
     val bookmarked: Boolean = false,
     val solvedAt: String? = null,
+    /**
+     * 북마크에 담은 시각. **목록 응답에만** 있다(`GET /api/bookmarks`, `5247cbd`) —
+     * 상세 응답엔 없으므로 기본값 null 이다. 미풀이 항목도 항상 채워져 온다.
+     *
+     * 북마크 목록의 서버 정렬 축이 이 값이다(담은 순 내림차순). 화면이 `solvedAt` 을
+     * 찍으면 정렬 축과 표시 축이 갈려 순서가 뒤죽박죽으로 보인다 — 그래서 받는다.
+     */
+    val bookmarkedAt: String? = null,
     /** 복습(물 주기) 상태. 복습 큐에 오른 적 없는 문제면 null. 구서버도 null. */
     val review: ReviewStatusApi? = null,
 )

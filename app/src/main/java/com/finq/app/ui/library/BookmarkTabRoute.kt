@@ -51,6 +51,10 @@ fun BookmarkTabRoute(
         onToggleBookmark = { item -> viewModel.toggleBookmark(item.quizId, item.bookmarked) },
         onOpenDetail = onOpenDetail,
         onStartQuiz = onStartQuiz,
+        // 이 화면의 서버 정렬 축은 **담은 시각**이다. 날짜 열도 같은 값을 찍어야
+        // 순서가 설명된다 — 푼 날짜를 찍으면 미풀이는 빈칸이고 나머지는 정렬과
+        // 무관한 날짜라 목록이 뒤죽박죽으로 읽힌다.
+        dateAxis = AttemptDateAxis.BOOKMARKED,
         showTitle = false,
         modifier = modifier,
     )

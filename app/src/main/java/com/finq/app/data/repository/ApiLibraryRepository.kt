@@ -52,6 +52,7 @@ class ApiLibraryRepository(
         article = article?.toDomain(),
         bookmarked = bookmarked,
         solvedAtIso = solvedAt,
+        bookmarkedAtIso = bookmarkedAt,
         solved = solved,
         review = review?.let {
             ReviewStatus(

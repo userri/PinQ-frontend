@@ -8,6 +8,7 @@ package com.finq.app.data.model
  *
  *  - selectedChoiceId : 사용자가 첫 시도에 고른 선택지. legacy(=서버 도입 이전) 데이터면 null.
  *  - solvedAtIso     : 첫 풀이 시각 (ISO-8601 문자열). null 가능 — 정렬 표시에 사용.
+ *  - bookmarkedAtIso : 북마크에 담은 시각. 북마크 목록 응답에만 있다.
  *  - bookmarked      : 화면에서 즉시 토글 UI 를 그릴 수 있도록 포함.
  */
 data class AttemptItem(
@@ -24,6 +25,11 @@ data class AttemptItem(
     val article: RelatedArticle?,
     val bookmarked: Boolean,
     val solvedAtIso: String?,
+    /**
+     * 북마크에 담은 시각. 북마크 목록 응답에만 실려 온다 — 다른 목록·상세에선 null.
+     * 북마크 화면은 이 값으로 정렬되므로 그 화면의 날짜 열도 이 값을 쓴다.
+     */
+    val bookmarkedAtIso: String? = null,
     /** 복습(물 주기) 상태. null 이면 한 번도 복습 큐에 오른 적 없음. */
     val review: ReviewStatus? = null,
     /**
