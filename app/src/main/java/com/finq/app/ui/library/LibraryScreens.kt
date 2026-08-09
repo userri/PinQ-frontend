@@ -40,7 +40,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.finq.app.data.model.AttemptItem
 import com.finq.app.data.model.Category
-import com.finq.app.ui.components.AdBanner
 import com.finq.app.ui.theme.Lime
 import com.finq.app.ui.theme.Outline
 import com.finq.app.ui.theme.OnLime
@@ -186,9 +185,6 @@ fun LibraryListScreen(
         // showTitle 모드에선 복습필터가 카운트 줄에 못 붙으므로 카테고리 아래에 둔다(폴백).
         if (showTitle) extraFilterRow?.invoke()
 
-        // 목록·빈 상태·로딩을 한 덩어리로 묶어 남는 높이를 전부 준다.
-        // (배너가 아래에 서려면 이 블록이 fillMaxSize 로 화면을 다 먹으면 안 된다)
-        Box(modifier = Modifier.weight(1f)) {
         when {
             isLoading -> LoadingState()
             error != null -> AttemptLoadErrorState(onRetry = onRetry)
@@ -222,16 +218,6 @@ fun LibraryListScreen(
                 }
             }
         }
-        }
-
-        // ── 배너 광고 ─────────────────────────────────────────────
-        // 목록 아래·하단 탭 위. 스크롤 콘텐츠 안이 아니라 화면에 고정한다 —
-        // 목록은 끝까지 내리는 화면이 아니라, 안에 넣으면 대부분 보이지 않는다.
-        AdBanner(
-            horizontalPaddingDp = 32, // 목록 좌우 패딩 16+16
-            anchored = true,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-        )
     }
 }
 

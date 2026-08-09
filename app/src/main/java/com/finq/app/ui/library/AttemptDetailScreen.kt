@@ -80,37 +80,34 @@ fun AttemptDetailScreen(
 
         Spacer(Modifier.height(18.dp))
 
-        Box(modifier = Modifier.weight(1f)) {
-            when {
-                // 목록과 같은 컴포저블 — 실패 화면이 화면마다 달라 보이지 않게.
-                error != null && !isLoading -> AttemptLoadErrorState(onRetry = onRetry)
+        when {
+            // 목록과 같은 컴포저블 — 실패 화면이 화면마다 달라 보이지 않게.
+            error != null && !isLoading -> AttemptLoadErrorState(onRetry = onRetry)
 
-                item != null && detailReady && !isLoading -> Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState()),
-                ) {
-                    QuizAnswerBody(
-                        quiz = item.toQuiz(),
-                        answer = item.toAnswerResult(),
-                        onArticleClick = onArticleClick,
-                    )
-                    Spacer(Modifier.height(24.dp))
-                }
+            item != null && detailReady && !isLoading -> Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                QuizAnswerBody(
+                    quiz = item.toQuiz(),
+                    answer = item.toAnswerResult(),
+                    onArticleClick = onArticleClick,
+                )
 
-                else -> Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator(color = Lime)
-                }
+                // ── 배너 광고 — 채점 화면과 같은 자리(스크롤 콘텐츠 맨 아래) ──
+                Spacer(Modifier.height(16.dp))
+                AdBanner(horizontalPaddingDp = 40) // 화면 좌우 패딩 20+20
+                Spacer(Modifier.height(24.dp))
+            }
+
+            else -> Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator(color = Lime)
             }
         }
-
-        // ── 배너 광고 ─────────────────────────────────────────────
-        // 해설 아래·화면 맨 아래에 고정. 채점 화면은 스크롤 콘텐츠 안에 두지만
-        // 여기는 CTA 가 없어 아래가 비므로 화면에 붙이는 편이 자리가 분명하다.
-        AdBanner(horizontalPaddingDp = 40, anchored = true) // 화면 좌우 패딩 20+20
     }
 }
 

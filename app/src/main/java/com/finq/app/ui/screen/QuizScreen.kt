@@ -41,6 +41,7 @@ import com.finq.app.data.DummyQuizData
 import com.finq.app.data.model.Quiz
 import com.finq.app.data.model.QuizOption
 import com.finq.app.ui.theme.FinQTheme
+import com.finq.app.ui.components.AdBanner
 import com.finq.app.ui.components.QuizNightSky
 import com.finq.app.ui.theme.BgBase
 import com.finq.app.ui.theme.BgElevated
@@ -66,6 +67,11 @@ fun QuizScreen(
     modifier: Modifier = Modifier,
     onClose: () -> Unit = {},
     isSubmitting: Boolean = false,
+    /**
+     * 선지 아래(스크롤 콘텐츠 맨 끝)에 배너를 붙일지. 복습 세션만 true —
+     * 오늘의 문제는 하루 한 번 치르는 짧은 흐름이라 그 안에 광고를 끼우지 않는다.
+     */
+    showAd: Boolean = false,
     /** 헤더 카테고리 라벨 override. 복습처럼 서버가 라벨을 직접 주는 경우에 쓴다. */
     categoryLabel: String? = null,
     /** 헤더 아래 안내 한 줄 (예: "복습은 기록에 영향 없어요"). null 이면 표시하지 않는다. */
@@ -89,6 +95,7 @@ fun QuizScreen(
             headerNote = headerNote,
             bookmarked = bookmarked,
             onToggleBookmark = onToggleBookmark,
+            showAd = showAd,
         )
     }
 }
@@ -107,6 +114,7 @@ private fun QuizContent(
     headerNote: String?,
     bookmarked: Boolean,
     onToggleBookmark: (() -> Unit)?,
+    showAd: Boolean,
 ) {
     Column(
         modifier = Modifier
@@ -217,6 +225,12 @@ private fun QuizContent(
                         onClick = { onSelectOption(option.id) },
                     )
                 }
+            }
+            // ── 배너 광고 — 채점 화면과 같은 자리(스크롤 콘텐츠 맨 아래) ──
+            // 선지 아래·CTA 위. 스크롤 안이라 지문이 길면 밀려 내려가고 CTA 를 덮지 않는다.
+            if (showAd) {
+                Spacer(Modifier.height(16.dp))
+                AdBanner(horizontalPaddingDp = 40) // 화면 좌우 패딩 20+20
             }
             Spacer(Modifier.height(4.dp))
         }
