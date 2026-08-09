@@ -23,10 +23,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,6 +46,8 @@ import com.finq.app.data.repository.GardenItem
 import com.finq.app.data.repository.ReviewGarden
 import com.finq.app.data.repository.ReviewStage
 import com.finq.app.ui.components.ReviewTreeConceptSheet
+import com.finq.app.ui.components.hasSeenGardenCoach
+import com.finq.app.ui.components.markGardenCoachSeen
 import com.finq.app.ui.components.garden.GardenNightScene
 import com.finq.app.ui.theme.BgBase
 import com.finq.app.ui.theme.FinQTheme
@@ -77,6 +81,13 @@ fun GardenScreen(
     modifier: Modifier = Modifier,
 ) {
     var showHelp by remember { mutableStateOf(false) }
+
+    // 첫 진입 1회 안내 — 후광이 "누를 수 있다"를 말해도, 처음 온 사람은 그게 장식인지
+    // 버튼인지 모른다. 맥동만으로 부족한 한 번을 문구가 메우고, 그 뒤로는 다시 안 뜬다.
+    // 봤다는 기록은 진입 즉시 남긴다 — 나갈 때 남기면 앱이 죽었을 때 영원히 다시 뜬다.
+    val coachContext = LocalContext.current
+    val showCoach = remember { !hasSeenGardenCoach(coachContext) }
+    LaunchedEffect(Unit) { if (showCoach) markGardenCoachSeen(coachContext) }
 
     if (showHelp) {
         ReviewTreeConceptSheet(
@@ -261,6 +272,18 @@ fun GardenScreen(
                                 modifier = Modifier.size(16.dp),
                             )
                         }
+                    }
+                    if (showCoach) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            // 라임을 쓰지 않는다 — 이 줄은 누를 수 있는 것이 아니다(§1).
+                            // 가리키는 대상(빛나는 잔디)이 이미 라임이라 여기까지 칠하면
+                            // 무엇을 누르라는 건지 흐려진다.
+                            text = "빛나는 잔디를 눌러도 물을 줄 수 있어요",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary,
+                            modifier = Modifier.padding(horizontal = 22.dp),
+                        )
                     }
                 }
             } else {

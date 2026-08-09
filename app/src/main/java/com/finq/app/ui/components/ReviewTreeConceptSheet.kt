@@ -247,3 +247,16 @@ fun markReviewTreeIntroSeen(context: Context) {
     context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         .edit().putBoolean(KEY_REVIEW_TREE_INTRO_SEEN, true).apply()
 }
+
+private const val KEY_GARDEN_COACH_SEEN = "garden_coach_seen"
+
+/** 정원 첫 진입 안내("빛나는 잔디를 눌러…")를 이미 봤는가. */
+fun hasSeenGardenCoach(context: Context): Boolean =
+    context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        .getBoolean(KEY_GARDEN_COACH_SEEN, false)
+
+/** 정원 첫 진입 안내를 봤다고 기록한다. */
+fun markGardenCoachSeen(context: Context) {
+    context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        .edit().putBoolean(KEY_GARDEN_COACH_SEEN, true).apply()
+}

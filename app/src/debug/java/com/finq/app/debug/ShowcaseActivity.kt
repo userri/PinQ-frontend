@@ -47,6 +47,8 @@ import com.finq.app.ui.components.NoticeDialog
 import com.finq.app.ui.components.ReviewTreeConceptSheet
 import com.finq.app.ui.components.ReviewTreeConceptVariant
 import com.finq.app.ui.components.garden.GardenCanvas
+import com.finq.app.ui.components.garden.GardenNightScene
+import com.finq.app.ui.components.garden.SceneTuning
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -332,6 +334,67 @@ class ShowcaseActivity : ComponentActivity() {
                         isLoading = false, error = null,
                         onRetry = {}, onBack = {}, onOpenQuiz = {},
                     )
+
+                    // ── #11 시안 비교 — 앞뒤 개체가 비쳐 겹치는 문제 ──────────────
+                    // 같은 데이터를 네 조합으로 그린다. 스크롤해서 나란히 본다.
+                    //  현행: 알파 하한 0.72(뒷줄이 비침) · 겹침 완화 없음
+                    //  A: 전부 불투명   B: 겹침 완화만   C: 둘 다
+                    "garden_depth" -> Column(
+                        Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                    ) {
+                        val sample = ReviewGarden(
+                            growing = List(11) { i ->
+                                gardenSample(800L + i, ReviewStage.values()[i % 3]).copy(
+                                    inTodayQueue = i % 4 == 0,
+                                )
+                            },
+                            graduated = List(2) { i ->
+                                gardenSample(900L + i, ReviewStage.ALMOST_TREE)
+                                    .copy(graduatedAtIso = "2026-07-1${i + 1}T12:00:00")
+                            },
+                            graduatedTrees = 2,
+                            todayQueueSize = 3,
+                        )
+                        listOf(
+                            "현행 · 알파 0.72 / 완화 없음" to SceneTuning(),
+                            "A · 전부 불투명" to SceneTuning(depthAlphaFloor = 1f),
+                            "B · 겹침 완화만" to SceneTuning(minXGap = 0.16f),
+                            "C · 불투명 + 완화" to SceneTuning(depthAlphaFloor = 1f, minXGap = 0.16f),
+                        ).forEach { (label, tuning) ->
+                            Text(
+                                label,
+                                Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                            )
+                            GardenNightScene(
+                                garden = sample,
+                                onItemTap = {},
+                                modifier = Modifier.fillMaxWidth().height(320.dp),
+                                tuning = tuning,
+                            )
+                        }
+                    }
+
+                    // ── #4 시안 비교 — 마이페이지 "앱 소개 다시 보기" 선두 아이콘 ────
+                    "help_icon" -> Column(
+                        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)
+                    ) {
+                        listOf(
+                            "현행 · 물음표" to com.finq.app.R.drawable.ic_help_circle,
+                            "A · 다시 보기(재생)" to com.finq.app.R.drawable.ic_replay,
+                            "B · 펼친 책" to com.finq.app.R.drawable.ic_book_open,
+                            "C · 새싹(앱의 상징)" to com.finq.app.R.drawable.ic_stage_sprout,
+                        ).forEach { (label, res) ->
+                            Text(label, Modifier.padding(top = 12.dp, bottom = 2.dp))
+                            ShowcaseActionRow(iconRes = res, label = "앱 소개 다시 보기")
+                            // 아래 행과 나란히 봐야 형태가 겹치는지 알 수 있다.
+                            ShowcaseActionRow(
+                                iconRes = com.finq.app.R.drawable.ic_paper_plane,
+                                label = "의견 보내기",
+                                sublabel = "2분이면 됩니다 · 익명",
+                            )
+                        }
+                    }
 
                     "garden_trees_few" -> GardenScreen(
                         garden = ReviewGarden(
@@ -2375,6 +2438,33 @@ class ShowcaseActivity : ComponentActivity() {
             },
             graduatedTrees = 23,
         )
+    }
+
+    /** 마이페이지 ActionRow 와 같은 모양(그쪽은 private). 아이콘 시안 비교 전용. */
+    @androidx.compose.runtime.Composable
+    private fun ShowcaseActionRow(iconRes: Int, label: String, sublabel: String? = null) {
+        Row(
+            modifier = Modifier.fillMaxWidth().height(56.dp).padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Image(
+                painter = painterResource(iconRes),
+                contentDescription = null,
+                colorFilter = ColorFilterIcon.tint(Lime),
+                modifier = Modifier.size(24.dp),
+            )
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = label, style = androidx.compose.material3.MaterialTheme.typography.bodyLarge)
+                if (sublabel != null) {
+                    Text(
+                        text = sublabel,
+                        style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                        color = TextMutedIcon,
+                    )
+                }
+            }
+        }
     }
 
     /** 정원 캔버스 케이스용 샘플 항목 — quizId·단계만 다르게. */
