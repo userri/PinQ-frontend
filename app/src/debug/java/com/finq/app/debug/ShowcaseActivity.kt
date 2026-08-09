@@ -107,6 +107,24 @@ class ShowcaseActivity : ComponentActivity() {
         setContent {
             FinQTheme {
                 when (screen) {
+                    // 월 라벨 잘림 검증 — **마지막 열이 새 달의 첫 주**인 두 경우.
+                    // 2026-06-01 은 월요일이라 그 주 전체가 6월이고, 6/03 은 그 주 수요일.
+                    // 오늘 날짜에 기대면 재현이 안 되므로 to 를 못박는다.
+                    "grass_month_edge" -> Column(
+                        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)
+                    ) {
+                        listOf(
+                            "to = 2026-06-01 (월) · 마지막 열에 하루만" to LocalDate.of(2026, 6, 1),
+                            "to = 2026-06-03 (수)" to LocalDate.of(2026, 6, 3),
+                            "to = 2026-06-07 (일) · 그 주가 꽉 참" to LocalDate.of(2026, 6, 7),
+                            "to = 2026-05-31 (일) · 마지막 열이 5월 말" to LocalDate.of(2026, 5, 31),
+                        ).forEach { (label, date) ->
+                            Text(label, Modifier.padding(bottom = 4.dp))
+                            GrassCalendarCard(grass = grassEndingAt(date))
+                            Spacer(Modifier.height(16.dp))
+                        }
+                    }
+
                     "grass" -> Column(
                         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)
                     ) {
@@ -336,64 +354,24 @@ class ShowcaseActivity : ComponentActivity() {
                     )
 
                     // ── #11 시안 비교 — 앞뒤 개체가 비쳐 겹치는 문제 ──────────────
-                    // 같은 데이터를 네 조합으로 그린다. 스크롤해서 나란히 본다.
-                    //  현행: 알파 하한 0.72(뒷줄이 비침) · 겹침 완화 없음
-                    //  A: 전부 불투명   B: 겹침 완화만   C: 둘 다
-                    "garden_depth" -> Column(
-                        Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-                    ) {
-                        val sample = ReviewGarden(
-                            growing = List(11) { i ->
-                                gardenSample(800L + i, ReviewStage.values()[i % 3]).copy(
-                                    inTodayQueue = i % 4 == 0,
-                                )
-                            },
-                            graduated = List(2) { i ->
-                                gardenSample(900L + i, ReviewStage.ALMOST_TREE)
-                                    .copy(graduatedAtIso = "2026-07-1${i + 1}T12:00:00")
-                            },
-                            graduatedTrees = 2,
-                            todayQueueSize = 3,
+                    // **화면 전체·최대 밀도**로만 판단할 수 있다. 320dp 로 줄여 넷을 한
+                    // 화면에 늘어놓으면 개체가 작아져 비침도 겹침도 안 보인다(한 번 그렇게
+                    // 만들었다가 못 고른다는 지적을 받았다). 그래서 케이스를 넷으로 쪼개고
+                    // 각각 풀스크린으로 그린다. 데이터는 앞줄 상한(FRONT_MAX=13)을 꽉 채운다 —
+                    // 실제 사용자가 볼 수 있는 가장 빽빽한 상태가 곧 최악의 겹침이다.
+                    "garden_depth_now", "garden_depth_a", "garden_depth_b", "garden_depth_c" -> {
+                        val tuning = when (screen) {
+                            "garden_depth_a" -> SceneTuning(depthAlphaFloor = 1f)
+                            "garden_depth_b" -> SceneTuning(minXGap = 0.16f)
+                            "garden_depth_c" -> SceneTuning(depthAlphaFloor = 1f, minXGap = 0.16f)
+                            else -> SceneTuning()
+                        }
+                        GardenNightScene(
+                            garden = denseGarden,
+                            onItemTap = {},
+                            modifier = Modifier.fillMaxSize(),
+                            tuning = tuning,
                         )
-                        listOf(
-                            "현행 · 알파 0.72 / 완화 없음" to SceneTuning(),
-                            "A · 전부 불투명" to SceneTuning(depthAlphaFloor = 1f),
-                            "B · 겹침 완화만" to SceneTuning(minXGap = 0.16f),
-                            "C · 불투명 + 완화" to SceneTuning(depthAlphaFloor = 1f, minXGap = 0.16f),
-                        ).forEach { (label, tuning) ->
-                            Text(
-                                label,
-                                Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                            )
-                            GardenNightScene(
-                                garden = sample,
-                                onItemTap = {},
-                                modifier = Modifier.fillMaxWidth().height(320.dp),
-                                tuning = tuning,
-                            )
-                        }
-                    }
-
-                    // ── #4 시안 비교 — 마이페이지 "앱 소개 다시 보기" 선두 아이콘 ────
-                    "help_icon" -> Column(
-                        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)
-                    ) {
-                        listOf(
-                            "현행 · 물음표" to com.finq.app.R.drawable.ic_help_circle,
-                            "A · 다시 보기(재생)" to com.finq.app.R.drawable.ic_replay,
-                            "B · 펼친 책" to com.finq.app.R.drawable.ic_book_open,
-                            "C · 새싹(앱의 상징)" to com.finq.app.R.drawable.ic_stage_sprout,
-                        ).forEach { (label, res) ->
-                            Text(label, Modifier.padding(top = 12.dp, bottom = 2.dp))
-                            ShowcaseActionRow(iconRes = res, label = "앱 소개 다시 보기")
-                            // 아래 행과 나란히 봐야 형태가 겹치는지 알 수 있다.
-                            ShowcaseActionRow(
-                                iconRes = com.finq.app.R.drawable.ic_paper_plane,
-                                label = "의견 보내기",
-                                sublabel = "2분이면 됩니다 · 익명",
-                            )
-                        }
                     }
 
                     "garden_trees_few" -> GardenScreen(
@@ -2289,6 +2267,28 @@ class ShowcaseActivity : ComponentActivity() {
     }
 
     /** 1년치 잔디 — 강도 0~4 가 모두 나오도록. days 는 서버처럼 활동일만 담는다(sparse). */
+    /**
+     * 임의의 `to` 날짜로 잔디 데이터를 만든다 — **마지막 열이 새 달의 첫 주**인 경우를
+     * 재현하려면 오늘 날짜에 기댈 수 없다(오늘이 언제냐에 따라 재현이 안 된다).
+     */
+    private fun grassEndingAt(to: LocalDate): GrassCalendar {
+        val from = to.minusDays(364)
+        val dayMap = (0..364).mapNotNull { offset ->
+            val level = (offset * 7) % 6
+            if (level !in 1..4) null
+            else from.plusDays(offset.toLong()) to com.finq.app.data.repository.GrassDay(
+                level = level, solved = level, reviewed = 0,
+            )
+        }.toMap()
+        return GrassCalendar(
+            from = from, to = to,
+            totalActiveDays = dayMap.size,
+            perfectDays = dayMap.count { it.value.level == 4 },
+            currentStreak = 7, maxStreak = 15, graduatedTrees = 4,
+            dayByDate = dayMap,
+        )
+    }
+
     private val sampleGrass: GrassCalendar by lazy {
         val today = LocalDate.now()
         val from = today.minusDays(364)
@@ -2440,31 +2440,25 @@ class ShowcaseActivity : ComponentActivity() {
         )
     }
 
-    /** 마이페이지 ActionRow 와 같은 모양(그쪽은 private). 아이콘 시안 비교 전용. */
-    @androidx.compose.runtime.Composable
-    private fun ShowcaseActionRow(iconRes: Int, label: String, sublabel: String? = null) {
-        Row(
-            modifier = Modifier.fillMaxWidth().height(56.dp).padding(vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Image(
-                painter = painterResource(iconRes),
-                contentDescription = null,
-                colorFilter = ColorFilterIcon.tint(Lime),
-                modifier = Modifier.size(24.dp),
-            )
-            Spacer(Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = label, style = androidx.compose.material3.MaterialTheme.typography.bodyLarge)
-                if (sublabel != null) {
-                    Text(
-                        text = sublabel,
-                        style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-                        color = TextMutedIcon,
-                    )
-                }
-            }
-        }
+    /**
+     * #11 시안용 최대 밀도 정원 — 앞줄 상한(13)을 꽉 채운다.
+     * 단계를 섞어야 나무 뒤에 풀이 겹치는 경우가 실제로 나온다.
+     */
+    private val denseGarden: ReviewGarden by lazy {
+        ReviewGarden(
+            growing = List(11) { i ->
+                gardenSample(1000L + i, ReviewStage.values()[i % 3]).copy(
+                    waterCount = i % 6,
+                    inTodayQueue = i % 3 == 0,
+                )
+            },
+            graduated = List(4) { i ->
+                gardenSample(1100L + i, ReviewStage.ALMOST_TREE)
+                    .copy(graduatedAtIso = "2026-07-1${i + 1}T12:00:00")
+            },
+            graduatedTrees = 6,
+            todayQueueSize = 4,
+        )
     }
 
     /** 정원 캔버스 케이스용 샘플 항목 — quizId·단계만 다르게. */

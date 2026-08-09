@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -125,7 +126,7 @@ fun GrassCalendarBody(grass: GrassCalendar) {
                 Spacer(Modifier.height(MONTH_LABEL_HEIGHT))
                 DAY_LABELS.forEach { label ->
                     Box(
-                        modifier = Modifier.height(CELL).padding(bottom = 0.dp),
+                        modifier = Modifier.height(CELL),
                         contentAlignment = Alignment.CenterStart,
                     ) {
                         if (label.isNotEmpty()) {
@@ -133,6 +134,15 @@ fun GrassCalendarBody(grass: GrassCalendar) {
                                 text = label,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = TextMuted,
+                                maxLines = 1,
+                                // 한 칸(13dp)은 이 글자의 줄높이보다 낮다 — 특히 폰트 배율을
+                                // 키운 기기에서. 높이를 제한하면 글자 아래가 잘리므로
+                                // 측정만 제한 없이 하고 가운데 정렬로 칸 밖으로 넘치게 둔다.
+                                // 라벨은 격주로만 있어 위아래가 비어 있고, 넘쳐도 부딪히지 않는다.
+                                modifier = Modifier.wrapContentHeight(
+                                    align = Alignment.CenterVertically,
+                                    unbounded = true,
+                                ),
                             )
                         }
                     }
@@ -257,9 +267,13 @@ private fun GrassSummaryRow(grass: GrassCalendar) {
     // 같은 만큼 들여써야 섹션 안에 왼쪽 기준선이 두 개 생기지 않는다.
     Row(modifier = Modifier.fillMaxWidth().padding(start = DAY_LABEL_WIDTH)) {
         SummaryStat(value = "${grass.totalActiveDays}일", label = "활동", modifier = Modifier.weight(1f))
-        // "만점" 금지 — 잔디 규칙(grass-and-streak.md)은 하루 4개 이상 정답 = 라임이고
+        // "만점" 금지 — 잔디 규칙(grass-and-streak.md)은 하루 4개 이상 정답 = 최고 등급이고
         // 오답이 등급을 깎지 않는다. 6문제 풀어 4개 맞힌 날도 여기 세므로 만점이 아니다.
-        SummaryStat(value = "${grass.perfectDays}일", label = "라임", modifier = Modifier.weight(1f))
+        //
+        // 라벨이 "라임"이었는데, 화면 어디에도 그 색 이름이 적혀 있지 않아 무엇을 센
+        // 숫자인지 알 수 없었다. 아래 범례가 이미 `맞힌 문제 1 ▪▪▪▪ 4+` 라고 말하므로
+        // **같은 말("4+ 정답")로 맞춘다** — 색 이름 대신 조건을 쓰면 범례를 보면 바로 이어진다.
+        SummaryStat(value = "${grass.perfectDays}일", label = "4+ 정답", modifier = Modifier.weight(1f))
         SummaryStat(value = "${grass.currentStreak}일", label = "연속", modifier = Modifier.weight(1f))
         SummaryStat(value = "${grass.maxStreak}일", label = "최고", modifier = Modifier.weight(1f))
     }
