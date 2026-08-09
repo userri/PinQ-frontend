@@ -1118,7 +1118,9 @@ private fun ReviewErrorBox(message: String, onRetry: () -> Unit) {
 private fun ExitHintPill() {
     Row(
         modifier = Modifier
+            // 하단 탭과 붙지 않게 띄운다 — 스낵바 슬롯은 바 바로 위에 붙여 놓는다.
             .padding(horizontal = 24.dp)
+            .padding(bottom = 20.dp)
             .clip(RoundedCornerShape(50))
             .background(com.finq.app.ui.theme.BgBase.copy(alpha = 0.45f))
             .border(
