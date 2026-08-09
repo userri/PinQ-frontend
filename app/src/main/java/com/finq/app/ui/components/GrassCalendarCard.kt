@@ -29,7 +29,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.finq.app.data.repository.GrassCalendar
@@ -189,30 +191,54 @@ private val MONTH_LABEL_HEIGHT = 16.dp
 /**
  * 월 라벨 — 각 월의 첫 주 열 위에만 찍는다.
  *
- * 열 하나 폭이 CELL+GAP 이므로, 라벨을 붙이지 않는 주는 그만큼 빈 칸으로 밀어준다.
+ * 라벨(`8월`)이 열 하나 폭(CELL+GAP)보다 넓어 오른쪽으로 흘러넘친다. 예전엔 열마다
+ * Box 를 세운 Row 였는데, **마지막 달 라벨은 흘러넘칠 자리가 없어 잘렸다** — 격자 폭을
+ * 넘어선 픽셀은 가로 스크롤 컨테이너가 잘라낸다(8월의 `월`이 반만 보이던 것).
+ *
+ * 그래서 직접 배치한다: x = 그 달 첫 주의 열 위치, 단 **오른쪽 끝을 넘으면 끝에 붙인다**.
+ * 마지막 달은 한두 픽셀 왼쪽으로 당겨지지만 글자가 온전하다 — 열과의 정렬보다 읽히는 게 먼저다.
+ * 폭은 격자와 같게 잡는다(열 사이 GAP 은 weeks-1 개다). 라벨 Row 가 더 넓으면 스크롤
+ * 끝이 격자 오른쪽 너머가 돼 오늘 칸이 화면 끝에 붙지 않는다.
  */
 @Composable
 private fun MonthLabels(gridStart: LocalDate, weeks: Int) {
-    Row(modifier = Modifier.height(MONTH_LABEL_HEIGHT)) {
+    // 달이 바뀌는 주만 남긴다 — (열 번호, 월).
+    val labeledWeeks = remember(gridStart, weeks) {
         var lastMonth = -1
-        repeat(weeks) { week ->
-            val weekStart = gridStart.plusWeeks(week.toLong())
-            val month = weekStart.monthValue
-            val isNewMonth = month != lastMonth
-            if (isNewMonth) lastMonth = month
-
-            // 열 폭(16dp)보다 라벨이 넓으므로 줄바꿈을 막고 옆으로 흘려보낸다.
-            // Box 는 기본적으로 클립하지 않으므로 다음 열 위로 자연스럽게 겹쳐 그려진다.
-            Box(modifier = Modifier.width(CELL + GAP)) {
-                if (isNewMonth) {
-                    Text(
-                        text = "${month}월",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = TextMuted,
-                        maxLines = 1,
-                        softWrap = false,
-                    )
+        buildList {
+            repeat(weeks) { week ->
+                val month = gridStart.plusWeeks(week.toLong()).monthValue
+                if (month != lastMonth) {
+                    lastMonth = month
+                    add(week to month)
                 }
+            }
+        }
+    }
+
+    Layout(
+        modifier = Modifier.height(MONTH_LABEL_HEIGHT),
+        content = {
+            labeledWeeks.forEach { (_, month) ->
+                Text(
+                    text = "${month}월",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextMuted,
+                    maxLines = 1,
+                    softWrap = false,
+                )
+            }
+        },
+    ) { measurables, _ ->
+        val stride = (CELL + GAP).roundToPx()
+        val gridWidth = (CELL.roundToPx() * weeks) + (GAP.roundToPx() * (weeks - 1))
+        val placeables = measurables.map { it.measure(Constraints()) }
+        layout(gridWidth, MONTH_LABEL_HEIGHT.roundToPx()) {
+            placeables.forEachIndexed { index, placeable ->
+                val x = (labeledWeeks[index].first * stride)
+                    .coerceAtMost(gridWidth - placeable.width)
+                    .coerceAtLeast(0)
+                placeable.place(x, 0)
             }
         }
     }
