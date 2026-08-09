@@ -32,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -42,10 +43,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.finq.app.R
+import com.finq.app.ui.components.QuizNightSky
 import com.finq.app.ui.theme.BgBase
 import com.finq.app.ui.theme.BgElevated
 import com.finq.app.ui.theme.BgSurface
 import com.finq.app.ui.theme.Error
+import com.finq.app.ui.theme.ErrorFaint
 import com.finq.app.ui.theme.FinQTheme
 import com.finq.app.ui.theme.GoogleBorder
 import com.finq.app.ui.theme.GoogleLabel
@@ -83,10 +86,33 @@ fun TasteQuizScreen(
     var picked by rememberSaveable { mutableStateOf<Int?>(null) }
     val revealed = picked != null
 
+    Box(modifier.fillMaxSize().background(BgBase)) {
+        // 오늘의 문제·채점 화면과 같은 하늘. 설치 직후 처음 푸는 문제가 다른 배경이면
+        // 로그인 뒤 만나는 진짜 퀴즈가 다른 앱처럼 보인다 — 첫 화면이 기준을 세운다.
+        QuizNightSky(Modifier.matchParentSize())
+        TasteQuizContent(
+            picked = picked,
+            revealed = revealed,
+            onPick = { picked = it },
+            onKakaoLogin = onKakaoLogin,
+            onGoogleLogin = onGoogleLogin,
+            isLoading = isLoading,
+        )
+    }
+}
+
+@Composable
+private fun TasteQuizContent(
+    picked: Int?,
+    revealed: Boolean,
+    onPick: (Int) -> Unit,
+    onKakaoLogin: () -> Unit,
+    onGoogleLogin: () -> Unit,
+    isLoading: Boolean,
+) {
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
-            .background(BgBase)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 24.dp),
     ) {
@@ -129,7 +155,7 @@ fun TasteQuizScreen(
                     revealed = revealed,
                     isCorrect = index == TASTE_ANSWER_INDEX,
                     isPicked = picked == index,
-                    onClick = { if (!revealed) picked = index },
+                    onClick = { if (!revealed) onPick(index) },
                 )
             }
         }
@@ -218,7 +244,7 @@ private fun VerdictBandCompact(isCorrect: Boolean) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(if (isCorrect) Grass1 else BgSurface)
+            .background(if (isCorrect) Grass1 else ErrorFaint)
             .padding(horizontal = 14.dp, vertical = 12.dp)
             .semantics { liveRegion = LiveRegionMode.Polite },
         verticalAlignment = Alignment.CenterVertically,
@@ -235,14 +261,19 @@ private fun VerdictBandCompact(isCorrect: Boolean) {
             text = if (isCorrect) "맞혔어요" else "아쉬워요",
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
-            color = if (isCorrect) Lime else TextPrimary,
+            color = if (isCorrect) Lime else Error,
         )
     }
 }
 
 /**
- * 선지 한 줄. 고르기 전엔 전부 같은 무게(누를 수 있는 상태), 고른 뒤엔
- * 채점 화면과 같은 3단 위계 — 정답만 면, 내 오답은 테두리, 안 고른 건 뒤로 물린다.
+ * 선지 한 줄.
+ *
+ * 고르기 전엔 넷 다 **유리**다 — 풀이 화면([QuizScreen])의 선지와 같은 재질이고,
+ * 뒤의 밤하늘이 그대로 비친다. 고른 뒤엔 채점 화면([QuizAnswerScreen])과 같은 3단
+ * 위계로 넘어간다: 정답만 면을 갖고, 내 오답은 번호 원과 라벨만 남으며, 안 고른 것은
+ * 면·테두리·원을 전부 잃는다. **유리도 그때 걷는다** — 채점 후에도 넷 다 유리로 두면
+ * 걷어낸 위계가 재질로 되살아난다.
  */
 @Composable
 private fun TasteOptionRow(
@@ -255,42 +286,44 @@ private fun TasteOptionRow(
 ) {
     val wrongPick = revealed && isPicked && !isCorrect
     val marked = revealed && (isCorrect || wrongPick)
+    val shape = RoundedCornerShape(14.dp)
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(
+            .then(
                 when {
-                    !revealed -> BgSurface
-                    isCorrect -> Grass1
-                    wrongPick -> BgSurface
-                    else -> Color.Transparent
+                    !revealed -> Modifier
+                        .clip(shape)
+                        .background(BgSurface.copy(alpha = GLASS_ALPHA))
+                        .background(
+                            Brush.verticalGradient(
+                                0f to Color.White.copy(alpha = 0.07f),
+                                0.55f to Color.Transparent,
+                            ),
+                        )
+                        .border(1.dp, GlassBorder, shape)
+                    isCorrect -> Modifier
+                        .clip(shape)
+                        .background(Grass1)
+                        .border(2.dp, Lime, shape)
+                    else -> Modifier
                 },
-            )
-            .border(
-                width = if (marked) 2.dp else 1.dp,
-                color = when {
-                    !revealed -> Outline
-                    isCorrect -> Lime
-                    wrongPick -> Error
-                    else -> Outline
-                },
-                shape = RoundedCornerShape(14.dp),
             )
             .clickable(enabled = !revealed, onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // 원은 "누를 수 있다"(고르기 전) 또는 "표시됐다"(고른 뒤)를 뜻한다.
+        // 채점 후 안 고른 선지에까지 원을 남기면 뜻 없는 도형이 된다.
         Box(
             modifier = Modifier
-                .size(26.dp)
-                .clip(CircleShape)
-                .background(
+                .size(28.dp)
+                .then(
                     when {
-                        !revealed -> BgElevated
-                        isCorrect -> Lime
-                        wrongPick -> Error
-                        else -> BgElevated
+                        !revealed -> Modifier.clip(CircleShape).background(BgElevated)
+                        isCorrect -> Modifier.clip(CircleShape).background(Lime)
+                        wrongPick -> Modifier.clip(CircleShape).background(Error)
+                        else -> Modifier
                     },
                 ),
             contentAlignment = Alignment.Center,
@@ -299,7 +332,12 @@ private fun TasteOptionRow(
                 text = "$number",
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
-                color = if (revealed && (isCorrect || wrongPick)) OnLime else TextSecondary,
+                color = when {
+                    isCorrect && revealed -> OnLime
+                    wrongPick -> ErrorFaint
+                    revealed -> TextMuted
+                    else -> TextSecondary
+                },
             )
         }
         Spacer(Modifier.size(12.dp))
@@ -325,35 +363,39 @@ private fun TasteOptionRow(
             Text(
                 text = "내 답",
                 style = MaterialTheme.typography.labelMedium,
-                color = TextSecondary,
+                fontWeight = FontWeight.Bold,
+                color = Error,
             )
         }
     }
 }
 
+/**
+ * 해설·곁가지 — 채점 화면과 같이 **면을 두지 않는다**. 하늘 위에 카드를 얹으면
+ * 정답 선지(유일한 면)와 같은 무게가 되어 무엇이 강조인지 흐려진다. 라벨은 작고 조용히.
+ */
 @Composable
 private fun ExplanationBlock(title: String, body: String, accent: Boolean = false) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(BgSurface)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-    ) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = title,
-            style = MaterialTheme.typography.titleSmall,
+            style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
-            color = if (accent) Lime else TextPrimary,
+            color = TextMuted,
         )
         Spacer(Modifier.height(6.dp))
         Text(
             text = body,
             style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondary,
+            lineHeight = 21.sp,
+            color = if (accent) TextPrimary else TextSecondary,
         )
     }
 }
+
+/** 유리 선지 — 값은 풀이 화면([QuizScreen])과 같아야 한다. 다르면 같은 재질로 안 읽힌다. */
+private const val GLASS_ALPHA = 0.16f
+private val GlassBorder = Color.White.copy(alpha = 0.18f)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 맛보기 문제 — 서버가 아니라 여기에만 있다.
