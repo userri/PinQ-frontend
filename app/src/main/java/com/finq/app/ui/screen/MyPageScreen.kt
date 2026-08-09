@@ -348,7 +348,9 @@ fun MyPageContent(
         )
         Spacer(Modifier.height(4.dp))
         ActionRow(
-            iconRes = R.drawable.ic_help_circle,
+            // 물음표가 아니라 펼친 책 — 물음표는 "도움말"이라 이 행이 실제로 하는 일
+            // (소개를 다시 읽는다)과 어긋났고, 정원 헤더의 "?" 와도 뜻이 겹쳤다.
+            iconRes = R.drawable.ic_book_open,
             label = "앱 소개 다시 보기",
             onClick = onOpenOnboarding,
         )
