@@ -1002,6 +1002,9 @@ fun FinQNavHost(
                         graduatedCount = state.graduatedCount,
                         nextDueDate = state.nextDueDate,
                         onGoHome = { navController.exitReview(from) },
+                        // 버튼은 실제로 가는 곳을 말한다 — exitReview 가 정원으로 보내는데
+                        // 라벨만 "홈으로"면 누르기 전과 후가 어긋난다.
+                        exitLabel = if (from == FinQRoutes.RETURN_GARDEN) "정원으로" else "홈으로",
                     )
                 }
             }
