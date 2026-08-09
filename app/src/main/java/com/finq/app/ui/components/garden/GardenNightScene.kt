@@ -96,17 +96,6 @@ internal data class ScenePlant(
     val due: Boolean,
 )
 
-/**
- * 씬 튜닝 — **시안 비교용 임시 축**이다. 결정이 나면 이긴 값을 상수로 굳히고 이 타입을 지운다.
- * 프로덕션 호출부는 기본값만 쓴다(디버그 쇼케이스만 다른 값을 준다).
- */
-data class SceneTuning(
-    /** 뒷줄 최소 알파. 1f 면 알파 원근이 없어져 앞뒤가 서로 비치지 않는다. */
-    val depthAlphaFloor: Float = 0.72f,
-    /** 깊이가 비슷한 이웃끼리 지켜야 할 x 최소 간격(분율). 0f 면 완화 없음. */
-    val minXGap: Float = 0f,
-)
-
 internal data class SceneLayout(
     val front: List<ScenePlant>,
     /** 앞줄에 못 들어간 나머지 수(레거시 졸업분 포함) — 실루엣 밀도의 근거. */
@@ -139,11 +128,7 @@ private data class Firefly(
  *
  * 배치: 골든비 수열로 x·깊이를 고르게 흩고, quizId 시드 지터로 격자 티를 없앤다.
  */
-internal fun computeNightScene(
-    garden: ReviewGarden,
-    today: LocalDate,
-    tuning: SceneTuning = SceneTuning(),
-): SceneLayout {
+internal fun computeNightScene(garden: ReviewGarden, today: LocalDate): SceneLayout {
     val growingRanked = garden.growing.sortedWith(
         compareByDescending<GardenItem> { it.stage.ordinal }.thenByDescending { it.waterCount }
     )
@@ -176,45 +161,9 @@ internal fun computeNightScene(
             due = item.inTodayQueue,
         )
     }
-    return SceneLayout(
-        front = if (tuning.minXGap > 0f) plants.spreadOverlaps(tuning.minXGap) else plants,
-        restCount = restCount,
-        restTreeFrac = restTreeFrac,
-    )
+    return SceneLayout(front = plants, restCount = restCount, restTreeFrac = restTreeFrac)
 }
 
-/**
- * 겹침 완화 — 깊이가 비슷한 이웃끼리만 x 를 밀어낸다.
- *
- * 깊이가 다르면 크기·그림자가 앞뒤를 말해 주므로 겹쳐도 읽힌다. 문제가 되는 건
- * **거의 같은 줄에 나란히 선 둘**이라, 그 경우에만 서로 반대로 민다. 여러 번 돌리는 건
- * 한 번에 밀면 옆의 셋째와 새로 부딪히기 때문이다. 결정적(입력만의 함수)이어야 하므로
- * 난수를 쓰지 않는다.
- */
-private fun List<ScenePlant>.spreadOverlaps(minGap: Float): List<ScenePlant> {
-    val xs = map { it.xFrac }.toMutableList()
-    repeat(SPREAD_PASSES) {
-        for (i in indices) {
-            for (j in i + 1 until size) {
-                if (kotlin.math.abs(this[i].depth - this[j].depth) > SAME_ROW_DEPTH) continue
-                val dx = xs[j] - xs[i]
-                val gap = kotlin.math.abs(dx)
-                if (gap >= minGap) continue
-                // 완전히 겹쳐 dx 가 0 이면 인덱스 순서로 방향을 정한다(난수 금지).
-                val dir = if (dx == 0f) 1f else dx / gap
-                val push = (minGap - gap) / 2f
-                xs[i] = (xs[i] - dir * push).coerceIn(X_MIN, X_MAX)
-                xs[j] = (xs[j] + dir * push).coerceIn(X_MIN, X_MAX)
-            }
-        }
-    }
-    return mapIndexed { i, p -> p.copy(xFrac = xs[i]) }
-}
-
-private const val SPREAD_PASSES = 3
-private const val SAME_ROW_DEPTH = 0.14f
-private const val X_MIN = 0.06f
-private const val X_MAX = 0.94f
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 씬 컴포저블
@@ -233,10 +182,8 @@ fun GardenNightScene(
     /** 탭한 식물. 목적지 분기(물주기 vs 열람)는 호출부가 정한다. */
     onItemTap: (GardenItem) -> Unit,
     modifier: Modifier = Modifier,
-    /** 시안 비교용. 프로덕션은 기본값 — [SceneTuning] 주석 참조. */
-    tuning: SceneTuning = SceneTuning(),
 ) {
-    val layout = remember(garden, tuning) { computeNightScene(garden, LocalDate.now(), tuning) }
+    val layout = remember(garden) { computeNightScene(garden, LocalDate.now()) }
 
     // 별 — 시드 고정, 밀도 그라데이션(상단 촘촘·수평선 성김), 일부 Lime.
     val stars = remember {
@@ -388,10 +335,7 @@ fun GardenNightScene(
 
         // ⑥ 앞줄 식물 — 멀리(작은 depth)부터 그려 가까운 것이 자연스럽게 앞에 겹친다.
         layout.front.sortedBy { it.depth }.forEach { p ->
-            drawScenePlant(
-                p, treePainter, almostTreePainter, grassPainter, sproutPainter,
-                duePulse, tuning.depthAlphaFloor,
-            )
+            drawScenePlant(p, treePainter, almostTreePainter, grassPainter, sproutPainter, duePulse)
         }
 
         // ⑦ 반딧불 — 은은한 명멸 + 느린 부유. Lime 저알파, 개수 고정.
@@ -443,8 +387,6 @@ private fun DrawScope.drawScenePlant(
     sproutPainter: Painter,
     /** due 후광의 맥동 계수(0.55~1). 후광에만 곱한다 — 식물은 흔들리지 않는다. */
     duePulse: Float,
-    /** 뒷줄 최소 알파([SceneTuning.depthAlphaFloor]). */
-    depthAlphaFloor: Float,
 ) {
     val (cx, groundY, side) = plantGeometry(p, size.width, size.height)
     val painter = when {
@@ -453,20 +395,18 @@ private fun DrawScope.drawScenePlant(
         p.item.stage == ReviewStage.GRASS -> grassPainter
         else -> almostTreePainter
     }
-    // 멀수록 흐릿·저채도(알파로 근사) — y축이 곧 깊이.
-    //
-    // 하한이 0.45 였을 땐 뒷줄 나무·나무 직전이 언덕에 묻혔다. 공기 원근은 배경과
-    // 대상의 **색이 다를 때** 성립하는데, 여기선 식물도 언덕도 같은 초록 계열이라
-    // 알파만 낮추면 원근이 아니라 그냥 사라진다. 깊이 신호는 크기(plantGeometry)와
-    // 그림자가 이미 담당하므로 알파는 거들기만 하면 된다.
-    val depthAlpha = depthAlphaFloor + (1f - depthAlphaFloor) * p.depth
+    // **식물은 전부 불투명하게 그린다.** 알파로 공기 원근을 흉내 내던 것을 걷었다
+    // (하한 0.45 → 0.72 로 완화했다가 결국 폐기). 두 번 실패한 이유가 같다: 식물도
+    // 언덕도 같은 초록 계열이라 알파를 낮추면 원근이 아니라 그냥 묻히고, 겹칠 때는
+    // **앞 개체를 뚫고 뒤 개체가 비쳐** 규칙 없는 신호가 된다(실기기 시안 비교로 확인).
+    // 깊이는 크기(plantGeometry)와 그림자가 이미 말한다.
 
     // due 글로우 — 오늘 물 줄 수 있는 식물의 은은한 Lime 라디얼(클릭 유도 신호).
     if (p.due) {
         val glowCenter = Offset(cx, groundY - side * 0.35f)
         drawCircle(
             brush = Brush.radialGradient(
-                colors = listOf(Lime.copy(alpha = 0.28f * depthAlpha * duePulse), Lime.copy(alpha = 0f)),
+                colors = listOf(Lime.copy(alpha = 0.28f * duePulse), Lime.copy(alpha = 0f)),
                 center = glowCenter,
                 radius = side * 0.85f,
             ),
@@ -477,7 +417,7 @@ private fun DrawScope.drawScenePlant(
 
     // 지면 앵커 그림자 — 밑동 절단면을 가려 "심긴" 것처럼.
     drawOval(
-        color = GrassDeep.copy(alpha = 0.55f * depthAlpha),
+        color = GrassDeep.copy(alpha = 0.55f),
         topLeft = Offset(cx - side * 0.30f, groundY - side * 0.055f),
         size = Size(side * 0.60f, side * 0.11f),
     )
@@ -498,7 +438,7 @@ private fun DrawScope.drawScenePlant(
     // 타원이 되어 "찌그러졌다"로 읽힌다(ScenePlant 주석 ③).
     translate(left = cx - side / 2f, top = groundY - side * 0.85f) {
         scale(scaleX = factor, scaleY = factor, pivot = Offset.Zero) {
-            with(painter) { draw(size = intrinsic, alpha = depthAlpha) }
+            with(painter) { draw(size = intrinsic) }
         }
     }
 }

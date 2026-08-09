@@ -47,8 +47,6 @@ import com.finq.app.ui.components.NoticeDialog
 import com.finq.app.ui.components.ReviewTreeConceptSheet
 import com.finq.app.ui.components.ReviewTreeConceptVariant
 import com.finq.app.ui.components.garden.GardenCanvas
-import com.finq.app.ui.components.garden.GardenNightScene
-import com.finq.app.ui.components.garden.SceneTuning
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -352,27 +350,6 @@ class ShowcaseActivity : ComponentActivity() {
                         isLoading = false, error = null,
                         onRetry = {}, onBack = {}, onOpenQuiz = {},
                     )
-
-                    // ── #11 시안 비교 — 앞뒤 개체가 비쳐 겹치는 문제 ──────────────
-                    // **화면 전체·최대 밀도**로만 판단할 수 있다. 320dp 로 줄여 넷을 한
-                    // 화면에 늘어놓으면 개체가 작아져 비침도 겹침도 안 보인다(한 번 그렇게
-                    // 만들었다가 못 고른다는 지적을 받았다). 그래서 케이스를 넷으로 쪼개고
-                    // 각각 풀스크린으로 그린다. 데이터는 앞줄 상한(FRONT_MAX=13)을 꽉 채운다 —
-                    // 실제 사용자가 볼 수 있는 가장 빽빽한 상태가 곧 최악의 겹침이다.
-                    "garden_depth_now", "garden_depth_a", "garden_depth_b", "garden_depth_c" -> {
-                        val tuning = when (screen) {
-                            "garden_depth_a" -> SceneTuning(depthAlphaFloor = 1f)
-                            "garden_depth_b" -> SceneTuning(minXGap = 0.16f)
-                            "garden_depth_c" -> SceneTuning(depthAlphaFloor = 1f, minXGap = 0.16f)
-                            else -> SceneTuning()
-                        }
-                        GardenNightScene(
-                            garden = denseGarden,
-                            onItemTap = {},
-                            modifier = Modifier.fillMaxSize(),
-                            tuning = tuning,
-                        )
-                    }
 
                     "garden_trees_few" -> GardenScreen(
                         garden = ReviewGarden(
@@ -2437,27 +2414,6 @@ class ShowcaseActivity : ComponentActivity() {
                     .copy(graduatedAtIso = "2026-07-%02dT12:00:00".format((it - 100)))
             },
             graduatedTrees = 23,
-        )
-    }
-
-    /**
-     * #11 시안용 최대 밀도 정원 — 앞줄 상한(13)을 꽉 채운다.
-     * 단계를 섞어야 나무 뒤에 풀이 겹치는 경우가 실제로 나온다.
-     */
-    private val denseGarden: ReviewGarden by lazy {
-        ReviewGarden(
-            growing = List(11) { i ->
-                gardenSample(1000L + i, ReviewStage.values()[i % 3]).copy(
-                    waterCount = i % 6,
-                    inTodayQueue = i % 3 == 0,
-                )
-            },
-            graduated = List(4) { i ->
-                gardenSample(1100L + i, ReviewStage.ALMOST_TREE)
-                    .copy(graduatedAtIso = "2026-07-1${i + 1}T12:00:00")
-            },
-            graduatedTrees = 6,
-            todayQueueSize = 4,
         )
     }
 

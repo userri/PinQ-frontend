@@ -1105,7 +1105,9 @@ private fun ReviewErrorBox(message: String, onRetry: () -> Unit) {
  *
  * 알약은 액션 전용이라는 규칙(§2)의 예외가 아니다. 이건 **떠 있다 사라지는 안내**라
  * 목록·카드 층에 얹히는 면이 아니고, 시스템 토스트가 서던 자리를 그대로 쓴다.
- * 잔디 아이콘 하나로 어느 앱이 말하는지 밝힌다 — 런처 아이콘을 붙이던 자리를 대신한다.
+ * 새싹 하나로 어느 앱이 말하는지 밝힌다 — 런처 아이콘을 붙이던 자리를 대신한다.
+ * 면은 반투명이다. 안내는 화면 위에 잠깐 떠 있다 사라지는 것이라, 아래가 비쳐야
+ * "화면이 바뀐 게 아니라 얹힌 것"으로 읽힌다.
  */
 @Composable
 private fun ExitHintPill() {
@@ -1113,12 +1115,12 @@ private fun ExitHintPill() {
         modifier = Modifier
             .padding(horizontal = 24.dp)
             .clip(RoundedCornerShape(50))
-            .background(com.finq.app.ui.theme.BgElevated.copy(alpha = 0.96f))
+            .background(com.finq.app.ui.theme.BgElevated.copy(alpha = 0.72f))
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
-            painter = painterResource(com.finq.app.R.drawable.ic_stage_grass),
+            painter = painterResource(com.finq.app.R.drawable.ic_stage_sprout),
             contentDescription = null,
             tint = Lime,
             modifier = Modifier.size(20.dp),
