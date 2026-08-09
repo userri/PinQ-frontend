@@ -7,6 +7,7 @@ import android.os.SystemClock
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -1106,8 +1107,12 @@ private fun ReviewErrorBox(message: String, onRetry: () -> Unit) {
  * 알약은 액션 전용이라는 규칙(§2)의 예외가 아니다. 이건 **떠 있다 사라지는 안내**라
  * 목록·카드 층에 얹히는 면이 아니고, 시스템 토스트가 서던 자리를 그대로 쓴다.
  * 새싹 하나로 어느 앱이 말하는지 밝힌다 — 런처 아이콘을 붙이던 자리를 대신한다.
- * 면은 반투명이다. 안내는 화면 위에 잠깐 떠 있다 사라지는 것이라, 아래가 비쳐야
- * "화면이 바뀐 게 아니라 얹힌 것"으로 읽힌다.
+ *
+ * 면은 유리다(§2.6). 안내는 화면 위에 잠깐 떠 있다 사라지는 것이라 아래가 비쳐야
+ * "화면이 바뀐 게 아니라 얹힌 것"으로 읽힌다. BgElevated 0.72 로 먼저 했다가
+ * **비침이 안 보인다**는 지적을 받았다 — BgElevated 는 밝은 남색이라 알파를 낮춰도
+ * 뒤가 드러나기 전에 색이 먼저 눈에 든다. 화면과 같은 BgBase 를 옅게 깔아야 비친다.
+ * 흰 hairline 이 없으면 유리가 아니라 얼룩으로 보인다.
  */
 @Composable
 private fun ExitHintPill() {
@@ -1115,7 +1120,12 @@ private fun ExitHintPill() {
         modifier = Modifier
             .padding(horizontal = 24.dp)
             .clip(RoundedCornerShape(50))
-            .background(com.finq.app.ui.theme.BgElevated.copy(alpha = 0.72f))
+            .background(com.finq.app.ui.theme.BgBase.copy(alpha = 0.45f))
+            .border(
+                1.dp,
+                androidx.compose.ui.graphics.Color.White.copy(alpha = 0.18f),
+                RoundedCornerShape(50),
+            )
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
