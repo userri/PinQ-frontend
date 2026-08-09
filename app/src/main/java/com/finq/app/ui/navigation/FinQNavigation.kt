@@ -949,7 +949,6 @@ fun FinQNavHost(
                                 // 누적 통계(물 N번 · 흡수 N번)는 진척이 아니므로 여기 없다.
                                 headerNote = if (item.stage.isFinalStage) "한 번 더 맞히면 나무가 돼요"
                                              else "맞히면 나무가 자라요",
-                                showAd = true,
                             )
                         }
                     }

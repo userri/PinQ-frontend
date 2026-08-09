@@ -166,7 +166,7 @@ fun ReviewDoneScreen(
         // CTA 아래, 화면 맨 아래. 이 화면은 이탈 직전이라 광고가 작업을 방해하지 않는다.
         // 문제를 읽는 화면(QuizScreen)에는 두지 않는다 — 거기서 아래를 차지하면
         // 긴 지문에서 선지가 밀린다.
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(24.dp))
         AdBanner(horizontalPaddingDp = 48) // 화면 좌우 패딩 24+24
     }
 }

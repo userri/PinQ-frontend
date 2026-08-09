@@ -212,9 +212,11 @@ fun QuizAnswerScreen(
             )
 
             // ── 배너 광고 (스크롤 콘텐츠 맨 아래 — CTA 를 가리지 않는 자리) ──
+            // 아래 CTA 와 24dp 를 벌린다(여기 20 + 스크롤 밖 4). 8dp 였을 땐 손가락
+            // 하나 폭도 안 돼, 한 세션에 다섯 번 누르는 버튼 바로 위에 광고가 붙었다.
             Spacer(Modifier.height(16.dp))
             AdBanner(horizontalPaddingDp = 40) // 화면 좌우 패딩 20+20
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(20.dp))
         }
 
         // 스크롤 영역과 하단 CTA 사이 여백
