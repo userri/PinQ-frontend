@@ -285,7 +285,7 @@ fun GardenNightScene(
             initialValue = 0.55f,
             targetValue = 1f,
             animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = 1_600, easing = FastOutSlowInEasing),
+                animation = tween(durationMillis = 1_100, easing = FastOutSlowInEasing),
                 repeatMode = RepeatMode.Reverse,
             ),
             label = "duePulseT",

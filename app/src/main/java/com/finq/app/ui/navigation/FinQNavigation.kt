@@ -31,6 +31,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -49,6 +50,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
@@ -350,9 +352,13 @@ fun FinQNavHost(
     // ── 앱 종료는 뒤로가기 두 번 ─────────────────────────────────────────
     // 홈(로그인 전이면 로그인)이 스택의 바닥이라 여기서 한 번 누르면 앱이 닫힌다.
     // 다른 탭에서 홈으로 돌아온 직후 습관적으로 한 번 더 누르는 일이 잦아, 그 한 번에
-    // 앱이 사라지는 걸 막는다. 안내는 스낵바가 아니라 토스트다 — 스낵바는 하단 탭 위에
-    // 얹혀 탭을 가리고, 화면을 떠나는 동작의 안내는 화면 밖에 떠 있는 편이 맞다.
+    // 앱이 사라지는 걸 막는다.
+    //
+    // 시스템 Toast 를 쓰지 않는다 — Android 12+ 는 토스트에 **런처 아이콘을 강제로**
+    // 붙이고 회색 캡슐 배경도 OEM 이 정한다(targetSdk 30+ 에선 setView 가 무시된다).
+    // 앱 안의 어떤 면과도 안 닮은 조각이 뜬다. 그래서 같은 자리에 우리 면으로 그린다.
     var lastBackPressedAt by remember { mutableLongStateOf(0L) }
+    var showExitHint by remember { mutableStateOf(false) }
     val atExitPoint = currentRoute == FinQRoutes.HOME || currentRoute == FinQRoutes.LOGIN
     BackHandler(enabled = atExitPoint) {
         val now = SystemClock.elapsedRealtime()
@@ -360,7 +366,14 @@ fun FinQNavHost(
             (context as? Activity)?.finish()
         } else {
             lastBackPressedAt = now
-            Toast.makeText(context, "한 번 더 누르면 앱이 닫혀요", Toast.LENGTH_SHORT).show()
+            showExitHint = true
+        }
+    }
+    // 확인 창과 같은 길이로 사라진다 — 안내가 남아 있는 동안이 곧 "지금 누르면 닫힌다".
+    LaunchedEffect(showExitHint, lastBackPressedAt) {
+        if (showExitHint) {
+            kotlinx.coroutines.delay(EXIT_CONFIRM_WINDOW_MS)
+            showExitHint = false
         }
     }
 
@@ -379,7 +392,14 @@ fun FinQNavHost(
 
     Scaffold(
         modifier = modifier,
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        // 종료 안내는 스낵바 슬롯을 빌려 쓴다 — 하단 탭 **위**에 뜨는 자리를 Scaffold 가
+        // 이미 계산해 준다. 둘이 동시에 뜨는 경로는 없다(안내는 홈·로그인에서만).
+        snackbarHost = {
+            Box(contentAlignment = Alignment.BottomCenter) {
+                SnackbarHost(snackbarHostState)
+                if (showExitHint) ExitHintPill()
+            }
+        },
         // 세션 화면에서는 상태바·하단 인셋까지 네이비로 풀블리드.
         containerColor = if (isDarkSession)
             com.finq.app.ui.theme.BgBase
@@ -1077,6 +1097,38 @@ private fun ReviewErrorBox(message: String, onRetry: () -> Unit) {
             Spacer(Modifier.height(16.dp))
             Button(onClick = onRetry) { Text("다시 시도") }
         }
+    }
+}
+
+/**
+ * 종료 안내 알약 — 시스템 Toast 대체.
+ *
+ * 알약은 액션 전용이라는 규칙(§2)의 예외가 아니다. 이건 **떠 있다 사라지는 안내**라
+ * 목록·카드 층에 얹히는 면이 아니고, 시스템 토스트가 서던 자리를 그대로 쓴다.
+ * 잔디 아이콘 하나로 어느 앱이 말하는지 밝힌다 — 런처 아이콘을 붙이던 자리를 대신한다.
+ */
+@Composable
+private fun ExitHintPill() {
+    Row(
+        modifier = Modifier
+            .padding(horizontal = 24.dp)
+            .clip(RoundedCornerShape(50))
+            .background(com.finq.app.ui.theme.BgElevated.copy(alpha = 0.96f))
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            painter = painterResource(com.finq.app.R.drawable.ic_stage_grass),
+            contentDescription = null,
+            tint = Lime,
+            modifier = Modifier.size(20.dp),
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = "한 번 더 누르면 앱이 닫혀요",
+            style = MaterialTheme.typography.bodyMedium,
+            color = com.finq.app.ui.theme.TextPrimary,
+        )
     }
 }
 
