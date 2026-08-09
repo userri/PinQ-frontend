@@ -1,7 +1,9 @@
 package com.finq.app.ui.navigation
 
+import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.os.SystemClock
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -39,6 +41,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -215,6 +218,9 @@ object FinQRoutes {
     const val REVIEW_DONE = "review/done"
 }
 
+/** 종료 확인 창 — 이 안에 한 번 더 누르면 닫는다. 토스트(LENGTH_SHORT ≈ 2초)와 같은 길이. */
+private const val EXIT_CONFIRM_WINDOW_MS = 2000L
+
 private val bottomNavRoutes = setOf(
     FinQRoutes.HOME,
     FinQRoutes.LIBRARY_TAB,
@@ -341,6 +347,23 @@ fun FinQNavHost(
 
     val snackbarHostState = remember { SnackbarHostState() }
 
+    // ── 앱 종료는 뒤로가기 두 번 ─────────────────────────────────────────
+    // 홈(로그인 전이면 로그인)이 스택의 바닥이라 여기서 한 번 누르면 앱이 닫힌다.
+    // 다른 탭에서 홈으로 돌아온 직후 습관적으로 한 번 더 누르는 일이 잦아, 그 한 번에
+    // 앱이 사라지는 걸 막는다. 안내는 스낵바가 아니라 토스트다 — 스낵바는 하단 탭 위에
+    // 얹혀 탭을 가리고, 화면을 떠나는 동작의 안내는 화면 밖에 떠 있는 편이 맞다.
+    var lastBackPressedAt by remember { mutableLongStateOf(0L) }
+    val atExitPoint = currentRoute == FinQRoutes.HOME || currentRoute == FinQRoutes.LOGIN
+    BackHandler(enabled = atExitPoint) {
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastBackPressedAt < EXIT_CONFIRM_WINDOW_MS) {
+            (context as? Activity)?.finish()
+        } else {
+            lastBackPressedAt = now
+            Toast.makeText(context, "한 번 더 누르면 앱이 닫혀요", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     // 첫 실행 온보딩 — 홈을 시작 목적지로 두고 그 "위에" 얹는다.
     // 온보딩을 NavHost 의 시작 목적지로 삼아 나갈 때 popUpTo(inclusive) 로 걷어내면
     // 그래프의 시작 목적지가 사라져 백스택이 깨진다(세션 그래프가 부모 없이 컴포즈돼
@@ -445,22 +468,20 @@ fun FinQNavHost(
             ) { entry ->
                 val replay = entry.arguments?.getBoolean("replay") ?: false
                 // 온보딩을 벗어나면(완료·건너뛰기·재열람 종료) 다시는 자동으로 뜨지 않는다.
-                // 아래는 늘 홈이므로 건너뛰기·재열람 종료는 popBackStack 한 번이면 된다.
-                val leave: (Boolean) -> Unit = { startFirstQuiz ->
+                // 아래는 늘 홈이므로 셋 다 popBackStack 한 번이면 된다.
+                //
+                // 완료도 홈이다. 예전엔 마지막 장 CTA 가 곧장 첫 문제(SESSION_GRAPH)로
+                // 보냈는데, 가입 직후 사용자가 처음 보는 화면이 문제 풀이가 되어
+                // **앱에 무엇이 있는지 못 본 채 시험부터 치렀다.** 홈에 내려놓으면
+                // 오늘의 문제 카드가 같은 자리에서 같은 것을 부르고, 정원·내 공부도 함께 보인다.
+                val leave: () -> Unit = {
                     markOnboardingSeen(context)
-                    // 설명을 더 쌓지 않고 곧장 첫 문제로. 온보딩만 걷어내 홈 위에 세션을 얹는다.
-                    if (startFirstQuiz && !replay) {
-                        navController.navigate(FinQRoutes.SESSION_GRAPH) {
-                            popUpTo(FinQRoutes.ONBOARDING_PATTERN) { inclusive = true }
-                        }
-                    } else {
-                        navController.popBackStack()
-                    }
+                    navController.popBackStack()
                 }
                 OnboardingScreen(
                     replay = replay,
-                    onFinish = { leave(true) },
-                    onSkip = { leave(false) },
+                    onFinish = leave,
+                    onSkip = leave,
                 )
             }
 
@@ -696,7 +717,11 @@ fun FinQNavHost(
                         }
                     },
                     // 정원은 보상 공간, 복습은 작업 공간 — 홈 물주기 카드와 같은 진입.
-                    onStartReview = { navController.navigate(FinQRoutes.reviewQuiz()) },
+                    // 단 나가는 곳은 들어온 곳이다. from 을 안 주면 기본값이 RETURN_HOME 이라
+                    // 정원에서 눌러 놓고 홈으로 떨어졌다 — 위 개별 식물 탭과 같은 값을 준다.
+                    onStartReview = {
+                        navController.navigate(FinQRoutes.reviewQuiz(from = FinQRoutes.RETURN_GARDEN))
+                    },
                 )
             }
 
