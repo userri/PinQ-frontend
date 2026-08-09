@@ -167,7 +167,7 @@ fun ReviewDoneScreen(
         // 문제를 읽는 화면(QuizScreen)에는 두지 않는다 — 거기서 아래를 차지하면
         // 긴 지문에서 선지가 밀린다.
         Spacer(Modifier.height(16.dp))
-        AdBanner(horizontalPaddingDp = 48) // 화면 좌우 패딩 24+24
+        AdBanner(horizontalPaddingDp = 48, anchored = true) // 화면 좌우 패딩 24+24
     }
 }
 
