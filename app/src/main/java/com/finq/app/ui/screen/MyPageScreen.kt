@@ -77,7 +77,6 @@ import com.finq.app.ui.theme.Lime
 import com.finq.app.ui.theme.OnLime
 import com.finq.app.ui.theme.TextMuted
 import com.finq.app.ui.theme.TextPrimary
-import kotlin.math.roundToInt
 
 /**
  * 마이페이지 — Stateless View.
@@ -87,7 +86,7 @@ import kotlin.math.roundToInt
  * 지금은 [grass] 만 그 값의 소유자다.
  *
  * @param totalSolved     누적 풀이 수 — 프로필 헤더가 소유
- * @param correctRate     정답률 0.0~1.0 — 프로필 헤더가 소유
+ * @param correctRate     누적 정답률 0.0~1.0 — 개념별 정답률 섹션이 소유(`전체 N% · M문제`)
  * @param appVersion      BuildConfig.VERSION_NAME
  * @param isLoading         통계 로딩 중 여부
  * @param error             통계 로드 실패 메시지 (null이면 정상)
@@ -271,11 +270,10 @@ fun MyPageContent(
         Spacer(Modifier.height(24.dp))
 
         // ── 프로필 헤더 ───────────────────────────────────────────
-        // 총 풀이·정답률은 여기서만 말한다. 연속/최고는 잔디밭 섹션이 단독으로 소유한다.
+        // 정체성만. 총 풀이·정답률은 개념별 정답률 섹션이, 연속/최고는 잔디밭 섹션이 소유한다.
         ProfileHeader(
             nickname = nickname,
             totalSolved = totalSolved,
-            correctRate = correctRate,
             onEditClick = { showNicknameDialog = true },
         )
 
@@ -310,7 +308,11 @@ fun MyPageContent(
         // 표본이 아예 없으면(카테고리 비었음) 섹션 자체를 숨긴다.
         if (conceptStats != null && conceptStats.categories.isNotEmpty()) {
             SectionDivider()
-            ConceptStatsSection(stats = conceptStats)
+            ConceptStatsSection(
+                stats = conceptStats,
+                overallRate = correctRate,
+                totalSolved = totalSolved,
+            )
         }
 
         Spacer(Modifier.height(24.dp))
@@ -678,97 +680,86 @@ fun MyPageContent(
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * 프로필 헤더 — 정체성(아바타·이름)과 누적 성취(정답률·풀이 수)를 한 줄로 읽는 자리.
+ * 프로필 헤더 — **정체성만** 말하는 자리(아바타·이름·닉네임 변경 어포던스).
  *
  * 예전엔 카드 안에 「아바타 + 이름 + "닉네임을 변경할 수 있어요" + [변경]」 뿐이었다.
  * 페이지 최상단이라는 가장 좋은 자리를 저가치 액션 안내가 차지하고 있었던 셈이라,
  * 이름 변경은 조용한 어포던스(이름 옆 `›` + 영역 탭)로 내리고 성취 요약을 올렸다.
  *
- * 이 화면에서 라임을 크게 쓰는 곳은 여기 정답률 하나뿐이다 — 잔디밭 통계는 전부 중립.
- * (아래 [TreeRecordBlock] 의 라임은 별도 톤 밴드 안이라 구역이 다르다.)
+ * **그 성취 요약(누적 정답률 · 총 풀이 수)은 다시 내려보냈다.** 두 값 다 여기서는
+ * 갈 곳이 없었다 — 정답률은 아래 [ConceptStatsSection] 이 같은 축을 더 자세히 말하는데
+ * 세 섹션 떨어져 있어 관계가 안 보였고, 총 풀이 수는 앱의 어떤 규칙에도 안 쓰이는
+ * 숫자라(잔디·스트릭·복습은 전부 "맞힌 수"와 "날짜"로 돈다) 혼자 떠 있었다.
+ * 지금은 둘이 개념별 정답률 제목 아래에 `전체 82% · 212문제` 로 함께 앉는다 —
+ * 문제 수가 정답률의 표본이 되면서 처음으로 쓸모가 생긴다.
  *
- * 아직 한 문제도 안 푼 사용자에겐 큰 `0%` 를 띄우지 않는다. 음수 정보를 주역으로
- * 세우는 대신 다음 행동을 말한다 — [TreeRecordBlock] 의 0그루 처리와 같은 규칙.
+ * 그래서 이 화면에는 큰 라임이 없다. 아바타 원의 라임은 강조가 아니라 배경이고,
+ * 색으로 말하는 자리는 [ConceptStatsSection] 의 빨강(기준 미달) 하나로 모았다.
+ *
+ * 아직 한 문제도 안 푼 사용자에게만 보조줄로 다음 행동을 말한다 — 기록이 있는
+ * 사용자에게 굳이 채울 줄이 없다. 빈 줄을 만들려고 저가치 문구를 되살리면
+ * 위에서 걷어낸 "닉네임을 변경할 수 있어요" 로 돌아간다.
  */
 @Composable
 private fun ProfileHeader(
     nickname: String,
     totalSolved: Int,
-    correctRate: Float,
     onEditClick: () -> Unit,
 ) {
     val initial = nickname.firstOrNull()?.toString() ?: "?"
     val hasRecord = totalSolved > 0
 
+    // 성취 열이 빠지면서 바깥 Row 가 자식 하나만 감싸는 껍데기가 됐다 — 걷고
+    // 탭 영역 Row 를 그대로 최상위로 올린다.
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            // 어포던스는 작지만 탭 영역은 아바타~이름 전체다.
+            .clickable(onClickLabel = "닉네임 변경", onClick = onEditClick)
+            .heightIn(min = 48.dp)
+            .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
+        Box(
             modifier = Modifier
-                .weight(1f)
-                .clip(RoundedCornerShape(14.dp))
-                // 어포던스는 작지만 탭 영역은 아바타~이름 전체다.
-                .clickable(onClickLabel = "닉네임 변경", onClick = onEditClick)
-                .heightIn(min = 48.dp)
-                .padding(vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
+                .size(56.dp)
+                .clip(CircleShape)
+                .background(Lime),
+            contentAlignment = Alignment.Center,
         ) {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(Lime),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = initial,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = OnLime,
-                )
-            }
-            Spacer(Modifier.width(14.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "${nickname}님",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false),
-                    )
-                    Spacer(Modifier.width(2.dp))
-                    Icon(
-                        painter = painterResource(R.drawable.ic_chevron_right),
-                        contentDescription = null,
-                        // 드로어블 기본색이 text_primary 라 tint 생략 시 라벨 색과 어긋난다.
-                        tint = TextMuted,
-                        modifier = Modifier.size(16.dp),
-                    )
-                }
-                Text(
-                    text = if (hasRecord) "${totalSolved}문제 풀이" else "첫 문제를 풀어보세요",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextMuted,
-                )
-            }
+            Text(
+                text = initial,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.ExtraBold,
+                color = OnLime,
+            )
         }
-
-        if (hasRecord) {
-            Spacer(Modifier.width(12.dp))
-            Column(horizontalAlignment = Alignment.End) {
+        Spacer(Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "${(correctRate * 100).roundToInt()}%",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Lime,
+                    text = "${nickname}님",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
                 )
+                Spacer(Modifier.width(2.dp))
+                Icon(
+                    painter = painterResource(R.drawable.ic_chevron_right),
+                    contentDescription = null,
+                    // 드로어블 기본색이 text_primary 라 tint 생략 시 라벨 색과 어긋난다.
+                    tint = TextMuted,
+                    modifier = Modifier.size(16.dp),
+                )
+            }
+            if (!hasRecord) {
                 Text(
-                    text = "정답률",
-                    style = MaterialTheme.typography.labelSmall,
+                    text = "첫 문제를 풀어보세요",
+                    style = MaterialTheme.typography.bodySmall,
                     color = TextMuted,
                 )
             }

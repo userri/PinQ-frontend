@@ -48,6 +48,17 @@ private const val BAR_MIN_FRACTION = 0.02f
 fun ConceptStatsSection(
     stats: ConceptStats,
     modifier: Modifier = Modifier,
+    /**
+     * 누적 정답률 0.0~1.0 과 표본. 종전엔 프로필 헤더가 큰 라임 `82%` 로 소유했는데,
+     * 개념별 정답률과 **세 섹션 떨어져 있어 같은 축인 줄 읽히지 않았다** — 헤더의
+     * 하나짜리 평균은 아래 목록의 요약도 아니다(가중치가 다르다). 여기로 내리면
+     * "전체 82%, 그런데 부동산이 58%" 라는 관계가 한 눈에 잡힌다.
+     *
+     * null 이면 줄을 그리지 않는다 — 아직 한 문제도 안 푼 사용자에게 `0%` 를 띄우지
+     * 않기 위해서다(프로필 헤더의 종전 규칙을 그대로 가져왔다).
+     */
+    overallRate: Float? = null,
+    totalSolved: Int = 0,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
@@ -56,6 +67,20 @@ fun ConceptStatsSection(
             fontWeight = FontWeight.Bold,
             color = TextPrimary,
         )
+        if (overallRate != null && totalSolved > 0) {
+            Spacer(Modifier.height(4.dp))
+            // 라임을 쓰지 않는다 — 이 섹션의 색은 빨강(기준 미달) 하나가 소유한다.
+            // 위에 큰 라임 값을 얹으면 "전체는 좋음 / 개념은 나쁨"을 두 색이 동시에
+            // 외쳐 어느 쪽을 봐야 할지 흐려진다. 여기선 기준선 역할이면 충분하다.
+            //
+            // 문제 수를 붙이는 이유: 이 숫자의 유일한 쓸모가 **정답률의 표본**이다.
+            // 헤더에 혼자 `212문제 풀이` 로 떠 있을 땐 무엇에 쓰는 값인지 알 수 없었다.
+            Text(
+                text = "전체 ${overallRate.toPercent()}% · ${totalSolved}문제",
+                style = MaterialTheme.typography.labelMedium,
+                color = TextSecondary,
+            )
+        }
         val diagnosis = conceptDiagnosis(stats)
         Spacer(Modifier.height(12.dp))
         when (diagnosis) {

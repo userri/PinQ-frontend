@@ -438,9 +438,20 @@ class ShowcaseActivity : ComponentActivity() {
                     "concept" -> Column(
                         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)
                     ) {
-                        ConceptStatsSection(sampleConcepts)
+                        // 전체 줄 있음 — 프로필 헤더에서 내려온 `전체 N% · M문제`.
+                        // 아래 개념 목록의 빨강과 같은 화면에서 어떻게 읽히는지 보는 자리다.
+                        ConceptStatsSection(
+                            sampleConcepts,
+                            overallRate = 0.82f,
+                            totalSolved = 212,
+                        )
                         Spacer(Modifier.height(16.dp))
-                        ConceptStatsSection(sampleConcepts.copy(weakest = null))
+                        // 표본 0 — 줄이 통째로 빠진다(첫 실행 사용자에게 `0%` 금지).
+                        ConceptStatsSection(
+                            sampleConcepts.copy(weakest = null),
+                            overallRate = 0f,
+                            totalSolved = 0,
+                        )
                     }
 
                     // 동률 지목 · 지목 과다 시 숨김
