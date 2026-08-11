@@ -48,7 +48,6 @@ import com.finq.app.data.model.Category
 import com.finq.app.data.model.Quiz
 import com.finq.app.data.model.RelatedArticle
 import com.finq.app.data.repository.AnswerResult
-import com.finq.app.ui.components.AdBanner
 import com.finq.app.ui.theme.FinQTheme
 import com.finq.app.ui.theme.BgElevated
 import com.finq.app.ui.theme.BgSurface
@@ -216,14 +215,6 @@ fun ResultReportScreen(
                 fontWeight = FontWeight.SemiBold,
             )
         }
-
-        // ── 배너 광고 ─────────────────────────────────────────────
-        // CTA 아래, 스크롤 콘텐츠 맨 아래. 복습 완료 화면과 같은 자리다 — 둘 다
-        // 세션이 끝나고 이탈 직전이라 광고가 작업을 방해하지 않는다(`docs/ui-rules.md` §7).
-        // CTA 와 24dp 를 벌린다. 붙이면 한 세션 끝에 반드시 누르는 버튼 바로 아래에
-        // 광고가 앉아 우발적 클릭을 유발하는 배치가 된다.
-        Spacer(Modifier.height(24.dp))
-        AdBanner(horizontalPaddingDp = 40) // 화면 좌우 패딩 20+20
         Spacer(Modifier.height(8.dp))
     }
 }
